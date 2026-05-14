@@ -8,6 +8,8 @@ from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 
 #=================================================================================================================
+# Code for the system assembly was provided bu STEFAN TAKACS
+#=================================================================================================================
 
 def assembleStiffness( p, t, coef_a ):
     """
