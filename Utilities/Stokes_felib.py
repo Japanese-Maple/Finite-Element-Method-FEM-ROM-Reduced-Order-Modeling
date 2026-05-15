@@ -2,6 +2,7 @@ import numpy as np
 from scipy import sparse
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+import matplotlib.patches as patches
 from scipy.sparse import bmat, linalg
 from .Mesh_processing import refine, refine_n_times, fix_orientation, build_stable_mesh, Plot_Initial_Refined_meshes
 
@@ -144,31 +145,31 @@ def calculate_Saddle_point_K(A, B_x, B_y):
 # VISUALIZATIONS
 #===============================================================================================================================================================
 
-def Stokes_matrix_structure(A_B_mat, mat_name:str='A/B_x/B_y',
+def Stokes_matrix_structure(A_B_K_mat, mat_name:str='A/B_x/B_y',
                             figsize:tuple=(13,13), cmap:str='viridis'):
     """Plots the B matrix values and color codes them."""
 
-    A_B_coo = A_B_mat.tocoo()
-    fig, b_plot = plt.subplots(figsize=figsize)
-    sc = b_plot.scatter(A_B_coo.col, A_B_coo.row, 
-                        c=A_B_coo.data,      
-                        s=1,
-                        cmap=cmap,   
-                        marker='s',
-                        linewidths=0,
-                        edgecolors='none', 
-                        antialiaseds=False)
+    A_B_K_coo = A_B_K_mat.tocoo()
+    fig, mat_plot = plt.subplots(figsize=figsize)
+    sc = mat_plot.scatter(A_B_K_coo.col, A_B_K_coo.row, 
+                          c=A_B_K_coo.data,      
+                          s=1,
+                          cmap=cmap,   
+                          marker='s',
+                          linewidths=0,
+                          edgecolors='none', 
+                          antialiaseds=False)
     
-    b_plot.set_xlim([0, A_B_mat.shape[1]])
-    b_plot.set_ylim([0, A_B_mat.shape[0]])
-    b_plot.invert_yaxis()
+    mat_plot.set_xlim([0, A_B_K_mat.shape[1]])
+    mat_plot.set_ylim([0, A_B_K_mat.shape[0]])
+    mat_plot.invert_yaxis()
 
-    divider = make_axes_locatable(b_plot)
+    divider = make_axes_locatable(mat_plot)
     cax = divider.append_axes("right", size="3%", pad=0.1)    
     plt.colorbar(sc, cax=cax, label='Matrix Entry Value')  
     
-    b_plot.set_aspect('equal')
-    b_plot.set_title(f"{mat_name}: {A_B_mat.shape[0]}x{A_B_mat.shape[1]}")
+    mat_plot.set_aspect('equal')
+    mat_plot.set_title(f"{mat_name}: {A_B_K_mat.shape[0]}x{A_B_K_mat.shape[1]}")
 
     plt.tight_layout()    
     plt.savefig(f'Outputs/Stokes_{mat_name}_matrix.svg')
@@ -176,10 +177,53 @@ def Stokes_matrix_structure(A_B_mat, mat_name:str='A/B_x/B_y',
 
 #===============================================================================================================================================================
 
-def K_matrix_structure(K_mat, highlight_blocks:bool=True,
+def K_matrix_structure(K_mat, dim_A, dim_B, 
                        figsize:tuple=(13,13), cmap:str='viridis'):
-    """Plots the K matrix values and color codes them."""
+    """Plots the Saddle-point K matrix with labeled block boundaries"""
+
+    K_coo = K_mat.tocoo()
+    fig, mat_plot = plt.subplots(figsize=figsize)
+    sc = mat_plot.scatter(K_coo.col, K_coo.row, 
+                    c=K_coo.data, 
+                    s=1, 
+                    cmap=cmap, 
+                    marker='s', 
+                    linewidths=0, 
+                    edgecolors='none', 
+                    antialiased=False)
     
-    plt.tight_layout()    
-    plt.savefig('Outputs/Stokes_K_matrix.svg')
-    plt.show() 
+    mat_plot.set_xlim([0, K_mat.shape[0]])
+    mat_plot.set_ylim([0, K_mat.shape[0]])
+    mat_plot.set_yticks([0, dim_A, 2*dim_A, 2*dim_A + dim_B])
+    mat_plot.set_xticks([0, dim_A, 2*dim_A, 2*dim_A + dim_B])
+    mat_plot.invert_yaxis()
+    mat_plot.set_aspect('equal')
+
+    offsets = [0, dim_A, 2*dim_A, 2*dim_A + dim_B]
+    labels = [['$\\mathbf{\\mathbb{A}}$',     '$\\mathbf{\\mathbb{0}}$',     '$\\mathbf{\\mathbb{B}}_x$'],
+              ['$\\mathbf{\\mathbb{0}}$',     '$\\mathbf{\\mathbb{A}}$',     '$\\mathbf{\\mathbb{B}}_y$'],
+              ['$\\mathbf{\\mathbb{B}}_x^T$', '$\\mathbf{\\mathbb{B}}_y^T$', '$\\mathbf{\\mathbb{0}}$']]
+
+    for i in range(3):
+        for j in range(3):
+
+            h = offsets[i+1] - offsets[i]
+            w = offsets[j+1] - offsets[j]
+            
+            rect = patches.Rectangle((offsets[j], offsets[i]), w, h, 
+                                     linewidth=2.3, edgecolor="#CA0707", facecolor='none', alpha=0.6)
+            mat_plot.add_patch(rect)
+            
+            mat_plot.text(offsets[j] + w/2, offsets[i] + h/2, labels[i][j], 
+                          color="#004216", fontsize=25, fontweight='bold', ha='center', va='center',
+                          bbox=dict(facecolor='white', alpha=0.7, edgecolor='none'))
+
+    
+    divider = make_axes_locatable(mat_plot)
+    cax = divider.append_axes("right", size="3%", pad=0.1)
+    plt.colorbar(sc, cax=cax, label='Matrix Entry Value')
+
+    mat_plot.set_title(f"Saddle-Point Matrix K: {K_mat.shape[0]}x{K_mat.shape[1]}", fontsize=15)
+    plt.tight_layout()
+    plt.savefig('Outputs/Stokes_K_matrix_labeled.svg')
+    plt.show()
