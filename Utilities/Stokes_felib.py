@@ -75,3 +75,73 @@ def calculate_velocity_A(p, t, kinematic_viscosity):
 
 #===============================================================================================================================================================
 
+def calculate_pressure_B(p_fine, t_fine, p_coarce, t_coarce):
+    """Calculates the pressure matrices Bx, By"""
+
+    Np_fine = p_fine.shape[0]
+    Nt_fine = t_fine.shape[0]
+
+    Np_coarce = p_coarce.shape[0]
+    Nt_coarce = t_coarce.shape[0]
+
+    jacobian = np.zeros(shape=(Nt_fine, 2, 2))
+    jacobian[:, 0, :] = p_fine[t_fine[:, 1]] - p_fine[t_fine[:, 0]] 
+    jacobian[:, 1, :] = p_fine[t_fine[:, 2]] - p_fine[t_fine[:, 0]] 
+
+    test_function_derivatives = np.array([[-1, -1],   # ф1 = 1 - s_1 - s_2
+                                          [1, 0],     # ф2 = s_1
+                                          [0, 1]])    # ф3 = s_2
+    
+    # We can now construct local matrices Bx, By for each triangle:
+
+    Bx_local = np.zeros(shape=(Nt_fine, 3, 3))
+    By_local = np.zeros(shape=(Nt_fine, 3, 3))
+
+    # for i in [0, 1, 2]:
+    #     for j in [0, 1, 2]:
+    #         Bx_local[:, i, j] = 1/6 * (  jacobian[:, 0, 1] * test_function_derivatives[i, 1]       
+    #                                    - jacobian[:, 1, 1] * test_function_derivatives[i, 0])
+
+    #         By_local[:, i, j] = 1/6 * (  jacobian[:, 1, 0] * test_function_derivatives[i, 0] 
+    #                                    - jacobian[:, 0, 0] * test_function_derivatives[i, 1])
+            
+    # print(Bx_local[0],'\n')
+    # print(By_local[0],'\n')
+            
+    Bx_vals = 1/6 * (  jacobian[:, 0, 1, None] * test_function_derivatives[:, 1]       
+                     - jacobian[:, 1, 1, None] * test_function_derivatives[:, 0])
+    
+    By_vals = 1/6 * (  jacobian[:, 1, 0, None] * test_function_derivatives[:, 0] 
+                     - jacobian[:, 0, 0, None] * test_function_derivatives[:, 1])
+    
+    Bx_local = np.repeat(Bx_vals[:, :, None], 3, axis=2)
+    By_local = np.repeat(By_vals[:, :, None], 3, axis=2)
+
+    # We now adress the global matrix problem for Bx and By:
+
+    # 3. Create the mapping: which fine triangle belongs to which coarse triangle?
+    # Assuming standard 4-way split refinement:
+    fine_to_coarse_idx = np.repeat(np.arange(Nt_coarce), 4)[:Nt_fine]
+
+    # 4. Generate Global Indices
+    # Columns: Velocity nodes from the fine triangles
+    # We repeat each triangle's nodes 3 times to match the 3 pressure nodes
+    colidx = np.tile(t_fine[:, :, None], (1, 1, 3)).ravel()
+
+    parent_coarse_nodes = t_coarce[fine_to_coarse_idx]
+
+    #!!! changed
+    rowidx = np.tile(parent_coarse_nodes[:, None, :], (1, 3, 1)).ravel()
+
+    print(Bx_local.shape)
+    print(rowidx.shape)
+    print(colidx.shape)
+
+    print(Bx_local.ravel().shape)
+    print(rowidx.ravel().shape)
+    print(colidx.ravel().shape)
+    
+    B_x = sparse.csc_matrix((np.ravel(Bx_local),(np.ravel(rowidx),np.ravel(colidx))),shape=(Np_fine,Np_coarce))
+    B_y = sparse.csc_matrix((np.ravel(By_local),(np.ravel(rowidx),np.ravel(colidx))),shape=(Np_fine,Np_coarce))
+
+    return B_x, B_y
