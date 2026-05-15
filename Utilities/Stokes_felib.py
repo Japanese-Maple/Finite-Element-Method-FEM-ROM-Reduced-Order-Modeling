@@ -118,30 +118,19 @@ def calculate_pressure_B(p_fine, t_fine, p_coarce, t_coarce):
     By_local = np.repeat(By_vals[:, :, None], 3, axis=2)
 
     # We now adress the global matrix problem for Bx and By:
-
-    # 3. Create the mapping: which fine triangle belongs to which coarse triangle?
-    # Assuming standard 4-way split refinement:
-    fine_to_coarse_idx = np.repeat(np.arange(Nt_coarce), 4)[:Nt_fine]
-
-    # 4. Generate Global Indices
-    # Columns: Velocity nodes from the fine triangles
-    # We repeat each triangle's nodes 3 times to match the 3 pressure nodes
-    colidx = np.tile(t_fine[:, :, None], (1, 1, 3)).ravel()
-
-    parent_coarse_nodes = t_coarce[fine_to_coarse_idx]
-
-    #!!! changed
-    rowidx = np.tile(parent_coarse_nodes[:, None, :], (1, 3, 1)).ravel()
-
-    print(Bx_local.shape)
-    print(rowidx.shape)
-    print(colidx.shape)
-
-    print(Bx_local.ravel().shape)
-    print(rowidx.ravel().shape)
-    print(colidx.ravel().shape)
     
-    B_x = sparse.csc_matrix((np.ravel(Bx_local),(np.ravel(rowidx),np.ravel(colidx))),shape=(Np_fine,Np_coarce))
-    B_y = sparse.csc_matrix((np.ravel(By_local),(np.ravel(rowidx),np.ravel(colidx))),shape=(Np_fine,Np_coarce))
+    # INVESTIGATE:
+    fine_to_coarse_idx = np.repeat(np.arange(Nt_coarce), 4)[:Nt_fine]
+    colidx = np.tile(t_fine[:, :3, None], (1, 1, 3)).ravel()
+    parent_coarse_nodes = t_coarce[fine_to_coarse_idx, :3]
+    rowidx = np.tile(parent_coarse_nodes[:, None, :], (1, 3, 1)).ravel()
+    
+    B_x = sparse.csc_matrix((np.ravel(Bx_local),
+                            (np.ravel(rowidx), np.ravel(colidx))),
+                            shape=(Np_coarce, Np_fine))
+    
+    B_y = sparse.csc_matrix((np.ravel(By_local),
+                            (np.ravel(rowidx), np.ravel(colidx))),
+                            shape=(Np_coarce, Np_fine))
 
     return B_x, B_y
