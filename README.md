@@ -1,6 +1,6 @@
 #Stokes Equations
 
-$$
+\[
 \begin{cases}
 -\nu \Delta u + \nabla p = 0
 & \text{in } \Omega, \\[0.5em]
@@ -14,9 +14,9 @@ u = g
 -p\,n + \nu (\nabla u)n = h
 & \text{on } \Gamma_N.
 \end{cases}
-$$
+\]
 
-$$
+\[
 \begin{cases}
 \displaystyle
 \int_{\Omega} \nu \nabla u : \nabla v \, d\Omega
@@ -35,4 +35,4 @@ $$
 \int_{\Omega} q \, (\nabla \cdot r_g)\, d\Omega,
 & \forall q \in Q.
 \end{cases}
-$$
+\]
