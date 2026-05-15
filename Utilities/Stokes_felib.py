@@ -182,7 +182,7 @@ def K_matrix_structure(K_mat, dim_A, dim_B,
     """Plots the Saddle-point K matrix with labeled block boundaries"""
 
     K_coo = K_mat.tocoo()
-    fig, mat_plot = plt.subplots(figsize=figsize)
+    _, mat_plot = plt.subplots(figsize=figsize)
     sc = mat_plot.scatter(K_coo.col, K_coo.row, 
                     c=K_coo.data, 
                     s=1, 
@@ -200,9 +200,9 @@ def K_matrix_structure(K_mat, dim_A, dim_B,
     mat_plot.set_aspect('equal')
 
     offsets = [0, dim_A, 2*dim_A, 2*dim_A + dim_B]
-    labels = [['$\\mathbf{\\mathbb{A}}$',     '$\\mathbf{\\mathbb{0}}$',     '$\\mathbf{\\mathbb{B}}_x$'],
-              ['$\\mathbf{\\mathbb{0}}$',     '$\\mathbf{\\mathbb{A}}$',     '$\\mathbf{\\mathbb{B}}_y$'],
-              ['$\\mathbf{\\mathbb{B}}_x^T$', '$\\mathbf{\\mathbb{B}}_y^T$', '$\\mathbf{\\mathbb{0}}$']]
+    labels = [['$\\mathbf{\\mathbb{A}}$',   '$\\mathbf{\\mathbb{0}}$',   '$\\mathbf{\\mathbb{B}}_x^T$'],
+              ['$\\mathbf{\\mathbb{0}}$',   '$\\mathbf{\\mathbb{A}}$',   '$\\mathbf{\\mathbb{B}}_y^T$'],
+              ['$\\mathbf{\\mathbb{B}}_x$', '$\\mathbf{\\mathbb{B}}_y$', '$\\mathbf{\\mathbb{0}}$']]
 
     for i in range(3):
         for j in range(3):
