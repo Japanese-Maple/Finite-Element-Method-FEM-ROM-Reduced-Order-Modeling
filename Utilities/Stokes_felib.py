@@ -1,15 +1,16 @@
 import numpy as np
 from scipy import sparse
 import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 from scipy.sparse import bmat, linalg
 from .Mesh_processing import refine, refine_n_times, fix_orientation, build_stable_mesh, Plot_Initial_Refined_meshes
 
 #===============================================================================================================================================================
+# MAIN COMPUTATIONAL FUNCTIONS
+#===============================================================================================================================================================
 
 def calculate_velocity_A(p, t, kinematic_viscosity):
-    """
-    This is a matrix for the first integral in the Stokes Equations - The Stiffness Matrix A
-    """
+    """This is a matrix for the first integral in the Stokes Equations - The Stiffness Matrix A"""
 
     Np = p.shape[0]
     Nt = t.shape[0]
@@ -122,3 +123,37 @@ def calculate_pressure_B(p_fine, t_fine, p_coarse, t_coarse):
                             shape=(Np_coarse, Np_fine))
 
     return B_x, B_y
+
+#===============================================================================================================================================================
+# VISUALIZATIONS
+#===============================================================================================================================================================
+
+def B_matrix_structure(B_mat, 
+                       figsize:tuple=(13,13), cmap:str='viridis'):
+    """Plots the B matrix values and color codes them."""
+
+    B_coo = B_mat.tocoo()
+    fig, b_plot = plt.subplots(figsize=figsize)
+    sc = b_plot.scatter(B_coo.col, B_coo.row, 
+                        c=B_coo.data,      
+                        s=1,
+                        cmap=cmap,   
+                        marker='s',
+                        linewidths=0,
+                        edgecolors='none', 
+                        antialiaseds=False)
+    
+    b_plot.set_xlim([0, B_mat.shape[1]])
+    b_plot.set_ylim([0, B_mat.shape[0]])
+    b_plot.invert_yaxis()
+
+    divider = make_axes_locatable(b_plot)
+    cax = divider.append_axes("right", size="3%", pad=0.1)    
+    plt.colorbar(sc, cax=cax, label='Matrix Entry Value')  
+    
+    b_plot.set_aspect('equal')
+    b_plot.set_title(f"B: {B_mat.shape[0]}x{B_mat.shape[1]}")
+
+    plt.tight_layout()    
+    plt.savefig('Outputs/Stokes_B_matrix.svg')
+    plt.show()
