@@ -10,7 +10,7 @@ from .Mesh_processing import refine, refine_n_times, fix_orientation, build_stab
 #===============================================================================================================================================================
 
 def calculate_velocity_A(p, t, kinematic_viscosity):
-    """This is a matrix for the first integral in the Stokes Equations - The Stiffness Matrix A"""
+    """Calculates the Stiffness Matrix **A**"""
 
     Np = p.shape[0]
     Nt = t.shape[0]
@@ -77,7 +77,7 @@ def calculate_velocity_A(p, t, kinematic_viscosity):
 #===============================================================================================================================================================
 
 def calculate_pressure_B(p_fine, t_fine, p_coarse, t_coarse):
-    """Calculates the pressure matrices Bx, By"""
+    """Calculates the pressure matrices **Bx**, **By**"""
 
     Np_fine = p_fine.shape[0]
     Nt_fine = t_fine.shape[0]
@@ -125,17 +125,33 @@ def calculate_pressure_B(p_fine, t_fine, p_coarse, t_coarse):
     return B_x, B_y
 
 #===============================================================================================================================================================
+
+def calculate_Saddle_point_K(A, B_x, B_y):
+    """Calculates the Saddle-Point matrix **K**"""
+
+    Np_coarse = B_x.shape[0]
+    Zero_pp = sparse.csc_matrix((Np_coarse, Np_coarse))
+
+    K_mat = bmat([
+        [A,       None,    B_x.T],
+        [None,    A,       B_y.T],
+        [B_x,     B_y,     Zero_pp]
+    ], format='csc')
+
+    return K_mat
+
+#===============================================================================================================================================================
 # VISUALIZATIONS
 #===============================================================================================================================================================
 
-def B_matrix_structure(B_mat, 
-                       figsize:tuple=(13,13), cmap:str='viridis'):
+def Stokes_matrix_structure(A_B_mat, mat_name:str='A/B_x/B_y',
+                            figsize:tuple=(13,13), cmap:str='viridis'):
     """Plots the B matrix values and color codes them."""
 
-    B_coo = B_mat.tocoo()
+    A_B_coo = A_B_mat.tocoo()
     fig, b_plot = plt.subplots(figsize=figsize)
-    sc = b_plot.scatter(B_coo.col, B_coo.row, 
-                        c=B_coo.data,      
+    sc = b_plot.scatter(A_B_coo.col, A_B_coo.row, 
+                        c=A_B_coo.data,      
                         s=1,
                         cmap=cmap,   
                         marker='s',
@@ -143,8 +159,8 @@ def B_matrix_structure(B_mat,
                         edgecolors='none', 
                         antialiaseds=False)
     
-    b_plot.set_xlim([0, B_mat.shape[1]])
-    b_plot.set_ylim([0, B_mat.shape[0]])
+    b_plot.set_xlim([0, A_B_mat.shape[1]])
+    b_plot.set_ylim([0, A_B_mat.shape[0]])
     b_plot.invert_yaxis()
 
     divider = make_axes_locatable(b_plot)
@@ -152,8 +168,18 @@ def B_matrix_structure(B_mat,
     plt.colorbar(sc, cax=cax, label='Matrix Entry Value')  
     
     b_plot.set_aspect('equal')
-    b_plot.set_title(f"B: {B_mat.shape[0]}x{B_mat.shape[1]}")
+    b_plot.set_title(f"{mat_name}: {A_B_mat.shape[0]}x{A_B_mat.shape[1]}")
 
     plt.tight_layout()    
-    plt.savefig('Outputs/Stokes_B_matrix.svg')
+    plt.savefig(f'Outputs/Stokes_{mat_name}_matrix.svg')
     plt.show()
+
+#===============================================================================================================================================================
+
+def K_matrix_structure(K_mat, highlight_blocks:bool=True,
+                       figsize:tuple=(13,13), cmap:str='viridis'):
+    """Plots the K matrix values and color codes them."""
+    
+    plt.tight_layout()    
+    plt.savefig('Outputs/Stokes_K_matrix.svg')
+    plt.show() 
