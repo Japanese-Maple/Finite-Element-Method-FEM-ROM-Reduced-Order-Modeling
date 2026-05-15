@@ -38,8 +38,8 @@ def calculate_velocity_A(p, t, kinematic_viscosity):
     Q_mat[:, 1, 1] = q22
     
     test_function_derivatives = np.array([[-1, -1],   # ф1 = 1 - s_1 - s_2
-                                          [ 1,  0],     # ф2 = s_1
-                                          [ 0,  1]])    # ф3 = s_2
+                                          [ 1,  0],   # ф2 = s_1
+                                          [ 0,  1]])  # ф3 = s_2
 
 
     # We can now construct a local matrix A for each triangle:
@@ -89,8 +89,8 @@ def calculate_pressure_B(p_fine, t_fine, p_coarse, t_coarse):
     jacobian[:, 1, :] = p_fine[t_fine[:, 2]] - p_fine[t_fine[:, 0]] 
 
     test_function_derivatives = np.array([[-1, -1],   # ф1 = 1 - s_1 - s_2
-                                          [ 1,  0],     # ф2 = s_1
-                                          [ 0,  1]])    # ф3 = s_2
+                                          [ 1,  0],   # ф2 = s_1
+                                          [ 0,  1]])  # ф3 = s_2
     
     # We can now construct local matrices Bx, By for each triangle:
 
