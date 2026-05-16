@@ -1,5 +1,7 @@
 # Stokes Equations
+
 <div align="left">
+
 $$
 \begin{cases}
 -\nu \Delta u + \nabla p = 0 & \text{in } \Omega \\
