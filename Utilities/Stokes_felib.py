@@ -172,7 +172,8 @@ def calculate_F(A_mat, B_x, B_y, lifting_function):
 #===============================================================================================================================================================
 
 def Stokes_matrix_structure(A_B_K_mat, mat_name:str='A/B_x/B_y',
-                            figsize:tuple=(13,13), cmap:str='viridis'):
+                            figsize:tuple=(13,13), cmap:str='viridis',
+                            savetype:str='jpeg'):
     """Plots the B matrix values and color codes them."""
 
     A_B_K_coo = A_B_K_mat.tocoo()
@@ -198,13 +199,14 @@ def Stokes_matrix_structure(A_B_K_mat, mat_name:str='A/B_x/B_y',
     mat_plot.set_title(f"{mat_name}: {A_B_K_mat.shape[0]}x{A_B_K_mat.shape[1]}")
 
     plt.tight_layout()    
-    plt.savefig(f'Outputs/Stokes_{mat_name}_matrix.svg')
+    plt.savefig(f'Outputs/Stokes_{mat_name}_matrix.{savetype}')
     plt.show()
 
 #===============================================================================================================================================================
 
 def K_matrix_structure(K_mat, dim_A, dim_B, 
-                       figsize:tuple=(13,13), cmap:str='viridis'):
+                       figsize:tuple=(13,13), cmap:str='viridis',
+                       savetype:str='jpeg'):
     """Plots the Saddle-point K matrix with labeled block boundaries"""
 
     K_coo = K_mat.tocoo()
@@ -251,12 +253,13 @@ def K_matrix_structure(K_mat, dim_A, dim_B,
 
     mat_plot.set_title(f"Saddle-Point Matrix K: {K_mat.shape[0]}x{K_mat.shape[1]}", fontsize=15)
     plt.tight_layout()
-    plt.savefig('Outputs/Stokes_K_matrix_labeled.svg')
+    plt.savefig(f'Outputs/Stokes_K_matrix_labeled.{savetype}')
     plt.show()
 
 #===============================================================================================================================================================
 
-def plot_streamlines(p_fine, t_fine, ux, uy):
+def plot_streamlines(p_fine, t_fine, ux, uy,
+                     savetype:str='jpeg'):
     """
     Streamline visualization with automatic topology-based geometry masking.
     """
@@ -296,7 +299,7 @@ def plot_streamlines(p_fine, t_fine, ux, uy):
     ax.streamplot(
         X, Y,
         U, V,
-        density=3.5,
+        density=2.5,
         linewidth=1.2,
         arrowsize=1.2,
         color='white'
@@ -308,5 +311,5 @@ def plot_streamlines(p_fine, t_fine, ux, uy):
     ax.set_ylabel("y")
 
     plt.tight_layout()
-    plt.savefig('Outputs/Solution_Streamlines.svg')
+    plt.savefig(f'Outputs/Solution_Streamlines.{savetype}')
     plt.show()

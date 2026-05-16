@@ -178,7 +178,8 @@ def mesh_df(p, e, t,
 
 def Plot_Initial_Refined_meshes(data_path: str, num_of_refinements: int = 3,
                                 plot: bool=True,
-                                figsize: tuple=(16,8)):
+                                figsize: tuple=(16,8),
+                                savetype:str="jpeg"):
     """
     Plots the initial blender mesh and the refined counterpart. 
     Additionally outputs the refined mesh arrays.
@@ -216,8 +217,9 @@ def Plot_Initial_Refined_meshes(data_path: str, num_of_refinements: int = 3,
         ax[i].legend()
  
     plt.suptitle(f'Initial Mesh ({len(p_raw)} Nodes, {len(tri_idx)} Triangles) --> Refined Mesh ({len(p)} Nodes, {len(t)} Triangles)')
-
-    if plot==True:
+    plt.savefig(f"Outputs/InitialvsRefined_mesh.{savetype}")
+    
+    if plot==True:        
         plt.show()
     else:
         plt.close()
