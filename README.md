@@ -9,7 +9,8 @@ u = g & \text{on } \Gamma_D \\
 \end{cases}
 $$
 
-$$ \begin{cases} 
+$$ 
+\begin{cases} 
 \int_{\Omega} \nu \nabla u : \nabla v \, d\Omega - \int_{\Omega} p (\nabla \cdot v) \, d\Omega = 
 \int_{\Gamma_N} h \cdot v \, d\Gamma - \int_{\Omega} \nu \nabla r_g : \nabla v \, d\Omega & \forall v \in X \\ -\int_{\Omega} q (\nabla \cdot u) \, d\Omega = 
 \int_{\Omega} q (\nabla \cdot r_g) \, d\Omega & \forall q \in Q 
