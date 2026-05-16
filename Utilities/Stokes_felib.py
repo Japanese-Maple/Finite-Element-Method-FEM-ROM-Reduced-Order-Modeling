@@ -259,6 +259,7 @@ def K_matrix_structure(K_mat, dim_A, dim_B,
 #===============================================================================================================================================================
 
 def plot_streamlines(p_fine, t_fine, ux, uy,
+                     density:float=3.5,
                      savetype:str='jpeg'):
     """
     Streamline visualization with automatic topology-based geometry masking.
@@ -299,7 +300,7 @@ def plot_streamlines(p_fine, t_fine, ux, uy,
     ax.streamplot(
         X, Y,
         U, V,
-        density=2.5,
+        density=density,
         linewidth=1.2,
         arrowsize=1.2,
         color='white'

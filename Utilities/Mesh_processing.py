@@ -217,8 +217,8 @@ def Plot_Initial_Refined_meshes(data_path: str, num_of_refinements: int = 3,
         ax[i].legend()
  
     plt.suptitle(f'Initial Mesh ({len(p_raw)} Nodes, {len(tri_idx)} Triangles) --> Refined Mesh ({len(p)} Nodes, {len(t)} Triangles)')
-    plt.savefig(f"Outputs/InitialvsRefined_mesh.{savetype}")
-    
+    plt.savefig(f"Outputs/Mesh_Refinement.{savetype}")
+
     if plot==True:        
         plt.show()
     else:
