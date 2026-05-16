@@ -1,6 +1,8 @@
 import numpy as np
 from scipy import sparse
+from scipy.interpolate import griddata
 import matplotlib.pyplot as plt
+import matplotlib.tri as tri
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib.patches as patches
 from scipy.sparse import bmat, linalg
@@ -142,6 +144,30 @@ def calculate_Saddle_point_K(A, B_x, B_y):
     return K_mat
 
 #===============================================================================================================================================================
+
+def calculate_Neumann_BCs():
+    return
+
+#===============================================================================================================================================================
+
+def calculate_Dirichlet_BCs(A_mat, lifting_function):
+    lf_x, lf_y = lifting_function
+    return A_mat @ lf_x, A_mat @ lf_y
+
+#===============================================================================================================================================================
+
+def calculate_pressure_lifting(B_x, B_y, lifting_function):
+    lf_x, lf_y = lifting_function
+    return B_x @ lf_x + B_y @ lf_y
+
+#===============================================================================================================================================================
+
+def calculate_F(A_mat, B_x, B_y, lifting_function):
+    F_x, F_y = calculate_Dirichlet_BCs(A_mat, lifting_function)
+    p = calculate_pressure_lifting(B_x, B_y, lifting_function)
+    return np.concatenate([-F_x, -F_y, p])    
+
+#===============================================================================================================================================================
 # VISUALIZATIONS
 #===============================================================================================================================================================
 
@@ -226,4 +252,61 @@ def K_matrix_structure(K_mat, dim_A, dim_B,
     mat_plot.set_title(f"Saddle-Point Matrix K: {K_mat.shape[0]}x{K_mat.shape[1]}", fontsize=15)
     plt.tight_layout()
     plt.savefig('Outputs/Stokes_K_matrix_labeled.svg')
+    plt.show()
+
+#===============================================================================================================================================================
+
+def plot_streamlines(p_fine, t_fine, ux, uy):
+    """
+    Streamline visualization with automatic topology-based geometry masking.
+    """
+    x = p_fine[:, 0]
+    y = p_fine[:, 1]
+
+    nx, ny = 300, 150
+    xi = np.linspace(x.min(), x.max(), nx)
+    yi = np.linspace(y.min(), y.max(), ny)
+    X, Y = np.meshgrid(xi, yi)
+
+    # Interpolation of FEM velocity:
+    U = griddata((x, y), ux, (X, Y), method='linear')
+    V = griddata((x, y), uy, (X, Y), method='linear')
+
+    triang_v = tri.Triangulation(x, y, t_fine[:, :3])
+    trifinder = triang_v.get_trifinder()
+    
+    # If a grid point (X, Y) lands in a hole/obstacle, trifinder returns -1
+    geometry_mask = (trifinder(X, Y) == -1)
+    U = np.ma.array(U, mask=geometry_mask)
+    V = np.ma.array(V, mask=geometry_mask)
+    
+    speed = np.sqrt(U**2 + V**2)
+
+    # The Plot:
+    fig, ax = plt.subplots(figsize=(14, 6))
+
+    cf = ax.contourf(
+        X, Y,
+        speed,
+        levels=60,
+        cmap='viridis'
+    )
+    plt.colorbar(cf, ax=ax, label='$\\|\\vec{u}\\|$')
+
+    ax.streamplot(
+        X, Y,
+        U, V,
+        density=3.5,
+        linewidth=1.2,
+        arrowsize=1.2,
+        color='white'
+    )
+
+    ax.set_aspect('equal')
+    ax.set_title("Streamlines of $\\vec{u}$")
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
+
+    plt.tight_layout()
+    plt.savefig('Outputs/Solution_Streamlines.svg')
     plt.show()
