@@ -259,7 +259,9 @@ def K_matrix_structure(K_mat, dim_A, dim_B,
 #===============================================================================================================================================================
 
 def plot_streamlines(p_fine, t_fine, ux, uy,
-                     density:float=3.5,
+                     density:float=3.5, 
+                     grid_num:tuple=(300,300),
+                     figsize:tuple=(14, 6),
                      savetype:str='jpeg'):
     """
     Streamline visualization with automatic topology-based geometry masking.
@@ -267,7 +269,7 @@ def plot_streamlines(p_fine, t_fine, ux, uy,
     x = p_fine[:, 0]
     y = p_fine[:, 1]
 
-    nx, ny = 300, 150
+    nx, ny = grid_num
     xi = np.linspace(x.min(), x.max(), nx)
     yi = np.linspace(y.min(), y.max(), ny)
     X, Y = np.meshgrid(xi, yi)
@@ -283,11 +285,11 @@ def plot_streamlines(p_fine, t_fine, ux, uy,
     geometry_mask = (trifinder(X, Y) == -1)
     U = np.ma.array(U, mask=geometry_mask)
     V = np.ma.array(V, mask=geometry_mask)
-    
+
     speed = np.sqrt(U**2 + V**2)
 
     # The Plot:
-    fig, ax = plt.subplots(figsize=(14, 6))
+    fig, ax = plt.subplots(figsize=figsize)
 
     cf = ax.contourf(
         X, Y,
@@ -305,6 +307,14 @@ def plot_streamlines(p_fine, t_fine, ux, uy,
         arrowsize=1.2,
         color='white'
     )
+
+    x_min, x_max = p_fine[:,0].min(), p_fine[:,0].max()
+    x_margin = np.abs(x_max - x_min)*0.03
+    y_min, y_max = p_fine[:,1].min(), p_fine[:,1].max()
+    y_margin = np.abs(y_max - y_min)*0.03
+
+    ax.set_xlim([x_min - x_margin, x_max + x_margin])
+    ax.set_ylim([y_min - y_margin, y_max + y_margin])
 
     ax.set_aspect('equal')
     ax.set_title("Streamlines of $\\vec{u}$")
