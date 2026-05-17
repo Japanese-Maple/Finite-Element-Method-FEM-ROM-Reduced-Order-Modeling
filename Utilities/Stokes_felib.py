@@ -324,3 +324,33 @@ def plot_streamlines(p_fine, t_fine, ux, uy,
     plt.tight_layout()
     plt.savefig(f'Outputs/Solution_Streamlines.{savetype}')
     plt.show()
+
+#===============================================================================================================================================================
+
+def plot_pressure(p_coarse, t_coarse, p_sol,
+                  figsize:tuple=(10,10),
+                  savetype:str='jpeg'):
+    """Plots the pressure"""
+
+    _, plots = plt.subplots(figsize=figsize)
+
+    triangulation = tri.Triangulation(p_coarse[:, 0], p_coarse[:, 1], t_coarse[:, :3])
+    cf = plots.tricontourf(triangulation, p_sol, levels=90)
+
+    plt.colorbar(cf, ax=plots, label='$\\mathbf{P}$')
+
+    plots.set_yticks([])
+    plots.set_xticks([])
+    plots.set_aspect('equal')
+
+    x_min, x_max = p_coarse[:,0].min(), p_coarse[:,0].max()
+    x_margin = np.abs(x_max - x_min)*0.03
+    y_min, y_max = p_coarse[:,1].min(), p_coarse[:,1].max()
+    y_margin = np.abs(y_max - y_min)*0.03
+
+    plots.set_xlim([x_min - x_margin, x_max + x_margin])
+    plots.set_ylim([y_min - y_margin, y_max + y_margin])
+
+    plots.set_title('Pressure $\\mathbf{P}$')
+    plt.savefig(f'Outputs/Pressure_Tricontourf.{savetype}')
+    plt.show()
