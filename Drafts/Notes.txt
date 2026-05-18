@@ -1,0 +1,1 @@
+p_fine, e_fine, t_fine, p_coarse, e_coarse, t_coarse, ux, uy, p_sol = load_simulation_data("Solutions/Winding_pipe.npz")

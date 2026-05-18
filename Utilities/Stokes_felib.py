@@ -330,7 +330,7 @@ def plot_streamlines(p_fine, t_fine, ux, uy,
     U = np.ma.array(U, mask=geometry_mask)
     V = np.ma.array(V, mask=geometry_mask)
 
-    speed = np.sqrt(U**2 + V**2)
+    speed = np.ma.sqrt(U**2 + V**2)
 
     # The Plot:
     _, ax = plt.subplots(figsize=figsize)
