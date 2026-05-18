@@ -1,1 +1,61 @@
+#----------------------------------------------------------------------------------
+# Loader
+#----------------------------------------------------------------------------------
+
 p_fine, e_fine, t_fine, p_coarse, e_coarse, t_coarse, ux, uy, p_sol = load_simulation_data("Solutions/Winding_pipe.npz")
+
+#----------------------------------------------------------------------------------
+# Triangulation Visual
+#----------------------------------------------------------------------------------
+
+h = np.sqrt(3)/2
+p = np.array([[0, 0],
+              [1, 0],
+              [1/2,h]])
+e = np.array([[0,1,0],
+              [1,2,0],
+              [2,0,0]])
+t = np.array([[0, 1, 2, 0, 1, 2, 0]])
+
+pf, ef, tf = refine(p, e, t)
+triangulation1 = tri.Triangulation(p[:, 0], p[:, 1], t[:, :3])
+triangulation2 = tri.Triangulation(pf[:, 0], pf[:, 1], tf[:, :3])
+
+_, ax = plt.subplots(1, 2, figsize=(10,5))
+ax[0].triplot(triangulation1, c='k')
+ax[1].triplot(triangulation2, c='k')
+
+ax[0].scatter(p[:, 0],  p[:, 1],  s=50, facecolor='red', marker='s')
+ax[1].scatter(pf[:, 0], pf[:, 1], s=50, facecolor='red', marker='s')
+
+for i in [0,1]:
+    ax[i].set_aspect('equal')
+    ax[i].axis('off')
+
+for idx, element in enumerate(t[:, :3]):
+    # Extract coordinates of the 3 vertices defining this triangle
+    triangle_coords = p[element]
+    # Compute the center of mass (centroid)
+    cx, cy = triangle_coords.mean(axis=0)
+    
+    ax[0].text(cx, cy, "$\\tilde{\mathbb{T}}_1$", fontsize=33, color='blue',
+               fontweight='bold', ha='center', va='center')
+
+# 2. Label the 4 newly generated refined sub-triangles (1, 2, 3, 4)
+for idx, element in enumerate(tf[:, :3]):
+    # Extract coordinates from the fine mesh points
+    triangle_coords = pf[element]
+    cx, cy = triangle_coords.mean(axis=0)
+    
+    # Optional: add a slight semi-transparent white background box to ensure text readability
+    # Optional: add a slight semi-transparent white background box to ensure text readability
+    ax[1].text(cx, cy, fr"$\mathbb{{T}}_{{{idx + 1}}}$", fontsize=23, color='blue', 
+           fontweight='bold', ha='center', va='center')
+    
+for i in [0, 1]:
+    ax[i].set_aspect('equal')
+    ax[i].axis('off')
+
+plt.tight_layout()
+plt.savefig("Outputs/P1-iso-P1.svg")
+plt.show()

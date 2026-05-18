@@ -256,13 +256,13 @@ def K_matrix_structure(K_mat, dim_A, dim_B,
     K_coo = K_mat.tocoo()
     _, mat_plot = plt.subplots(figsize=figsize)
     sc = mat_plot.scatter(K_coo.col, K_coo.row, 
-                    c=K_coo.data, 
-                    s=1, 
-                    cmap=cmap, 
-                    marker='s', 
-                    linewidths=0, 
-                    edgecolors='none', 
-                    antialiased=False)
+                          c=K_coo.data, 
+                          s=1, 
+                          cmap=cmap, 
+                          marker='s', 
+                          linewidths=0, 
+                          edgecolors='none', 
+                          antialiased=False)
     
     mat_plot.set_xlim([0, K_mat.shape[0]])
     mat_plot.set_ylim([0, K_mat.shape[0]])
