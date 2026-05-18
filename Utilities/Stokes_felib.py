@@ -165,7 +165,51 @@ def calculate_pressure_lifting(B_x, B_y, lifting_function):
 def calculate_F(A_mat, B_x, B_y, lifting_function):
     F_x, F_y = calculate_Dirichlet_BCs(A_mat, lifting_function)
     p = calculate_pressure_lifting(B_x, B_y, lifting_function)
-    return np.concatenate([-F_x, -F_y, p])    
+    return np.concatenate([-F_x, -F_y, p])
+
+#===============================================================================================================================================================
+# SAVING/LOADING
+#===============================================================================================================================================================
+
+def save_simulation_data(p_fine, e_fine, t_fine, 
+                         p_coarse, e_coarse, t_coarse,
+                         ux, uy, p_sol,
+                         name:str='SIM_n'):
+    """Saves the solution and grid into a single file in compressed ```.npz``` format."""
+    
+    np.savez_compressed(f'Solutions/{name}.npz',
+                        p_fine=p_fine,                        
+                        e_fine=e_fine,
+                        t_fine=t_fine,
+                        p_coarse=p_coarse,                        
+                        e_coarse=e_coarse,
+                        t_coarse=t_coarse,
+                        ux=ux,
+                        uy=uy,
+                        p_sol=p_sol)
+    
+    print(f"Simulation '{name}' data saved.")  
+
+#===============================================================================================================================================================
+
+def load_simulation_data(file_path:str='Solutions/Exchanger_device.npz'):
+    """Loads the data from the compressed ```.npz``` format."""
+
+    data = np.load(file_path)
+
+    p_fine = data['p_fine']    
+    e_fine = data['e_fine']
+    t_fine = data['t_fine']
+
+    p_coarse = data['p_coarse']
+    e_coarse = data['e_coarse']
+    t_coarse = data['t_coarse']
+
+    ux = data['ux']
+    uy = data['uy']
+    p_sol = data['p_sol']
+
+    return p_fine, e_fine, t_fine, p_coarse, e_coarse, t_coarse, ux, uy, p_sol
 
 #===============================================================================================================================================================
 # VISUALIZATIONS
@@ -289,7 +333,7 @@ def plot_streamlines(p_fine, t_fine, ux, uy,
     speed = np.sqrt(U**2 + V**2)
 
     # The Plot:
-    fig, ax = plt.subplots(figsize=figsize)
+    _, ax = plt.subplots(figsize=figsize)
 
     cf = ax.contourf(
         X, Y,
@@ -297,7 +341,11 @@ def plot_streamlines(p_fine, t_fine, ux, uy,
         levels=60,
         cmap='viridis'
     )
-    plt.colorbar(cf, ax=ax, label='$\\|\\vec{u}\\|$')
+    
+    # plt.colorbar(cf, ax=ax, label='$\\|\\vec{u}\\|$')
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="3%", pad=0.1)
+    plt.colorbar(cf, cax=cax, label='$\\|\\vec{u}\\|$')
 
     ax.streamplot(
         X, Y,
@@ -337,10 +385,12 @@ def plot_pressure(p_coarse, t_coarse, p_sol,
     triangulation = tri.Triangulation(p_coarse[:, 0], p_coarse[:, 1], t_coarse[:, :3])
     cf = plots.tricontourf(triangulation, p_sol, levels=90)
 
-    plt.colorbar(cf, ax=plots, label='$\\mathbf{P}$')
-
-    plots.set_yticks([])
-    plots.set_xticks([])
+    divider = make_axes_locatable(plots)
+    cax = divider.append_axes("right", size="3%", pad=0.1)
+    plt.colorbar(cf, cax=cax, label='$\\mathbf{P}$')
+  
+    plots.set_xlabel("x")
+    plots.set_ylabel("y")
     plots.set_aspect('equal')
 
     x_min, x_max = p_coarse[:,0].min(), p_coarse[:,0].max()
