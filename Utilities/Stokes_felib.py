@@ -48,28 +48,28 @@ def calculate_velocity_A(p, t, kinematic_viscosity):
 
     # We can now construct a local matrix A for each triangle:
     
-    A_local = np.zeros(shape=(Nt, 3, 3))
-    for i in range(3):
-        for j in range(i, 3):
+    # A_local = np.zeros(shape=(Nt, 3, 3))
+    # for i in range(3):
+    #     for j in range(i, 3):
 
-            grad_i = test_function_derivatives[i]
-            grad_j = test_function_derivatives[j]
+    #         grad_i = test_function_derivatives[i]
+    #         grad_j = test_function_derivatives[j]
 
-            val = np.einsum(
-                'i, nij, j->n',
-                grad_j,
-                Q_mat,
-                grad_i
-            )
+    #         val = np.einsum(
+    #             'i, nij, j->n',
+    #             grad_j,
+    #             Q_mat,
+    #             grad_i
+    #         )
 
-            val *= kinematic_viscosity / (2 * det_J)
+    #         val *= kinematic_viscosity / (2 * det_J)
 
-            A_local[:, i, j] = val
-            A_local[:, j, i] = val
+    #         A_local[:, i, j] = val
+    #         A_local[:, j, i] = val
 
     # INVESTIGATE:
-    # A_local = np.einsum('mi,tkj,nj->tmn', test_function_derivatives, Q_mat, test_function_derivatives)
-    # A_local *= (kinematic_viscosity / (2.0 * np.abs(det_J)))[:, None, None]
+    A_local = np.einsum('mi,txy,nj->tmn', test_function_derivatives, Q_mat, test_function_derivatives)
+    A_local *= (kinematic_viscosity / (2.0 * det_J))[:, None, None]
 
     rowidx = np.einsum("ni,j->nij", t[:,0:3], [1,1,1])
     colidx = np.einsum("nj,i->nij", t[:,0:3], [1,1,1])
@@ -304,6 +304,8 @@ def K_matrix_structure(K_mat, dim_A, dim_B,
 
 def plot_streamlines(p_fine, t_fine, ux, uy,
                      density:float=3.5, 
+                     levels:int=90,
+                     cmap:str='viridis',
                      grid_num:tuple=(300,300),
                      figsize:tuple=(14, 6),
                      savetype:str='jpeg'):
@@ -319,8 +321,8 @@ def plot_streamlines(p_fine, t_fine, ux, uy,
     X, Y = np.meshgrid(xi, yi)
 
     # Interpolation of FEM velocity:
-    U = griddata((x, y), ux, (X, Y), method='linear')
-    V = griddata((x, y), uy, (X, Y), method='linear')
+    U = griddata((x, y), ux, (X, Y), method='cubic')
+    V = griddata((x, y), uy, (X, Y), method='cubic')
 
     triang_v = tri.Triangulation(x, y, t_fine[:, :3])
     trifinder = triang_v.get_trifinder()
@@ -338,8 +340,8 @@ def plot_streamlines(p_fine, t_fine, ux, uy,
     cf = ax.contourf(
         X, Y,
         speed,
-        levels=60,
-        cmap='viridis'
+        levels=levels,
+        cmap=cmap
     )
     
     # plt.colorbar(cf, ax=ax, label='$\\|\\vec{u}\\|$')
@@ -376,6 +378,7 @@ def plot_streamlines(p_fine, t_fine, ux, uy,
 #===============================================================================================================================================================
 
 def plot_pressure(p_coarse, t_coarse, p_sol,
+                  levels:int=90,
                   figsize:tuple=(10,10),
                   savetype:str='jpeg'):
     """Plots the pressure"""
@@ -383,7 +386,7 @@ def plot_pressure(p_coarse, t_coarse, p_sol,
     _, plots = plt.subplots(figsize=figsize)
 
     triangulation = tri.Triangulation(p_coarse[:, 0], p_coarse[:, 1], t_coarse[:, :3])
-    cf = plots.tricontourf(triangulation, p_sol, levels=90)
+    cf = plots.tricontourf(triangulation, p_sol, levels=levels)
 
     divider = make_axes_locatable(plots)
     cax = divider.append_axes("right", size="3%", pad=0.1)
