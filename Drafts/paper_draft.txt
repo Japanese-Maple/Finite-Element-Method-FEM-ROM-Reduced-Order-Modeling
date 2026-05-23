@@ -1,0 +1,519 @@
+\documentclass[11pt]{article}
+\usepackage[a4paper,margin=0.55in]{geometry} % Standard academic formatting
+\usepackage{amsmath, amssymb, amsthm} % Essential packages for math symbols and environments
+\usepackage{hyperref} % Adds hyperlinks to references and table of contents
+\usepackage{graphicx} % Allows inserting images (if needed)
+\usepackage{svg} % Allows inclusion of SVG images
+\usepackage{fancyhdr} % For custom headers
+\usepackage{setspace} % Adjusts line spacing
+\usepackage{enumitem} % For better control over lists
+\usepackage{float}
+\usepackage{multicol}
+\usepackage{subcaption} % For subfigure environment
+\usepackage{listings} % For code listings
+
+\usepackage{xcolor}       % for color definitions
+\usepackage{titlesec}     % for section title customization
+
+% Define your custom color
+\definecolor{deepdarkgreen}{RGB}{53, 94, 59}
+\titleformat{\section}
+  {\color{deepdarkgreen}\normalfont\Large\bfseries} % format: color + font
+  {\thesection}{1em}{} % section number formatting
+
+% theorem environments
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{definition}[theorem]{Definition}
+
+% Title information
+\title{\textbf{Finite Element Method Applied to Stokes Equations}}
+\author{Oleksandr Samoliuk}
+\date{Summer Semester, 2026}
+
+\usepackage{amsmath}
+\begin{document}
+
+\maketitle % Generates the title section
+
+\begin{abstract}
+Derivations for Stokes Equations
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.87\linewidth]{Flow.jpeg}
+\end{figure}
+
+
+\end{abstract}
+
+\newpage
+\tableofcontents % Automatically generates a numbered list of sections
+
+\newpage
+\section{General Information}Stokes flow, also named creeping flow or creeping motion, is a type of fluid flow where advective inertial forces are negligibly small compared with viscous forces. This regime is mathematically characterized by a low Reynolds number, i.e., 
+\[
+\mathrm{Re} = \frac{\rho U L}{\mu} \ll 1 \quad \nu=\frac{\mu}{\rho},
+\]
+where $\rho$ is the fluid density, $U$ is a characteristic velocity scale, $L$ is a characteristic length scale, $\mu$ is the dynamic viscosity, and $\nu$ is the kinematic viscosity. This situation is highly typical in applications where the fluid velocities are remarkably slow, the fluid viscosities are exceptionally large, or the geometric length-scales of the flow domain are micro- or nano-sized. 
+
+Creeping flow was historically first analyzed by Sir George Gabriel Stokes to model the settling of spheres and understand hydrodynamic lubrication. In nature, this type of flow governs the swimming mechanics of microorganisms, the movement of lava, and the slow mantle convection currents deep within the Earth. In engineering and biotechnology, it occurs prominently in painting processes, micro-electromechanical systems (MEMS), microfluidic lab-on-a-chip devices, and the transport of viscous polymers during extrusion.
+
+\subsection{Mathematical Characterization and Challenges}
+From a mathematical perspective, the Stokes equations are obtained by simplifying the non-linear incompressible Navier-Stokes equations: 
+
+\[
+\begin{cases}
+\dfrac{\partial \mathbf{u}}{\partial t} + (\mathbf{u} \cdot \nabla)\mathbf{u} = -\dfrac{1}{\rho} \nabla p + \nu \nabla^2 \mathbf{u} + \mathbf{f}\\[0.8em]
+\nabla \cdot \mathbf{u} = 0 
+\end{cases}
+\]
+
+Where:
+\begin{itemize}
+    \item $\mathbf{u}$ is the flow velocity vector field.
+    \item $t$ represents time.
+    \item $p$ is the scalar static pressure field.
+    \item $\rho$ is the constant fluid density.
+    \item $\nu$ is the kinematic viscosity.
+    \item $\mathbf{f}$ represents external body force accelerations (such as gravity).
+\end{itemize}
+
+By dropping the convective inertial acceleration term $(\mathbf{u} \cdot \nabla)\mathbf{u}$, the momentum equation can be linearized, transforming into a system where the velocity field $\mathbf{u}$ and the pressure field $p$ are coupled strictly through viscous dissipation and incompressibility constraints.
+
+The absence of a time-derivative or non-linear term simplifies some analytical aspects but introduces profound structural numerical challenges for the Finite Element Method:
+\begin{itemize}
+    \item \textbf{Saddle-Point Structure:} The incompressibility constraint $\nabla \cdot \mathbf{u} = 0$ acts as a structural constraint on the velocity space, giving the weak formulation a classic \textit{saddle-point} (or constrained optimization) algebraic structure.
+    \item \textbf{The Inf-Sup (LBB) Condition:} Unlike standard elliptic systems (such as the Poisson equation), one cannot arbitrarily pair discrete finite element approximation spaces for velocity ($X_h$) and pressure ($Q_h$). Unstable combinations lead to spurious numerical pressure oscillations (``checkerboard'' pressure fields). To guarantee stability and convergence, the discrete spaces must satisfy the strict \textit{Ladyzhenskaya-Babu\v{s}ka-Brezzi (LBB)} or \textit{inf-sup} condition, requiring deliberate pairings such as the Taylor-Hood element ($P_k / P_{k-1}$) or stabilized formulations.
+\end{itemize}
+
+\subsection{Stable Macro-Element Discretizations: The \texorpdfstring{$P_1\text{-iso-}P_1$}{P1-iso-P1} Element}
+To circumvent the structural instabilities imposed by the inf-sup condition without resorting to complex higher-order polynomial expansions or non-conforming spaces, mixed finite element frameworks can leverage hierarchical macro-element structures. A prominent and computationally efficient choice within this class is the $P_1\text{-iso-}P_1$ element pair, historically introduced by Bercovier and Pironneau.
+
+Instead of varying the polynomial degree between variables on a single mesh, the $P_1\text{-iso-}P_1$ method varies the underlying triangulation density while keeping both velocity and pressure spaces continuously piecewise linear ($P_1$). The discretization relies on a coarse macro-mesh $\mathcal{T}_H$ and a fine mesh $\mathcal{T}_h$. The fine mesh is constructed via a uniform refinement protocol where each parent macro-triangle $K \in \mathcal{T}_H$ is subdivided into four congruent child triangles by connecting the midpoints of its three topological edges, effectively halving the characteristic mesh size such that $h = H/2$.
+
+The discrete spaces for the fluid variables are then defined as:
+\begin{align*}
+X_h &= \{ \mathbf{v}_h \in C^0(\overline{\Omega})^2 : \mathbf{v}_h|_K \in P_1(K)^2, \forall K \in \mathcal{T}_h \} \\
+Q_h &= \{ q_h \in C^0(\overline{\Omega}) : q_h|_M \in P_1(M), \forall M \in \mathcal{T}_H \}
+\end{align*}
+By defining the velocity field $\mathbf{u}_h$ on the refined grid $\mathcal{T}_h$ and the pressure field $p_h$ on the coarse macro-grid $\mathcal{T}_H$, the velocity space is enriched with a substantial number of internal degrees of freedom. This spatial scale separation provides a stable velocity-to-pressure ratio that satisfies the discrete Ladyzhenskaya-Babu\v{s}ka-Brezzi (LBB) condition:
+\[
+\sup_{\mathbf{v}_h \in X_h \setminus \{\mathbf{0}\}} \frac{\int_{\Omega} p_h (\nabla \cdot \mathbf{v}_h) \, d\Omega}{\|\mathbf{v}_h\|_{X}} \ge \beta \|p_h\|_{Q} \quad \forall p_h \in Q_h
+\]
+where the stability constant $\beta > 0$ remains strictly bounded away from zero independently of the mesh refinement level. This macro-element architecture yields a highly symmetric structural layout, allowing the numerical engine to enjoy the low computational overhead of linear shape functions while retaining robust convergence properties.
+
+\begin{figure}[H]
+    \centering
+    \includesvg[width=1\linewidth]{P1-iso-P1.svg}
+\end{figure}
+
+\newpage
+\section{Strong Formulation}
+
+\[
+\begin{cases}
+-\nu \Delta u + \nabla p = 0
+& \text{in } \Omega, \\[0.5em]
+
+\nabla \cdot u = 0
+& \text{in } \Omega, \\[0.5em]
+
+u = g
+& \text{on } \Gamma_D, \\[0.5em]
+
+-p\,n + \nu (\nabla u)n = h
+& \text{on } \Gamma_N.
+\end{cases}
+\]
+
+\newpage
+\section{Weak Formulation}
+
+\[
+\begin{cases}
+\displaystyle
+\int_{\Omega} \nu \nabla u : \nabla v \, d\Omega
+-
+\int_{\Omega} p \, (\nabla \cdot v)\, d\Omega
+=
+\int_{\Gamma_N} h \cdot v \, d\Gamma
+-
+\int_{\Omega} \nu \nabla r_g : \nabla v \, d\Omega,
+& \forall v \in X,
+\\[1.2em]
+
+\displaystyle
+-\int_{\Omega} q \, (\nabla \cdot u)\, d\Omega
+=
+\int_{\Omega} q \, (\nabla \cdot r_g)\, d\Omega,
+& \forall q \in Q.
+\end{cases}
+\]
+
+\newpage
+\section{Finite Element Discretization and Matrix Assembly}
+
+\subsection{Stiffness Matrix \texorpdfstring{$\mathbb{A}$}{A}}
+
+\[
+\int_{\Omega} \nu \nabla u : \nabla v \, d\Omega
+\]
+
+\[
+
+\]
+
+\subsection{Pressure Matrices \texorpdfstring{$\mathbb{B}_x$ and $\mathbb{B}_y$}{Bx and By}}
+
+\[
+-\int_{\Omega} p \, (\nabla \cdot v)\, d\Omega
+\]
+
+\subsection{Saddle-Point Block Matrix \texorpdfstring{$\mathbb{K}$}{K}}
+
+\[
+\left[
+\begin{array}{ccc}
+\mathbb{A} & 0 & \mathbb{B}_x^T \\
+0 & \mathbb{A} & \mathbb{B}_y^T \\
+\mathbb{B}_x & \mathbb{B}_y & 0
+\end{array}
+\right]
+\begin{bmatrix}
+\mathbf{U}_x \\
+\mathbf{U}_y \\
+\mathbf{P}
+\end{bmatrix}
+=
+\begin{bmatrix}
+\mathbf{F}_x \\
+\mathbf{F}_y \\
+\mathbf{0}
+\end{bmatrix}
+\]
+
+\[
+\mathbb{A} \in \mathbf{R}^{N_u \times N_u} \quad
+\mathbb{B}_x \in \mathbf{R}^{N_p \times N_u} \quad
+\mathbb{B}_x^T \in \mathbf{R}^{N_u \times N_p}
+\]
+
+\subsection{Load Vector \texorpdfstring{$\mathbf{F}$}{F} Assembly and Inhomogeneous Boundary Lifting}
+
+\[
+\mathbf{F} = \int_{\Gamma_N} h \cdot v \, d\Gamma - \int_{\Omega} \nu \nabla r_g : \nabla v \, d\Omega = \mathbf{F}_{forces} - \mathbb{A}\vec{r_g} = 
+\left[
+    \begin{array}{c}
+    \mathbb{F}_x\\
+    \mathbb{F}_y
+    \end{array}
+\right] - \mathbb{A}\vec{r_g}
+\]
+
+\subsection{Pressure Null-Space Regulation and Singular Constraints}
+
+\subsection{Sparse Storage Layout and Linear Solver Mechanics}
+
+\newpage
+\section{Ladyzhenskaya–Babuška–Brezzi Condition}
+In numerical partial differential equations, the \textit{Ladyzhenskaya–Babuška–Brezzi }(LBB) condition is a sufficient condition for a saddle point problem to have a unique solution that depends continuously on the input data.
+
+\[
+\exists \beta>0: \quad
+\inf_{q \in Q_{\setminus\{0\}}} \space \sup_{v \in V_{\setminus\{0\}}} \Big(\frac{\int_{\Omega}q(\nabla \cdot v)d\Omega}{\|v\|_{V}\cdot\|q\|_{Q}}\Big) \ge \beta 
+\]
+For this problem it is useful to reformulate the condition in a discrete way. We can start by mapping the continuous functions to their nodal coordinate representations:
+\[
+v \rightarrow \mathbf{u}=
+\begin{bmatrix}
+    u_1^x\\
+    \vdots\\
+    u_{N_v}^x\\
+    u_1^y\\
+    \vdots\\
+    u_{N_v}^y
+\end{bmatrix} \in \mathbb{R}^{2N_v},
+\quad 
+q \rightarrow \mathbf{p}=
+\begin{bmatrix}
+    p_1\\
+    \vdots\\
+    p_{N_p}
+\end{bmatrix}\in \mathbb{R}^{N_p}
+\]
+The corresponding discrete differential bilinear forms translate directly into the global block matrices assembled across the mesh:
+\[
+\mathbf{B}=\left[\mathbf{B}_x \quad\mathbf{B}_y\right],
+\quad
+\mathbf{M}_v=\left[
+\begin{array}{cc}
+    \mathbf{A} & \mathbf{0} \\
+    \mathbf{0} & \mathbf{A}
+\end{array}
+\right],
+\quad
+\left(\mathbf{M}_p\right)_{ij} = \int_{\Omega} \psi_j(x,y)\psi_i(x,y)\, d\Omega
+\]
+
+Where:
+\begin{itemize}
+    \item $\mathbf{u}$ is the velocity vector on a fine grid;
+    \item $p$ is the pressure vector on a coarse grid;
+    \item $\mathbf{B}$ is a discrete divergence operator, responsible for coupling pressure and velocity;
+    \item $\mathbf{A}$ is a discrete Laplacian operator that handles the viscosity of the fluid;
+    \item $\mathbf{M}_v$ is the velocity energy weight matrix, used to calculate the physical size and kinetic energy of the velocity field.
+    \item $\mathbf{M}_p$ is
+\end{itemize}
+
+Now we can start the discretization of the inf-sup condition:
+\begingroup
+\small
+\begin{enumerate}
+    \raggedright
+    % Write out in Bx and By and then combine and v_x, v_y have to be used
+    \item $\begin{aligned}[t]
+        \displaystyle\int_{\Omega}q(\nabla \cdot v) \, d\Omega &= \left|
+        \begin{array}{ccc}
+            q(x,y)\approx \displaystyle\sum_{j=1}^{N_p}p_j\psi_j(x,y) & v_x(x,y)\approx \displaystyle\sum_{i=1}^{N_v}u^x_i\phi_i(x,y) & \frac{\partial v_x}{\partial x}\approx \displaystyle\sum_{i=1}^{N_v}u^x_i\frac{\partial}{\partial x}\phi_i(x,y)\\
+            v(x,y)=
+            \begin{bmatrix}
+               v_x(x,y) \\
+               v_y(x,y)  
+            \end{bmatrix} & v_y(x,y)\approx \displaystyle\sum_{i=1}^{N_v}u^y_i\phi_i(x,y) & \frac{\partial v_y}{\partial y}\approx \displaystyle\sum_{i=1}^{N_v}u^y_i\frac{\partial}{\partial y}\phi_i(x,y)
+        \end{array}\right| = \\[10pt]
+        &= \int_{\Omega}q(x,y) \left(
+        \begin{bmatrix}
+            \frac{\partial}{\partial x}\\
+            \frac{\partial}{\partial y}
+        \end{bmatrix}^T
+        \begin{bmatrix}
+            v_x(x,y) \\
+            v_y(x,y)
+        \end{bmatrix}
+        \right) \, d\Omega 
+        = \int_{\Omega} q(x,y)\left( \frac{\partial v_x}{\partial x} + \frac{\partial v_y}{\partial y} \right) \, d\Omega = \\[10pt]
+        &= \int_{\Omega} q(x,y)\frac{\partial v_x}{\partial x} \, d\Omega
+        + \int_{\Omega} q(x,y)\frac{\partial v_y}{\partial y} \, d\Omega = \\[10pt]
+        &= \int_{\Omega} \sum_{j=1}^{N_p}p_j\psi_j(x,y) \sum_{i=1}^{N_v}u^x_i\frac{\partial}{\partial x}\phi_i(x,y) \, d\Omega + \int_{\Omega} \sum_{j=1}^{N_p}p_j\psi_j(x,y) \sum_{i=1}^{N_v}u^y_i\frac{\partial}{\partial y}\phi_i(x,y) \, d\Omega = \\[10pt]
+        &= \left[\sum_{j=1}^{N_p}\sum_{i=1}^{N_v}p_j \cdot \int_{\Omega}\psi_j(x,y) \frac{\partial}{\partial x}\phi_i(x,y) \, d\Omega \cdot u^x_i \right] + \left[ \sum_{j=1}^{N_p}\sum_{i=1}^{N_v}p_j \cdot \int_{\Omega}\psi_j(x,y) \frac{\partial}{\partial y}\phi_i(x,y) \, d\Omega \cdot u^y_i \right] \\[10pt]
+        &= \sum_{j=1}^{N_p}\sum_{i=1}^{N_v} p_j B^x_{ji} u^x_i + \sum_{j=1}^{N_p}\sum_{i=1}^{N_v} p_j B^y_{ji} u^y_i = \mathbf{p}^T \mathbf{B}_x \mathbf{u}_x + \mathbf{p}^T \mathbf{B}_y \mathbf{u}_y = \mathbf{p}^T \left[\mathbf{B}_x \quad \mathbf{B}_y\right]
+        \begin{bmatrix}
+            \mathbf{u}_x \\
+            \mathbf{u}_y
+        \end{bmatrix} = \\[10pt]
+        &=\mathbf{p}^T \mathbf{B} \mathbf{u}
+        \end{aligned}$
+
+    \item $\begin{aligned}[t]
+    \|v\|_V &= \left( \displaystyle\int_{\Omega} \left( \|\nabla v_x\|^2 + \|\nabla v_y\|^2 \right) \, d\Omega \right)^{1/2}
+    = \left( \int_{\Omega} \left( \nabla v_x \cdot \nabla v_x + \nabla v_y \cdot \nabla v_y \right) \, d\Omega \right)^{1/2} =\\
+    &= 
+    \left|
+    \begin{array}{cc}
+         v_x(x,y) \approx \displaystyle\sum_{i=1}^{N_v}u_i^x\phi_i(x,y) & \nabla v_x(x,y) \approx \displaystyle\sum_{i=1}^{N_v}u_i^x\nabla\phi_i(x,y)\\[10pt]
+         \quad v_y(x,y) \approx \displaystyle\sum_{j=1}^{N_v}u_j^y\phi_j(x,y) & \nabla v_y(x,y) \approx \displaystyle\sum_{j=1}^{N_v}u_j^y\nabla\phi_j(x,y)
+    \end{array}
+    \right| =\\
+    &= \left( \displaystyle\int_{\Omega} \left(\sum_{i=1}^{N_v}u_i^x\nabla\phi_i(x,y) \cdot \sum_{j=1}^{N_v}u_j^x\nabla\phi_j(x,y) + \sum_{i=1}^{N_v}u_i^y\nabla\phi_i(x,y) \cdot \sum_{j=1}^{N_v}u_j^y\nabla\phi_j(x,y) \right) \, d\Omega \right)^{1/2} =\\
+    &= \left(\left[ \sum_{i=1}^{N_v}\sum_{j=1}^{N_v} u_i^x \cdot \displaystyle\int_{\Omega} \nabla\phi_i(x,y) \cdot \nabla\phi_j(x,y)\, d\Omega \cdot u_j^x\right] + \sum_{i=1}^{N_v}\sum_{j=1}^{N_v}\left[u_i^y\cdot \displaystyle\int_{\Omega} \nabla\phi_i(x,y) \cdot \nabla\phi_j(x,y)\, d\Omega \cdot u_j^y\right]\right)^{1/2} = \\[10pt]
+    &= \left(\mathbf{u_x}^T \mathbf{A} \mathbf{u_x} + \mathbf{u_y}^T \mathbf{A} \mathbf{u_y}\right)^{1/2} = \left(
+    \begin{bmatrix}
+        \mathbf{u_x}\\
+        \mathbf{u_y}
+    \end{bmatrix}^T
+    \left[
+    \begin{array}{cc}
+        \mathbf{A} & \mathbf{0} \\
+        \mathbf{0} & \mathbf{A}
+    \end{array}
+    \right]
+    \begin{bmatrix}
+        \mathbf{u_x}\\
+        \mathbf{u_y}
+    \end{bmatrix}
+    \right)^{1/2}
+    = \left(\mathbf{u}^T \mathbf{M}_v \mathbf{u}\right)^{1/2}
+    \end{aligned}$
+    
+    \item $\begin{aligned}[t]
+        \|q\|_Q &= \left( \int_{\Omega} q(x,y)^2 \, d\Omega \right)^{1/2} = \left|q(x,y) \approx \displaystyle\sum_{i=1}^{N_p}p_i\psi_i(x,y)\right|=\\
+        &= \left( \int_{\Omega} \sum_{i=1}^{N_p}p_i\psi_i(x,y) \cdot \sum_{j=1}^{N_p}p_j\psi_j(x,y)\, d\Omega \right)^{1/2} = \left( \int_{\Omega} \sum_{i=1}^{N_p}\sum_{j=1}^{N_p}p_i p_j\psi_j(x,y)\psi_i(x,y)\, d\Omega \right)^{1/2} = \\
+        &= \left( \sum_{i=1}^{N_p}\sum_{j=1}^{N_p} p_i \cdot \left(\int_{\Omega} \psi_j(x,y)\psi_i(x,y)\, d\Omega\right) \cdot p_j\right)^{1/2} = \left(\mathbf{p}^T \mathbf{M}_p \mathbf{p}\right)^{1/2}
+    \end{aligned}$
+\end{enumerate}
+
+\newpage
+\section{Reverse Techniques: Einsum}
+
+\subsection{First Einsum}
+\label{sub:first_example}
+
+\begin{lstlisting}[
+    language=Python, 
+    frame=single,                  
+    backgroundcolor=\color{white}, 
+    basicstyle=\ttfamily\scriptsize, 
+    breaklines=true                 
+    Overfull \hbox
+]
+A_local = np.zeros(shape=(Nt, 3, 3))
+for i in range(3):
+    for j in range(i, 3):
+
+        grad_i = test_function_derivatives[i]
+        grad_j = test_function_derivatives[j]
+
+        val = np.einsum('i,nij,j->n', 
+                        grad_j, Q_mat, grad_i)
+
+        val *= kinematic_viscosity / (2 * det_J)
+
+        A_local[:, i, j] = val
+        A_local[:, j, i] = val
+\end{lstlisting}
+
+\[
+\begin{array}{ccc}
+    \left[\psi_1, \psi_2\right]  
+    & 
+    \left[
+    \begin{array}{cc}
+        q^n_{11} & q^n_{12} \\
+        q^n_{21} & q^n_{22}
+    \end{array}
+    \right]
+    & \left[\psi_1, \psi_2\right] \\
+    \psi_i & q^n_{ij} & \psi_j
+\end{array}
+\]
+
+\[
+\sum_{i=2}^2\sum_{j=2}^2\psi_i q^n_{ij} \psi_j = A^n \in \mathbb{R}^n
+\]
+
+\subsection{Second Einsum}
+\label{sub:Second_example}
+
+\begin{lstlisting}[
+    language=Python, 
+    frame=single,                  % Draws the box around the code
+    backgroundcolor=\color{white}, % Background color inside the box
+    basicstyle=\ttfamily\scriptsize, % Makes the font very small
+    breaklines=true                 % Automatically wraps long lines to fix Overfull \hbox
+]
+A_local = np.einsum('mi,txy,nj->tmn', 
+                    test_function_derivatives, Q_mat, test_function_derivatives)
+A_local *= (kinematic_viscosity / (2.0 * det_J))[:, None, None]
+\end{lstlisting}
+
+\[
+\begin{array}{ccccc}
+    
+    \left[
+    \begin{array}{c}
+         \left[\psi_1^1,\psi_2^1\right]\\[3pt]
+         \left[\psi_1^2,\psi_2^2\right]\\[3pt]
+         \left[\psi_1^3,\psi_2^3\right]     
+    \end{array}
+    \right]
+    &
+    \left[
+    \begin{array}{cc}
+        q^t_{11} & q^t_{12} \\
+        q^t_{21} & q^t_{22}
+    \end{array}
+    \right]
+    &
+    \left[
+    \begin{array}{c}
+         \left[\psi_1^1,\psi_2^1\right]\\[3pt]
+         \left[\psi_1^2,\psi_2^2\right]\\[3pt]
+         \left[\psi_1^3,\psi_2^3\right]     
+    \end{array}
+    \right]
+    &
+    \longrightarrow
+    &
+    \left[
+    \begin{array}{ccc}
+        A^t_{11} & A^t_{12} & A^t_{13}\\
+        A^t_{21} & A^t_{22} & A^t_{23}\\
+        A^t_{31} & A^t_{32} & A^t_{33}
+    \end{array}
+    \right]\\[2em]
+    \psi^m_i & q^t_{xy} & \psi^n_j &  & A^t_{mn}
+\end{array}
+\]
+So by using indexation and sums we notice that the structure has not really changed since the first example~\ref{sub:first_example}:
+
+\[
+\sum_{i=1}^2\sum_{j=1}^2\psi^m_iq^t_{ij}\psi^n_j = A^t_{mn}\in\mathbb{R}^{t \times m\times n}
+\]
+
+\newpage
+\section{Numerical Experiments and Applications}
+In this section, we validate our $P_1\text{-iso-}P_1$ finite element solver using two distinct fluid engineering case studies: an \textit{Exchanger Device} and a \textit{Winding Pipe}. Both configurations operate under a creeping flow regime ($\mathrm{Re} \ll 1$), where viscous forces dominate. 
+
+For each case study, the numerical results are presented in a vertical sequence showing:
+\begin{enumerate}
+    \item \textbf{Pressure Field Contour Maps:} Tri-contour plots displaying the continuous linear scalar pressure fields ($\mathbf{P}$) and revealing the pressure drop across the domains.
+    \item \textbf{Velocity Field Streamplots:} Streamline trajectories displaying the path lines, vector flow patterns, and boundary layer behaviors of the velocity field ($\mathbf{u}$).
+\end{enumerate}
+
+\subsection{Exchanger Device}
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[b]{0.85\textwidth}  
+        \centering
+        \includegraphics[width=\textwidth]{Exchanger Device/Solution_Streamlines.jpeg}
+        \caption{Computed Velocity Streamline Vector Paths.}
+        \label{fig:exchanger_streamlines}
+    \end{subfigure}
+    \\ \vspace{0.4cm}                     
+    \begin{subfigure}[b]{0.85\textwidth} 
+        \centering
+        \includegraphics[width=\textwidth]{Exchanger Device/Pressure_Tricontourf.jpeg}
+        \caption{Continuous Piecewise Linear Pressure Contour Map.}
+        \label{fig:exchanger_pressure}
+    \end{subfigure}
+    \caption{Complete Stokes flow simulation inside the \textit{Exchanger Device} domain.}
+    \label{fig:exchanger_full}
+\end{figure}
+The numerical results inside the \textit{Exchanger Device} reveal distinct kinematic adjustments driven by the variable cross-sectional area of the channel network. As observed in the velocity streamline distributions (Figure~\ref{fig:exchanger_streamlines}), the fluid velocity increases significantly at the turns, where the geometry narrows relative to the wider vertical passages. To preserve mass conservation under the incompressibility constraint $\nabla \cdot \mathbf{u} = 0$, the velocity field must accelerate through these local contractions, creating higher localized velocity gradients along the curved inner walls.
+
+Furthermore, the simulation clearly shows fluid swirls (recirculation zones) inside the dead-end, cut-off extensions. Because Stokes flow has no inertia, the fluid balance simplifies to a strict equilibrium between pressure gradients and viscous friction:
+\[
+-\nu \Delta \mathbf{u} + \nabla p = \mathbf{0}
+\]
+As a result, the main stream takes the path of least resistance through the primary central channels. However, as this fast-moving core flow sweeps past the stagnant fluid trapped in the side cavities, it shears against it. This boundary shear transfers momentum across the open gap, dragging the passive fluid along and creating slow, circular vortices inside the extensions. Capturing these delicate stagnation zones and sharp shear interfaces demonstrates that the mixed finite element solver handles localized flow splitting accurately without generating numerical instability.
+
+
+\subsection{Winding Pipe}
+The \textit{Winding Pipe} models an internal distribution manifold containing geometric obstacles designed to alter flow paths. This setup presents a challenging test case for mass conservation preservation across sudden transitions.
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{Winding Pipe/Pressure_Tricontourf.jpeg}
+        \caption{Continuous Piecewise Linear Pressure Contour Map.}
+        \label{fig:winding_pipe_pressure}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{Winding Pipe/Solution_Streamlines.jpeg}
+        \caption{Computed Velocity Streamline Vector Paths.}
+        \label{fig:winding_pipe_streamlines}
+    \end{subfigure}
+    \caption{Complete Stokes flow simulation inside the \textit{Winding Pipe} domain.}
+    \label{fig:winding_pipe_full}
+\end{figure}
+
+As observed in Figure~\ref{fig:winding_pipe_full}, the velocity streamlines adapt smoothly around the internal channel obstacles without displaying spurious velocity vector spikes. Concurrently, the pressure distribution field (Figure~\ref{fig:winding_pipe_pressure}) displays a continuous linear gradient drop, confirming the inf-sup spatial stability of the dual-grid discretization matrix configuration.
+
+
+
+\end{document}
