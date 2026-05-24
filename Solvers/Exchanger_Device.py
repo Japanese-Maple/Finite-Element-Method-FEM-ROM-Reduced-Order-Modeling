@@ -49,6 +49,7 @@ def compute_U_P_solution(p_fine, t_fine, e_fine, p_coarse, t_coarse):
     Bx, By = calculate_pressure_B(p_fine, t_fine, p_coarse, t_coarse)
     F = calculate_F(A, Bx, By, (lf_x, lf_y))
     K = calculate_Saddle_point_K(A, Bx, By)
+    print(f"K is of the shape {K.shape}")
 
     dirichlet_nodes = np.unique(np.concatenate([inlet_idx, v_wall_idx]))
     K = K.tolil()
