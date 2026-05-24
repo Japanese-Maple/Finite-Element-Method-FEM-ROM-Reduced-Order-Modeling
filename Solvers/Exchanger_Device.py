@@ -97,9 +97,11 @@ def compute_U_P_solution(p_fine, t_fine, e_fine, p_coarse, t_coarse):
 
 # Solution computation and logging
 
-ux, uy, p_sol = compute_U_P_solution(p_fine, t_fine, e_fine, p_coarse, t_coarse)
+if __name__ == "__main__":
+    
+    ux, uy, p_sol = compute_U_P_solution(p_fine, t_fine, e_fine, p_coarse, t_coarse)
 
-save_simulation_data(p_fine, e_fine, t_fine, 
-                     p_coarse, e_coarse, t_coarse, 
-                     ux, uy, p_sol,
-                     name='Exchanger_device')
+    save_simulation_data(p_fine, e_fine, t_fine, 
+                        p_coarse, e_coarse, t_coarse, 
+                        ux, uy, p_sol,
+                        name='Exchanger_device')
