@@ -41,7 +41,7 @@ Derivations for Stokes Equations
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.87\linewidth]{Flow.jpeg}
+    \includegraphics[width=0.83\linewidth]{Flow.jpeg}
 \end{figure}
 
 
@@ -51,6 +51,7 @@ Derivations for Stokes Equations
 \tableofcontents % Automatically generates a numbered list of sections
 
 \newpage
+\normalsize
 \section{General Information}Stokes flow, also named creeping flow or creeping motion, is a type of fluid flow where advective inertial forces are negligibly small compared with viscous forces. This regime is mathematically characterized by a low Reynolds number, i.e., 
 \[
 \mathrm{Re} = \frac{\rho U L}{\mu} \ll 1 \quad \nu=\frac{\mu}{\rho},
@@ -98,14 +99,17 @@ X_h &= \{ \mathbf{v}_h \in C^0(\overline{\Omega})^2 : \mathbf{v}_h|_K \in P_1(K)
 Q_h &= \{ q_h \in C^0(\overline{\Omega}) : q_h|_M \in P_1(M), \forall M \in \mathcal{T}_H \}
 \end{align*}
 By defining the velocity field $\mathbf{u}_h$ on the refined grid $\mathcal{T}_h$ and the pressure field $p_h$ on the coarse macro-grid $\mathcal{T}_H$, the velocity space is enriched with a substantial number of internal degrees of freedom. This spatial scale separation provides a stable velocity-to-pressure ratio that satisfies the discrete Ladyzhenskaya-Babu\v{s}ka-Brezzi (LBB) condition:
+
 \[
-\sup_{\mathbf{v}_h \in X_h \setminus \{\mathbf{0}\}} \frac{\int_{\Omega} p_h (\nabla \cdot \mathbf{v}_h) \, d\Omega}{\|\mathbf{v}_h\|_{X}} \ge \beta \|p_h\|_{Q} \quad \forall p_h \in Q_h
+\exists \beta>0: \quad
+\inf_{q \in Q_{\setminus\{0\}}} \space \sup_{v \in V_{\setminus\{0\}}} \left(\frac{\int_{\Omega}q(\nabla \cdot v)d\Omega}{\|v\|_{V}\cdot\|q\|_{Q}}\right) \ge \beta 
 \]
+
 where the stability constant $\beta > 0$ remains strictly bounded away from zero independently of the mesh refinement level. This macro-element architecture yields a highly symmetric structural layout, allowing the numerical engine to enjoy the low computational overhead of linear shape functions while retaining robust convergence properties.
 
 \begin{figure}[H]
     \centering
-    \includesvg[width=1\linewidth]{P1-iso-P1.svg}
+    \includesvg[width=0.7\linewidth]{P1-iso-P1.svg}
 \end{figure}
 
 \newpage
@@ -219,11 +223,17 @@ u = g
 \section{Ladyzhenskaya–Babuška–Brezzi Condition}
 In numerical partial differential equations, the \textit{Ladyzhenskaya–Babuška–Brezzi }(LBB) condition is a sufficient condition for a saddle point problem to have a unique solution that depends continuously on the input data.
 
+At the continuous level, the velocity space $V$ and pressure space $Q$ must satisfy:
+
 \[
 \exists \beta>0: \quad
-\inf_{q \in Q_{\setminus\{0\}}} \space \sup_{v \in V_{\setminus\{0\}}} \Big(\frac{\int_{\Omega}q(\nabla \cdot v)d\Omega}{\|v\|_{V}\cdot\|q\|_{Q}}\Big) \ge \beta 
+\inf_{q \in Q_{\setminus\{0\}}} \space \sup_{v \in V_{\setminus\{0\}}} \left(\frac{\int_{\Omega}q(\nabla \cdot v)d\Omega}{\|v\|_{V}\cdot\|q\|_{Q}}\right) \ge \beta 
 \]
+
+\subsection{Discrete Mapping and Coordinate Representation}
 For this problem it is useful to reformulate the condition in a discrete way. We can start by mapping the continuous functions to their nodal coordinate representations:
+
+
 \[
 v \rightarrow \mathbf{u}=
 \begin{bmatrix}
@@ -240,33 +250,42 @@ q \rightarrow \mathbf{p}=
     p_1\\
     \vdots\\
     p_{N_p}
-\end{bmatrix}\in \mathbb{R}^{N_p}
+\end{bmatrix}\in \mathbb{R}^{N_p}\\[10pt]
 \]
 The corresponding discrete differential bilinear forms translate directly into the global block matrices assembled across the mesh:
+
+\small
 \[
-\mathbf{B}=\left[\mathbf{B}_x \quad\mathbf{B}_y\right],
-\quad
-\mathbf{M}_v=\left[
+\begin{array}{lll}
+    \displaystyle
+    \mathbf{A}_{ij} = \int_{\Omega} \nu \nabla \phi_i(x,y) \cdot \nabla \phi_j(x,y) \, d\Omega \quad & 
+    \displaystyle \left(\mathbf{B}_x\right)_{ij} = -\int_{\Omega} \psi_j(x,y)\frac{\partial \phi_i(x,y)}{\partial x} \, d\Omega \quad & 
+    \displaystyle \left(\mathbf{B}_y\right)_{ij} = -\int_{\Omega} \psi_j(x,y) \frac{\partial \phi_i(x,y)}{\partial y} \, d\Omega \\[15pt]
+    \displaystyle \mathbf{B}=\left[\mathbf{B}_x \quad\mathbf{B}_y\right] \quad & \displaystyle \mathbf{M}_v=\left[
 \begin{array}{cc}
     \mathbf{A} & \mathbf{0} \\
     \mathbf{0} & \mathbf{A}
 \end{array}
-\right],
-\quad
-\left(\mathbf{M}_p\right)_{ij} = \int_{\Omega} \psi_j(x,y)\psi_i(x,y)\, d\Omega
+\right] \quad & \displaystyle \left(\mathbf{M}_p\right)_{ij} = \int_{\Omega} \psi_j(x,y)\psi_i(x,y)\, d\Omega
+\end{array}
 \]
+\normalsize
 
 Where:
 \begin{itemize}
-    \item $\mathbf{u}$ is the velocity vector on a fine grid;
-    \item $p$ is the pressure vector on a coarse grid;
-    \item $\mathbf{B}$ is a discrete divergence operator, responsible for coupling pressure and velocity;
-    \item $\mathbf{A}$ is a discrete Laplacian operator that handles the viscosity of the fluid;
-    \item $\mathbf{M}_v$ is the velocity energy weight matrix, used to calculate the physical size and kinetic energy of the velocity field.
-    \item $\mathbf{M}_p$ is
+    \item $\mathbf{u} \in \mathbb{R}^{2N_v}$ is the velocity vector on a fine grid;
+    \item $\mathbf{p} \in \mathbb{R}^{N_p}$ is the pressure vector on a coarse grid;
+    \item $\mathbf{B}_x \in \mathbb{R}^{N_p \times N_v}$ is the discrete horizontal divergence operator;
+    \item $\mathbf{B}_y \in \mathbb{R}^{N_p \times N_v}$ is the discrete vertical divergence operator;
+    \item $\mathbf{B} \in \mathbb{R}^{N_p \times 2N_v}$ is a discrete divergence operator, responsible for coupling pressure and velocity;
+    \item $\mathbf{A} \in \mathbb{R}^{N_v \times N_v}$ is a discrete Laplacian operator that handles the viscosity of the fluid;
+    \item $\mathbf{M}_v \in \mathbb{R}^{2N_v \times 2N_v}$ is the velocity energy weight matrix, used to calculate the physical size and kinetic energy of the velocity field.
+    \item $\mathbf{M}_p \in \mathbb{R}^{N_p \times N_p}$ is the pressure mass matrix that computes the spatial overlap of pressure basis functions.
 \end{itemize}
 
-Now we can start the discretization of the inf-sup condition:
+\subsection{Discretization Proofs for Operators and Field Norms}
+Using the coordinate definitions above, we can systematically transform the three core components of the continuous inf-sup condition into algebraic matrix operations:
+
 \begingroup
 \small
 \begin{enumerate}
@@ -297,7 +316,7 @@ Now we can start the discretization of the inf-sup condition:
         + \int_{\Omega} q(x,y)\frac{\partial v_y}{\partial y} \, d\Omega = \\[10pt]
         &= \int_{\Omega} \sum_{j=1}^{N_p}p_j\psi_j(x,y) \sum_{i=1}^{N_v}u^x_i\frac{\partial}{\partial x}\phi_i(x,y) \, d\Omega + \int_{\Omega} \sum_{j=1}^{N_p}p_j\psi_j(x,y) \sum_{i=1}^{N_v}u^y_i\frac{\partial}{\partial y}\phi_i(x,y) \, d\Omega = \\[10pt]
         &= \left[\sum_{j=1}^{N_p}\sum_{i=1}^{N_v}p_j \cdot \int_{\Omega}\psi_j(x,y) \frac{\partial}{\partial x}\phi_i(x,y) \, d\Omega \cdot u^x_i \right] + \left[ \sum_{j=1}^{N_p}\sum_{i=1}^{N_v}p_j \cdot \int_{\Omega}\psi_j(x,y) \frac{\partial}{\partial y}\phi_i(x,y) \, d\Omega \cdot u^y_i \right] \\[10pt]
-        &= \sum_{j=1}^{N_p}\sum_{i=1}^{N_v} p_j B^x_{ji} u^x_i + \sum_{j=1}^{N_p}\sum_{i=1}^{N_v} p_j B^y_{ji} u^y_i = \mathbf{p}^T \mathbf{B}_x \mathbf{u}_x + \mathbf{p}^T \mathbf{B}_y \mathbf{u}_y = \mathbf{p}^T \left[\mathbf{B}_x \quad \mathbf{B}_y\right]
+        &= \sum_{j=1}^{N_p}\sum_{i=1}^{N_v} p_j \left(B_x\right)_{ji} u^x_i + \sum_{j=1}^{N_p}\sum_{i=1}^{N_v} p_j\left(B_y\right)_{ji} u^y_i = \mathbf{p}^T \mathbf{B}_x \mathbf{u}_x + \mathbf{p}^T \mathbf{B}_y \mathbf{u}_y = \mathbf{p}^T \left[\mathbf{B}_x \quad \mathbf{B}_y\right]
         \begin{bmatrix}
             \mathbf{u}_x \\
             \mathbf{u}_y
@@ -317,6 +336,7 @@ Now we can start the discretization of the inf-sup condition:
     \right| =\\
     &= \left( \displaystyle\int_{\Omega} \left(\sum_{i=1}^{N_v}u_i^x\nabla\phi_i(x,y) \cdot \sum_{j=1}^{N_v}u_j^x\nabla\phi_j(x,y) + \sum_{i=1}^{N_v}u_i^y\nabla\phi_i(x,y) \cdot \sum_{j=1}^{N_v}u_j^y\nabla\phi_j(x,y) \right) \, d\Omega \right)^{1/2} =\\
     &= \left(\left[ \sum_{i=1}^{N_v}\sum_{j=1}^{N_v} u_i^x \cdot \displaystyle\int_{\Omega} \nabla\phi_i(x,y) \cdot \nabla\phi_j(x,y)\, d\Omega \cdot u_j^x\right] + \sum_{i=1}^{N_v}\sum_{j=1}^{N_v}\left[u_i^y\cdot \displaystyle\int_{\Omega} \nabla\phi_i(x,y) \cdot \nabla\phi_j(x,y)\, d\Omega \cdot u_j^y\right]\right)^{1/2} = \\[10pt]
+    &= \displaystyle\left(\left[ \sum_{i=1}^{N_v}\sum_{j=1}^{N_v} u_i^x A_{ij}  u_j^x\right] + \left[\sum_{i=1}^{N_v}\sum_{j=1}^{N_v}u_i^y A_{ij} u_j^y\right]\right)^{1/2} = \\[10pt]
     &= \left(\mathbf{u_x}^T \mathbf{A} \mathbf{u_x} + \mathbf{u_y}^T \mathbf{A} \mathbf{u_y}\right)^{1/2} = \left(
     \begin{bmatrix}
         \mathbf{u_x}\\
@@ -339,9 +359,33 @@ Now we can start the discretization of the inf-sup condition:
     \item $\begin{aligned}[t]
         \|q\|_Q &= \left( \int_{\Omega} q(x,y)^2 \, d\Omega \right)^{1/2} = \left|q(x,y) \approx \displaystyle\sum_{i=1}^{N_p}p_i\psi_i(x,y)\right|=\\
         &= \left( \int_{\Omega} \sum_{i=1}^{N_p}p_i\psi_i(x,y) \cdot \sum_{j=1}^{N_p}p_j\psi_j(x,y)\, d\Omega \right)^{1/2} = \left( \int_{\Omega} \sum_{i=1}^{N_p}\sum_{j=1}^{N_p}p_i p_j\psi_j(x,y)\psi_i(x,y)\, d\Omega \right)^{1/2} = \\
-        &= \left( \sum_{i=1}^{N_p}\sum_{j=1}^{N_p} p_i \cdot \left(\int_{\Omega} \psi_j(x,y)\psi_i(x,y)\, d\Omega\right) \cdot p_j\right)^{1/2} = \left(\mathbf{p}^T \mathbf{M}_p \mathbf{p}\right)^{1/2}
+        &= \left( \sum_{i=1}^{N_p}\sum_{j=1}^{N_p} p_i \cdot \left(\int_{\Omega} \psi_j(x,y)\psi_i(x,y)\, d\Omega\right) \cdot p_j\right)^{1/2} = \left( \sum_{i=1}^{N_p}\sum_{j=1}^{N_p} p_i \cdot \left(M_p\right)_{ij} \cdot p_j\right)^{1/2} = \left(\mathbf{p}^T \mathbf{M}_p \mathbf{p}\right)^{1/2}
     \end{aligned}$
 \end{enumerate}
+\normalsize
+
+\subsection{The Final Discrete Matrix Form}
+By substituting our three derived algebraic expressions directly back into the continuous supremum framework, the continuous inf-sup condition simplifies into its final, discrete matrix form:
+
+\[
+\exists \beta>0: \quad
+\inf_{\mathbf{p} \not= \mathbf{0}} \space \sup_{\mathbf{u} \not= \mathbf{0}} \left(\frac{\mathbf{p}^T \mathbf{B} \mathbf{u}}{\left(\mathbf{u}^T \mathbf{M}_v \mathbf{u}\right)^{1/2} \cdot \left(\mathbf{p}^T \mathbf{M}_p \mathbf{p}\right)^{1/2}}\right) \ge \beta \\[10pt]
+\]
+
+This discrete fraction acts as a normalized compatibility test, using $\mathbf{M}_v$ and $\mathbf{M}_p$ to ensure that the fields are measured by their true physical sizes rather than arbitrary numbers. Because calculating a nested maximum and minimum over thousands of mesh nodes is impossible for a computer, we must use a mathematical shortcut to transform this fraction into a simple matrix eigenvalue problem.
+
+\subsection{Solving the Optimization Problem}
+The optimization problem is of the following appearence:
+
+\[
+\min_{\mathbf{p} \not= \mathbf{0}} \space \max_{\mathbf{u} \not= \mathbf{0}} \left(\frac{\mathbf{p}^T \mathbf{B} \mathbf{u}}{\left(\mathbf{u}^T \mathbf{M}_v \mathbf{u}\right)^{1/2} \cdot \left(\mathbf{p}^T \mathbf{M}_p \mathbf{p}\right)^{1/2}}\right) = \min_{\mathbf{p} \not= \mathbf{0}} \space \max_{\mathbf{u} \not= \mathbf{0}} \left(  \gamma(\mathbf{u}, \mathbf{p})\right)\\[10pt]
+\]
+
+We start with the maximization of $\gamma(\mathbf{u}, \mathbf{p})$:
+
+\[
+\max_{\mathbf{u} \not= \mathbf{0}}\left( \gamma(\mathbf{u}, \mathbf{p})\right) = \max_{\mathbf{u} \not= \mathbf{0}} \left(\frac{\mathbf{p}^T \mathbf{B} \mathbf{u}}{\left(\mathbf{u}^T \mathbf{M}_v \mathbf{u}\right)^{1/2} \cdot \left(\mathbf{p}^T \mathbf{M}_p \mathbf{p}\right)^{1/2}}\right)
+\]
 
 \newpage
 \section{Reverse Techniques: Einsum}
