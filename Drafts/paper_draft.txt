@@ -158,15 +158,52 @@ u = g
 \newpage
 \section{Finite Element Discretization and Matrix Assembly}
 
-\subsection{Stiffness Matrix \texorpdfstring{$\mathbb{A}$}{A}}
+In this section, we transition from the continuous \textbf{weak formulation} to a \textbf{discrete algebraic representation} suitable for computational execution. By projecting the infinite-dimensional solution space onto a finite-dimensional subspace spanned by piecewise linear basis functions, we transform the governing integral operators into global sparse matrices. The following subsections detail the systematic assembly of these components.
 
+\subsection{Stiffness Matrix \texorpdfstring{$\mathbf{A}$}{A}}
+
+To determine the discrete operator for the viscous term, we begin with the bilinear form involving the velocity test and trial functions:
 \[
 \int_{\Omega} \nu \nabla u : \nabla v \, d\Omega
 \]
 
 \[
-
+\begin{aligned}    
+\displaystyle
+\int_{\Omega} \nu \nabla \mathbf{u}(x,y) : \nabla \mathbf{v}(x,y)  \, d\Omega &= 
+\left|\begin{array}{c}
+   \mathbf{u}(x,y) =\begin{bmatrix}
+       u_x(x,y) \\
+       u_y(x,y) 
+   \end{bmatrix}
+   \\[17pt]
+   \mathbf{v}(x,y) =\begin{bmatrix}
+       v_x(x,y) \\
+       v_y(x,y) 
+   \end{bmatrix}
+\end{array}\right|
+=\int_{\Omega} \nu \left(\nabla u_x \cdot \nabla v_x + \nabla u_y \cdot \nabla v_y \right) \, d\Omega= \\[10pt]
+&= \int_{\Omega} \nu \nabla u_x \cdot \nabla v_x \, d\Omega +\int_{\Omega} \nu \nabla u_y \cdot \nabla v_y \, d\Omega 
+= \left|\begin{array}{c}
+u_x(x,y) \approx \displaystyle\sum_{i=1}^{N_v}u^x_i\phi_i(x,y) \\[17pt]
+u_y(x,y) \approx \displaystyle\sum_{i=1}^{N_v}u^y_i\phi_i(x,y) 
+\end{array} \right|= \\[10pt]
+&=\int_{\Omega} \nu \nabla \left(\sum_{i=1}^{N_v}u^x_i\phi_i \right) \cdot \nabla v_x \, d\Omega +\int_{\Omega} \nu \nabla \left(\sum_{i=1}^{N_v}u^y_i\phi_i \right) \cdot \nabla v_y \, d\Omega= \\[10pt]
+&= \left[\sum_{i=1}^{N_v}u^x_i \cdot \int_{\Omega} \nu \nabla \phi_i \cdot \nabla v_x \, d\Omega\right] + \left[\sum_{i=1}^{N_v}u^y_i \cdot \int_{\Omega} \nu \nabla \phi_i \cdot \nabla v_y \, d\Omega\right] = \\[10pt]
+&=\left|\substack{\displaystyle\text{We now set $v_x(x,y) = \phi_j(x,y)$} \\ \displaystyle\text{and $v_y(x,y) = \phi_j(x,y)$}}\right|=\\[10pt]
+&=\left[\sum_{i=1}^{N_v}u^x_i \cdot \int_{\Omega} \nu \nabla \phi_i \cdot \nabla \phi_j \, d\Omega\right] + \left[\sum_{i=1}^{N_v}u^y_i \cdot \int_{\Omega} \nu \nabla \phi_i \cdot \nabla \phi_j \, d\Omega\right]=\\[10pt]
+&=\sum_{i=1}^{N_v}A_{ji} u^x_i  + \sum_{i=1}^{N_v}A_{ji} u^y_i = \mathbf{A}^T \mathbf{u}_x + \mathbf{A}^T \mathbf{u}_y = \left|\mathbf{A}=\mathbf{A}^T\right| = \\[10pt]
+&= \mathbf{A} \mathbf{u}_x + \mathbf{A} \mathbf{u}_y
+=\left[ \begin{array}{cc}
+    \mathbf{A} & \mathbf{A}
+\end{array}\right] 
+\begin{bmatrix}
+    \mathbf{u}_x\\
+    \mathbf{u}_y
+\end{bmatrix}
+\end{aligned}
 \]
+
 
 \subsection{Pressure Matrices \texorpdfstring{$\mathbb{B}_x$ and $\mathbb{B}_y$}{Bx and By}}
 
@@ -558,6 +595,26 @@ The \textit{Winding Pipe} models an internal distribution manifold containing ge
 
 As observed in Figure~\ref{fig:winding_pipe_full}, the velocity streamlines adapt smoothly around the internal channel obstacles without displaying spurious velocity vector spikes. Concurrently, the pressure distribution field (Figure~\ref{fig:winding_pipe_pressure}) displays a continuous linear gradient drop, confirming the inf-sup spatial stability of the dual-grid discretization matrix configuration.
 
+\newpage
+\section{Convergence of Numerical Solutions}
 
+
+\subsection{Convergence Analysis via a Reference Solution on an Exchanger Device}
+
+\begin{table}[H]
+\centering
+\caption{Stokes FEM Error Convergence Analysis on the Exchanger Device Geometric Mesh.}
+\label{tab:stokes_convergence}
+\resizebox{\textwidth}{!}{% <-- Scales table down to fit perfectly within the text margins
+\begin{tabular}{cccccccc}
+\hline \hline
+\textbf{Level} & \textbf{Mesh Size} & \textbf{Velocity DOFs} & \textbf{Pressure DOFs} & \textbf{$L^2$ Error $\mathbf{u}$} & \textbf{Rate ($r_u$)} & \textbf{$L^2$ Error $p$} & \textbf{Rate ($r_p$)} \\ \hline
+0              & $h_0/1$            & 3,262                  & 442                    & 1.1575e-01                       & —                     & 1.7831e+00               & —                     \\
+1              & $h_0/2$            & 12,506                 & 1,631                  & 6.7977e-02                       & 0.768                 & 9.8238e-01               & 0.860                 \\
+2              & $h_0/4$            & 48,946                 & 6,253                  & 4.3875e-02                       & 0.632                 & 4.9816e-01               & 0.980                 \\
+3              & $h_0/8$            & 193,634                & 24,473                 & 3.1974e-02                       & 0.457                 & 2.3816e-01               & 1.065                 \\ \hline \hline
+\end{tabular}%
+}
+\end{table}
 
 \end{document}
