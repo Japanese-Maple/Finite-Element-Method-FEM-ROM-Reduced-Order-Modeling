@@ -63,3 +63,49 @@ plt.show()
 #----------------------------------------------------------------------------------
 # Jacobian
 #----------------------------------------------------------------------------------
+
+p = np.array([[0, 0], [1, 0], [0, 1]])
+t = np.array([[0, 1, 2, 0, 1, 2, 0]])
+
+p1 = np.array([[1, 1], [-1, 1/2], [0, -1]])+0.4
+t1 = np.array([[0, 1, 2, 0, 1, 2, 0]])
+
+triangulation1 = tri.Triangulation(p[:, 0], p[:, 1], t[:, :3])
+triangulation2 = tri.Triangulation(p1[:, 0], p1[:, 1], t1[:, :3])
+
+_, ax = plt.subplots(1, 2, figsize=(10,5))
+
+for triangle in triangulation1.triangles:
+    coords = p[triangle]
+    ax[0].fill(coords[:, 0], coords[:, 1], fill=False, hatch='///', edgecolor='red', linewidth=0)
+ax[0].triplot(triangulation1, c='k', linewidth=1.5)
+ax[0].scatter(p[:, 0],  p[:, 1],  s=50, facecolor='red', marker='s', zorder=3)
+
+for triangle in triangulation2.triangles:
+    coords = p1[triangle]
+    ax[1].fill(coords[:, 0], coords[:, 1], fill=False, hatch='///', edgecolor='blue', linewidth=0)
+ax[1].triplot(triangulation2, c='k', linewidth=1.5)
+ax[1].scatter(p1[:, 0], p1[:, 1], s=50, facecolor='blue', marker='s', zorder=3)
+
+for i, name in zip([0, 1], [[r'$\xi_1$', r'$\xi_2$'],['x', 'y']]):
+    ax[i].set_xlim(-1.8, 1.8)
+    ax[i].set_ylim(-1.8, 1.8)
+    
+    ax[i].arrow(-0.5, 0, 2.0, 0, head_width=0.08, head_length=0.15, fc='k', ec='k', length_includes_head=True, zorder=1)
+    ax[i].text(1.6, -0.1, name[0], fontsize=14)
+    
+    ax[i].arrow(0, -0.5, 0, 2.0, head_width=0.08, head_length=0.15, fc='k', ec='k', length_includes_head=True, zorder=1)
+    ax[i].text(0.1, 1.6, name[1], fontsize=14)
+
+    ax[i].text(-1/5, -1/5, r'$0$', fontsize=15)
+
+    ax[i].set_ylim([-1.0,2.5])
+    ax[i].set_xlim([-1.0,2.5])
+
+for i in [0, 1]:
+    ax[i].set_aspect('equal')
+    ax[i].axis('off')
+
+plt.tight_layout()
+plt.savefig("Outputs/Jacobian_tri_transform.svg")
+plt.show();
