@@ -47,7 +47,6 @@ Derivations for Stokes Equations
     \includegraphics[width=0.83\linewidth]{Flow.jpeg}
 \end{figure}
 
-
 \end{abstract}
 
 \newpage
@@ -173,12 +172,82 @@ During this mathematical transition, the natural boundary conditions—such as t
 \end{cases}
 \end{equation}
 
-
-
 \newpage
 \section{Finite Element Discretization and Matrix Assembly}
 
 In this section, we transition from the continuous \textbf{weak formulation} to a \textbf{discrete algebraic representation} suitable for computational execution. By projecting the infinite-dimensional solution space onto a finite-dimensional subspace spanned by piecewise linear basis functions, we transform the governing integral operators into global sparse matrices. The following subsections detail the systematic assembly of these components.
+
+\subsection{Reference Triangle}
+
+To compute integrals efficiently, we map every arbitrary triangle in our mesh onto a standard master element called the reference triangle $\hat{T}$ in local coordinates $(\xi_1, \xi_2)$. Its vertices are fixed at $\hat{\mathbf{x}}_1 = (0,0)$, $\hat{\mathbf{x}}_2 = (1,0)$, and $\hat{\mathbf{x}}_3 = (0,1)$. On this master domain, we define the standard linear Lagrange shape functions $\hat{\phi}_i(\xi_1, \xi_2)$:
+
+
+\begin{tcolorbox}[
+    colframe=RoyalBlue, 
+    colback=RoyalBlue!7!white, 
+    sharp corners
+]
+\begin{center}
+$
+\begin{aligned}
+\displaystyle
+    \hat{\phi}_1(\xi_1, \xi_2) &= 1 - \xi_1 - \xi_2 &\hspace{113pt}
+    & 
+    \hat{\phi}_1(0, 0) = 1, \quad 
+    \hat{\phi}_1(1, 0) = 0, \quad
+    \hat{\phi}_1(0, 1) = 0
+    \\[5pt]
+    \hat{\phi}_2(\xi_1, \xi_2) &= \xi_1 &\hspace{113pt}
+    &
+    \hat{\phi}_2(0, 0) = 0, \quad 
+    \hat{\phi}_2(1, 0) = 1, \quad
+    \hat{\phi}_2(0, 1) = 0
+    \\[5pt]
+    \hat{\phi}_3(\xi_1, \xi_2) &= \xi_2 &\hspace{113pt}
+    &
+    \hat{\phi}_3(0, 0) = 0, \quad 
+    \hat{\phi}_3(1, 0) = 0, \quad
+    \hat{\phi}_3(0, 1) = 1
+    \\[5pt]
+\end{aligned}
+$
+\end{center}
+\end{tcolorbox}
+
+It is also necessary to take a look at the original shape functions' derivatives:
+
+\begin{equation}
+\label{eq:grad_for_Bx_By}
+\begin{aligned}
+    \nabla \phi_i(x,y) &=
+    \begin{bmatrix}
+        \frac{\partial \phi _i}{\partial x}\\[5pt]
+        \frac{\partial \phi _i}{\partial y}
+    \end{bmatrix}
+    = J_T^{-T} \cdot \nabla \hat{\phi}_i(\xi_1, \xi_2)
+    = \left[
+    \begin{array}{cc}
+       x_2 - x_1 & x_3 - x_1 \\
+       y_2 - y_1 & y_3 - y_1
+    \end{array}
+    \right]
+    \begin{bmatrix}
+        \frac{\partial \hat{\phi} _i}{\partial x}\\[5pt]
+        \frac{\partial \hat{\phi} _i}{\partial y}
+    \end{bmatrix}
+    \\[10pt]
+    &= |J_T|^{-1}
+        \begin{bmatrix}            
+        \quad (y_3 - y_1)\frac{\partial \hat{\phi} _i}{\partial \xi _1} - (y_2 - y_1)\frac{\partial \hat{\phi} _i}{\partial \xi _2}\\[5pt]
+        \space-(x_3 - x_1)\frac{\partial \hat{\phi} _i}{\partial \xi _1} + (x_2 - x_1)\frac{\partial \hat{\phi} _i}{\partial \xi _2}
+        \end{bmatrix}
+\end{aligned}
+\end{equation}
+
+\begin{figure}[H]
+    \centering
+    \includesvg[width=0.7\linewidth]{Jacobian_tri_transform.svg}
+\end{figure}
 
 \subsection{Stiffness Matrix \texorpdfstring{$\mathbf{A}$}{A}}
 
