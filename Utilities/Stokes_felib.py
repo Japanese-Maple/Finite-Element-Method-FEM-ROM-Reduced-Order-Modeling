@@ -79,6 +79,16 @@ def calculate_velocity_A(p, t, kinematic_viscosity):
 
 #===============================================================================================================================================================
 
+def calculate_mass_M(p, t,):
+    M_local = None
+
+    rowidx = np.einsum("ni,j->nij", t[:,0:3], [1,1,1])
+    colidx = np.einsum("nj,i->nij", t[:,0:3], [1,1,1])
+
+    return sparse.csc_matrix((np.ravel(M_local),(np.ravel(rowidx),np.ravel(colidx))),shape=(Np,Np))
+
+#===============================================================================================================================================================
+
 def calculate_pressure_B(p_fine, t_fine, p_coarse, t_coarse):
     """Calculates the pressure matrices **Bx**, **By**"""
 
