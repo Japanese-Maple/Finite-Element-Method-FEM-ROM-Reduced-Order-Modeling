@@ -214,6 +214,68 @@ $
 \end{center}
 \end{tcolorbox}
 
+We will also take the gradients for easier future derivations and implementations:
+
+\begin{tcolorbox}[
+    colframe=RoyalBlue, 
+    colback=RoyalBlue!7!white, 
+    sharp corners
+]
+\begin{center}
+$
+\begin{array}{ccc}
+\nabla \hat{\phi}_1(\xi_1,\xi_2)
+=\begin{bmatrix}
+    -1\\
+    -1
+\end{bmatrix}
+&\qquad\qquad
+\nabla \hat{\phi}_2(\xi_1,\xi_2)
+=\begin{bmatrix}
+    1\\
+    0
+\end{bmatrix}
+&\qquad\qquad
+\nabla \hat{\phi}_3(\xi_1,\xi_2)
+=\begin{bmatrix}
+    0\\
+    1
+\end{bmatrix}
+\end{array}
+$
+\end{center}
+\end{tcolorbox}
+
+We will now take a close look at the mapping and derive a Jacobian:
+
+\[
+\begin{aligned}
+    x(\xi_1, \xi_2) &= x_1 + (x_2 - x_1)\xi_1 + (x_3 - x_1)\xi_2\\[10pt]
+    y(\xi_1, \xi_2) &= y_1 + (y_2 - y_1)\xi_1 + (y_3 - y_1)\xi_2
+\end{aligned}
+\]
+
+The mapping can be easily checked: 
+\[
+\begin{array}{ccc}
+    x(0, 0) = x_1 \qquad & \qquad x(1, 0) = x_2 \qquad & \qquad x(0, 1) = x_3\\[10pt]
+    y(0, 0) = y_1 \qquad & \qquad y(1, 0) = y_2 \qquad & \qquad y(0, 1) = y_3
+\end{array}
+\]
+
+We can now take the Jacobian:
+
+\[
+\mathbf{J}_T = \begin{bmatrix}
+\frac{\partial x}{\partial \xi_1} & \frac{\partial x}{\partial \xi_2} \\[9pt]
+\frac{\partial y}{\partial \xi_1} & \frac{\partial y}{\partial \xi_2}
+\end{bmatrix} = 
+\begin{bmatrix}
+    x_2 - x_1 & x_3 - x_1 \\[13pt]
+    y_2 - y_1 & y_3 - y_1
+\end{bmatrix}
+\]
+
 It is also necessary to take a look at the original shape functions' derivatives:
 
 \begin{equation}
@@ -224,25 +286,46 @@ It is also necessary to take a look at the original shape functions' derivatives
         \frac{\partial \phi _i}{\partial x}\\[5pt]
         \frac{\partial \phi _i}{\partial y}
     \end{bmatrix}
-    = J_T^{-T} \cdot \nabla \hat{\phi}_i(\xi_1, \xi_2)
+    = \mathbf{J}_T^{-T} \cdot \nabla \hat{\phi}_i(\xi_1, \xi_2)
     = \left[
     \begin{array}{cc}
        x_2 - x_1 & x_3 - x_1 \\
        y_2 - y_1 & y_3 - y_1
     \end{array}
-    \right]
+    \right]^{-T}
+    \cdot
     \begin{bmatrix}
-        \frac{\partial \hat{\phi} _i}{\partial x}\\[5pt]
-        \frac{\partial \hat{\phi} _i}{\partial y}
+        \frac{\partial \hat{\phi} _i}{\partial \xi_1}\\[5pt]
+        \frac{\partial \hat{\phi} _i}{\partial \xi_2}
+    \end{bmatrix}=\\[10pt]
+    &=\left|\mathbf{X}=
+    \begin{bmatrix}
+        a & b\\
+        c & d
+    \end{bmatrix},\quad
+    \mathbf{X}^{-1}=  \frac{1}{ad-cb}
+    \begin{bmatrix}
+         d & -b \\
+        -c &  a
     \end{bmatrix}
+    \right| = \frac{1}{|\mathbf{J}_T|} 
+    \begin{bmatrix}
+         y_3 - y_1 & y_1 - y_2 \\
+         x_1 - x_3 & x_2 - x_1 
+    \end{bmatrix}\cdot \begin{bmatrix}
+        \frac{\partial \hat{\phi} _i}{\partial \xi_1}\\[5pt]
+        \frac{\partial \hat{\phi} _i}{\partial \xi_2}
+    \end{bmatrix}=
     \\[10pt]
-    &= |J_T|^{-1}
+    &= |\mathbf{J}_T|^{-1}
         \begin{bmatrix}            
         \quad (y_3 - y_1)\frac{\partial \hat{\phi} _i}{\partial \xi _1} - (y_2 - y_1)\frac{\partial \hat{\phi} _i}{\partial \xi _2}\\[5pt]
         \space-(x_3 - x_1)\frac{\partial \hat{\phi} _i}{\partial \xi _1} + (x_2 - x_1)\frac{\partial \hat{\phi} _i}{\partial \xi _2}
         \end{bmatrix}
 \end{aligned}
 \end{equation}
+
+
 
 \begin{figure}[H]
     \centering
@@ -285,10 +368,15 @@ u_x(x,y) \approx \displaystyle\sum_{i=1}^{N_v}u^x_i\phi_i(x,y) \\[17pt]
 u_y(x,y) \approx \displaystyle\sum_{i=1}^{N_v}u^y_i\phi_i(x,y) 
 \end{array} \right|= \\[10pt]
 &=\int_{\Omega} \nu \nabla \left(\sum_{i=1}^{N_v}u^x_i\phi_i \right) \cdot \nabla v_x \, d\Omega +\int_{\Omega} \nu \nabla \left(\sum_{i=1}^{N_v}u^y_i\phi_i \right) \cdot \nabla v_y \, d\Omega= \\[10pt]
-&= \left[\sum_{i=1}^{N_v}u^x_i \cdot \int_{\Omega} \nu \nabla \phi_i \cdot \nabla v_x \, d\Omega\right] + \left[\sum_{i=1}^{N_v}u^y_i \cdot \int_{\Omega} \nu \nabla \phi_i \cdot \nabla v_y \, d\Omega\right] = \\[10pt]
+&= \left[\sum_{i=1}^{N_v}u^x_i \cdot \int_{\Omega} \nu \nabla \phi_i \cdot \nabla v_x \, d\Omega\right] + 
+\left[\sum_{i=1}^{N_v}u^y_i \cdot \int_{\Omega} \nu \nabla \phi_i \cdot \nabla v_y \, d\Omega\right] = \\[10pt]
 &=\left|\substack{\displaystyle\text{We now set $v_x(x,y) = \phi_j(x,y)$} \\ \displaystyle\text{and $v_y(x,y) = \phi_j(x,y)$}}\right|=\\[10pt]
-&=\left[\sum_{i=1}^{N_v}u^x_i \cdot \int_{\Omega} \nu \nabla \phi_i \cdot \nabla \phi_j \, d\Omega\right] + \left[\sum_{i=1}^{N_v}u^y_i \cdot \int_{\Omega} \nu \nabla \phi_i \cdot \nabla \phi_j \, d\Omega\right]=\\[10pt]
-&=\sum_{i=1}^{N_v}A_{ji} u^x_i  + \sum_{i=1}^{N_v}A_{ji} u^y_i = \mathbf{A}^T \mathbf{u}_x + \mathbf{A}^T \mathbf{u}_y = \left|\mathbf{A}=\mathbf{A}^T\right| = \\[10pt]
+&=\left[\sum_{i=1}^{N_v}u^x_i \cdot \int_{\Omega} \nu \nabla \phi_i \cdot \nabla \phi_j \, d\Omega\right] + 
+\left[\sum_{i=1}^{N_v}u^y_i \cdot \int_{\Omega} \nu \nabla \phi_i \cdot \nabla \phi_j \, d\Omega\right]=\\[10pt]
+&=\sum_{i=1}^{N_v}A_{ji} u^x_i  + 
+\sum_{i=1}^{N_v}A_{ji} u^y_i 
+= \mathbf{A}^T \mathbf{u}_x + \mathbf{A}^T \mathbf{u}_y 
+= \left|\mathbf{A}=\mathbf{A}^T\right| = \\[10pt]
 &= \mathbf{A} \mathbf{u}_x + \mathbf{A} \mathbf{u}_y
 =\left[ \begin{array}{cc}
     \mathbf{A} & \mathbf{A}
@@ -299,6 +387,65 @@ u_y(x,y) \approx \displaystyle\sum_{i=1}^{N_v}u^y_i\phi_i(x,y)
 \end{bmatrix}
 \end{aligned}
 \]
+
+Now using the derived coordinate transformation, performed with the help of the Jacobian, we can calculate the local matrix $\mathbf{A}^{loc} \in \mathbb{R}^{3\times3}$
+
+\[
+\begin{aligned}
+    \mathbf{A}_{ij} &= 
+    \int_{\Omega} \nu \nabla \phi_i(x,y) \cdot \nabla \phi_j(x,y) \, d\Omega = \left|
+    \begin{array}{c}
+         \nabla \phi(x,y) = \mathbf{J}_T^{-T}\nabla \hat{\phi}(\xi_1,\xi_2)\\
+         d\Omega = dxdy=\left|\mathbf{J}_T\right|d\xi_1d\xi_2
+    \end{array}
+    \right| = \\[10pt]
+    &= \int_{\hat{T}} \nu \left(\mathbf{J}_T^{-T}\nabla \hat{\phi}_i(\xi_1,\xi_2)\right)^{T} \left(\mathbf{J}_T^{-T}\nabla \hat{\phi}_j(\xi_1,\xi_2)\right) \left|\mathbf{J}_T\right| \, d\xi_1d\xi_2 = 
+    \int_{\hat{T}} \nu \left(\nabla \hat{\phi}_i\right)^T\mathbf{J}^{-1}_T\mathbf{J}^{-T}_T \left(\nabla \hat{\phi}_j\right)\left|\mathbf{J}_T\right| \, d\xi_1d\xi_2 = \\[10pt]
+    &= \int_{\hat{T}} \frac{\nu}{2\left|\mathbf{J}_T\right|} \left(\nabla \hat{\phi}_i\right)^T
+    \begin{bmatrix}
+    y_3 - y_1    & -(x_3 - x_1) \\
+    -(y_2 - y_1) & x_2 - x_1
+    \end{bmatrix}
+    \begin{bmatrix}
+    y_3 - y_1    & -(y_2 - y_1) \\
+    -(x_3 - x_1) & x_2 - x_1
+    \end{bmatrix} 
+    \left(\nabla \hat{\phi}_j\right)\left|\mathbf{J}_T\right| \, d\xi_1d\xi_2 = \\[10pt]
+    &= \frac{\nu}{\left|\mathbf{J}_T\right|} \int_{\hat{T}} \left(\nabla \hat{\phi}_i\right)^T \mathbf{Q} \left(\nabla \hat{\phi}_j\right) \, d\xi_1d\xi_2 
+    = \frac{\nu}{2\left|\mathbf{J}_T\right|} \left(\nabla \hat{\phi}_i\right)^T \mathbf{Q} \left(\nabla \hat{\phi}_j\right)
+\end{aligned}
+\]
+
+After all the calculations we obtain:
+
+\[
+\begin{aligned}
+    \mathbf{A}^{loc} &=
+    \begin{bmatrix}
+        \nabla \hat{\phi}_1\mathbf{Q}\nabla \hat{\phi}_1 & 
+        \nabla \hat{\phi}_2\mathbf{Q}\nabla \hat{\phi}_1 &
+        \nabla \hat{\phi}_3\mathbf{Q}\nabla \hat{\phi}_1 \\[10pt]
+        \nabla \hat{\phi}_1\mathbf{Q}\nabla \hat{\phi}_2 &
+        \nabla \hat{\phi}_2\mathbf{Q}\nabla \hat{\phi}_2 &
+        \nabla \hat{\phi}_3\mathbf{Q}\nabla \hat{\phi}_2 \\[10pt]
+        \nabla \hat{\phi}_1\mathbf{Q}\nabla \hat{\phi}_3 &
+        \nabla \hat{\phi}_2\mathbf{Q}\nabla \hat{\phi}_3 &
+        \nabla \hat{\phi}_3\mathbf{Q}\nabla \hat{\phi}_3 \\
+    \end{bmatrix} \in \mathbb{R}^{3\times3} , \\[15pt]
+    \text{Where:} \quad
+    \mathbf{Q} &= 
+    % Cf(\mathbf{J}_T)^T Cf(\mathbf{J}_T) = 
+    \mathbf{J}_T^{-1}\mathbf{J}_T^{-T} = \begin{bmatrix}
+        (y_3 - y_1)^2 + (x_3 - x_1)^2 & 
+        (y_1 - y_2)(y_3 - y_1) + (x_2 - x_1)(x_1 - x_3) \\
+        (y_1 - y_2)(y_3 - y_1) + (x_2 - x_1)(x_1 - x_3) & 
+        (y_2 - y_1)^2 + (x_2 - x_1)^2
+    \end{bmatrix}
+\end{aligned}
+\]
+
+
+\subsection{Mass Matrix \texorpdfstring{$\mathbf{M}_p$}{Mp}}
 
 
 \subsection{Pressure Matrices \texorpdfstring{$\mathbf{B}_x$ and $\mathbf{B}_y$}{Bx and By}}

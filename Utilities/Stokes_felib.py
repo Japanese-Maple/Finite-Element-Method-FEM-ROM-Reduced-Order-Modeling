@@ -27,8 +27,8 @@ def calculate_velocity_A(p, t, kinematic_viscosity):
 
     det_J = jacobian[:, 0, 0] * jacobian[:, 1, 1] - jacobian[:, 0, 1] * jacobian[:, 1, 0]
 
-    # Cofactor multiplication matrix Q:                   Q = |(y_3 - y_1)^2 + (x_3 - x_1)^2                   (y_1 - y_2)(y_3 - y_1) + (x_2 - x_1)(x1 - x_3)|
-    #                                                         |(y_1 - y_2)(y_3 - y_1) + (x_2 - x_1)(x1 - x_3)  (y_2 - y_1)^2 + (x_2 - x_1)^2                 |
+    # Cofactor multiplication matrix Q:                   Q = |(y_3 - y_1)^2 + (x_3 - x_1)^2                   (y_1 - y_2)(y_3 - y_1) + (x_2 - x_1)(x_1 - x_3)|
+    #                                                         |(y_1 - y_2)(y_3 - y_1) + (x_2 - x_1)(x_1 - x_3)  (y_2 - y_1)^2 + (x_2 - x_1)^2                 |
     #
     #                                                     Q = Cof(J).T @ Cof(J)
 
@@ -80,6 +80,10 @@ def calculate_velocity_A(p, t, kinematic_viscosity):
 #===============================================================================================================================================================
 
 def calculate_mass_M(p, t,):
+
+    Np = p.shape[0]
+    Nt = t.shape[0]
+
     M_local = None
 
     rowidx = np.einsum("ni,j->nij", t[:,0:3], [1,1,1])
