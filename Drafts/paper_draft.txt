@@ -388,12 +388,15 @@ u_y(x,y) \approx \displaystyle\sum_{i=1}^{N_v}u^y_i\phi_i(x,y)
 \end{aligned}
 \]
 
+\vspace{1.5ex}
+
 Now using the derived coordinate transformation, performed with the help of the Jacobian, we can calculate the local matrix $\mathbf{A}^{loc} \in \mathbb{R}^{3\times3}$
 
 \[
 \begin{aligned}
     \mathbf{A}_{ij} &= 
-    \int_{\Omega} \nu \nabla \phi_i(x,y) \cdot \nabla \phi_j(x,y) \, d\Omega = \left|
+    \int_{\Omega} \nu \nabla \phi_i(x,y) \cdot \nabla \phi_j(x,y) \, d\Omega \\[10pt] 
+    \mathbf{A}^{loc}_{ij} &=\left|
     \begin{array}{c}
          \nabla \phi(x,y) = \mathbf{J}_T^{-T}\nabla \hat{\phi}(\xi_1,\xi_2)\\
          d\Omega = dxdy=\left|\mathbf{J}_T\right|d\xi_1d\xi_2
@@ -416,23 +419,31 @@ Now using the derived coordinate transformation, performed with the help of the 
 \end{aligned}
 \]
 
-After all the calculations we obtain:
+\vspace{1.5ex}
+
+After calculating the vector-matrix-vector products explicitly using the constant reference gradients \quad $\nabla \hat{\phi}_1 = [-1, -1]^T$, $\nabla \hat{\phi}_2 = [1, 0]^T$, and $\nabla \hat{\phi}_3 = [0, 1]^T$, we obtain the fully expanded local element matrix:
+
+\vspace{1.5ex}
 
 \[
 \begin{aligned}
-    \mathbf{A}^{loc} &=
+    \mathbf{A}^{loc} &= \frac{\nu}{\left|\mathbf{J}_T\right|}
     \begin{bmatrix}
         \nabla \hat{\phi}_1\mathbf{Q}\nabla \hat{\phi}_1 & 
-        \nabla \hat{\phi}_2\mathbf{Q}\nabla \hat{\phi}_1 &
-        \nabla \hat{\phi}_3\mathbf{Q}\nabla \hat{\phi}_1 \\[10pt]
         \nabla \hat{\phi}_1\mathbf{Q}\nabla \hat{\phi}_2 &
+        \nabla \hat{\phi}_1\mathbf{Q}\nabla \hat{\phi}_3 \\[10pt]
+        \nabla \hat{\phi}_2\mathbf{Q}\nabla \hat{\phi}_1 &
         \nabla \hat{\phi}_2\mathbf{Q}\nabla \hat{\phi}_2 &
-        \nabla \hat{\phi}_3\mathbf{Q}\nabla \hat{\phi}_2 \\[10pt]
-        \nabla \hat{\phi}_1\mathbf{Q}\nabla \hat{\phi}_3 &
-        \nabla \hat{\phi}_2\mathbf{Q}\nabla \hat{\phi}_3 &
+        \nabla \hat{\phi}_2\mathbf{Q}\nabla \hat{\phi}_3 \\[10pt]
+        \nabla \hat{\phi}_3\mathbf{Q}\nabla \hat{\phi}_1 &
+        \nabla \hat{\phi}_3\mathbf{Q}\nabla \hat{\phi}_2 &
         \nabla \hat{\phi}_3\mathbf{Q}\nabla \hat{\phi}_3 \\
-    \end{bmatrix} \in \mathbb{R}^{3\times3} , \\[15pt]
-    \text{Where:} \quad
+    \end{bmatrix} \in \mathbb{R}^{3\times3} , \quad \text{where:}
+\end{aligned}
+\]
+
+\[
+\begin{aligned}
     \mathbf{Q} &= 
     % Cf(\mathbf{J}_T)^T Cf(\mathbf{J}_T) = 
     \mathbf{J}_T^{-1}\mathbf{J}_T^{-T} = \begin{bmatrix}
@@ -443,6 +454,10 @@ After all the calculations we obtain:
     \end{bmatrix}
 \end{aligned}
 \]
+
+\vspace{1.5ex}
+
+Please note that the matrices $\mathbf{Q}$ and $\mathbf{A}^{loc}$ are symmetric. This structural property is highly advantageous for optimizing numerical calculations.
 
 
 \subsection{Mass Matrix \texorpdfstring{$\mathbf{M}_p$}{Mp}}
@@ -505,6 +520,26 @@ By splitting the velocity test function into its component channels $\mathbf{v} 
 \end{bmatrix}
 \end{aligned}
 \]
+
+We are now moving on to computing the local $\mathbf{B}^{loc}_x$ and $\mathbf{B}^{loc}_y$ using the help of our earlier derived gradient of $\phi_i(x,y)$ (~\ref{eq:grad_for_Bx_By}):
+
+\[
+\begin{aligned}
+    \left(\mathbf{B}^{loc}_x\right)_{ij} 
+    &= -\int_\Omega \psi_j \frac{\partial \phi_i}{\partial x} \, d_\Omega\\[10pt]
+    \left(\mathbf{B}^{loc}_x\right)_{ij} 
+    &= - \int_{\hat{T}} \hat{\psi}_j\frac{1}{\left|\mathbf{J}_T\right|}\left((y_3 - y_1)\frac{\partial \hat{\phi} _i}{\partial \xi _1} - (y_2 - y_1)\frac{\partial \hat{\phi} _i}{\partial \xi _2}\right)\left|\mathbf{J}_T\right| \, d\xi_1 d\xi_2 = \\[10pt]
+    &= \left((y_2 - y_1)\frac{\partial \hat{\phi} _i}{\partial \xi _2} - (y_3 - y_1)\frac{\partial \hat{\phi} _i}{\partial \xi _1}\right) \int_{\hat{T}} \hat{\psi}_j \, d\xi_1 d\xi_2 = \frac{1}{6}\left((y_2 - y_1)\frac{\partial \hat{\phi} _i}{\partial \xi _2} - (y_3 - y_1)\frac{\partial \hat{\phi} _i}{\partial \xi _1}\right)
+    \\[10pt]
+    \left(\mathbf{B}^{loc}_y\right)_{ij} 
+    &= -\int_\Omega \psi_j \frac{\partial \phi_i}{\partial x} \, d_\Omega\\[10pt]
+    \left(\mathbf{B}^{loc}_y\right)_{ij} 
+    &= - \int_{\hat{T}} \hat{\psi}_j\frac{1}{\left|\mathbf{J}_T\right|}\left(-(x_3 - x_1)\frac{\partial \hat{\phi} _i}{\partial \xi _1} + (x_2 - x_1)\frac{\partial \hat{\phi} _i}{\partial \xi _2}\right)\left|\mathbf{J}_T\right| \, d\xi_1 d\xi_2 = \\[10pt]
+    &= \left((x_3 - x_1)\frac{\partial \hat{\phi} _i}{\partial \xi _1} - (x_2 - x_1)\frac{\partial \hat{\phi} _i}{\partial \xi _2}\right) \int_{\hat{T}} \hat{\psi}_j \, d\xi_1 d\xi_2 = \frac{1}{6}\left((x_3 - x_1)\frac{\partial \hat{\phi} _i}{\partial \xi _1} - (x_2 - x_1)\frac{\partial \hat{\phi} _i}{\partial \xi _2}\right)\\[10pt]
+\end{aligned}
+\]
+
+
 
 
 \subsection{Saddle-Point Block Matrix \texorpdfstring{$\mathbf{K}$}{K}}
