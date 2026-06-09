@@ -14,8 +14,8 @@
 \usepackage{subcaption} % For subfigure environment
 \usepackage{listings}   % For code listings
 
-\usepackage{xcolor}       % for color definitions
-\usepackage{titlesec}     % for section title customization
+\usepackage{xcolor}     % for color definitions
+\usepackage{titlesec}   % for section title customization
 
 % Define your custom color
 \definecolor{deepdarkgreen}{RGB}{53, 94, 59}
@@ -752,13 +752,39 @@ This discrete fraction acts as a normalized compatibility test, using $\mathbf{M
 The optimization problem is of the following appearence:
 
 \[
-\min_{\mathbf{p} \not= \mathbf{0}} \space \max_{\mathbf{u} \not= \mathbf{0}} \left(\frac{\mathbf{p}^T \mathbf{B} \mathbf{u}}{\left(\mathbf{u}^T \mathbf{M}_v \mathbf{u}\right)^{1/2} \cdot \left(\mathbf{p}^T \mathbf{M}_p \mathbf{p}\right)^{1/2}}\right) = \min_{\mathbf{p} \not= \mathbf{0}} \space \max_{\mathbf{u} \not= \mathbf{0}} \left(  \gamma(\mathbf{u}, \mathbf{p})\right)\\[10pt]
+\min_{\mathbf{p} \not= \mathbf{0}} \space \max_{\mathbf{u} \not= \mathbf{0}} \left(\frac{\mathbf{p}^T \mathbf{B} \mathbf{u}}{\left(\mathbf{u}^T \mathbf{M}_v \mathbf{u}\right)^{1/2} \cdot \left(\mathbf{p}^T \mathbf{M}_p \mathbf{p}\right)^{1/2}}\right)\\[10pt]
 \]
 
-We start with the maximization of $\gamma(\mathbf{u}, \mathbf{p})$:
+We start with the maximization of with respect to $\mathbf{u}$:
 
 \[
-\max_{\mathbf{u} \not= \mathbf{0}}\left( \gamma(\mathbf{u}, \mathbf{p})\right) = \max_{\mathbf{u} \not= \mathbf{0}} \left(\frac{\mathbf{p}^T \mathbf{B} \mathbf{u}}{\left(\mathbf{u}^T \mathbf{M}_v \mathbf{u}\right)^{1/2} \cdot \left(\mathbf{p}^T \mathbf{M}_p \mathbf{p}\right)^{1/2}}\right)
+\begin{aligned}
+    \max_{\mathbf{u} \not= \mathbf{0}} \left(\frac{\mathbf{p}^T \mathbf{B} \mathbf{u}}{\left(\mathbf{u}^T \mathbf{M}_v \mathbf{u}\right)^{\frac{1}{2}} \cdot \left(\mathbf{p}^T \mathbf{M}_p \mathbf{p}\right)^{\frac{1}{2}}}\right) 
+    &= \frac{1}{\left(\mathbf{p}^T \mathbf{M}_p \mathbf{p}\right)^{\frac{1}{2}}} \max_{\mathbf{u} \not= \mathbf{0}} \left(\frac{\mathbf{p}^T \mathbf{B} \mathbf{u}}{\left(\mathbf{u}^T \mathbf{M}_v \mathbf{u}\right)^{\frac{1}{2}}}\right) = \left|
+    \begin{array}{c}
+       \mathbf{M}_v = \mathbf{M}_v^{\frac{1}{2}}\mathbf{M}_v^{\frac{1}{2}}\\
+       \mathbf{w} = \mathbf{M}_v^{\frac{1}{2}} \mathbf{u}, \quad \mathbf{u} = \mathbf{M}_v^{-\frac{1}{2}} \mathbf{w}
+    \end{array}
+    \right| = \\[10pt]
+    &= \frac{1}{\left(\mathbf{p}^T \mathbf{M}_p \mathbf{p}\right)^{\frac{1}{2}}} 
+    \max_{\mathbf{w} \not= \mathbf{0}} \left(\frac{\mathbf{p}^T \mathbf{B} \left(\mathbf{M}_v^{-\frac{1}{2}} \mathbf{w}\right)}{\left(\left(\mathbf{M}_v^{-\frac{1}{2}} \mathbf{w}\right)^T \mathbf{M}_v \left(\mathbf{M}_v^{-\frac{1}{2}} \mathbf{w}\right)\right)^{\frac{1}{2}}}\right) = \\[10pt]
+    &= \frac{1}{\left(\mathbf{p}^T \mathbf{M}_p \mathbf{p}\right)^{\frac{1}{2}}} 
+    \max_{\mathbf{w} \not= \mathbf{0}} \left(\frac{\mathbf{p}^T \mathbf{B} \mathbf{M}_v^{-\frac{1}{2}} \mathbf{w}}{\left( \mathbf{w}^T \mathbf{M}_v^{-\frac{1}{2}} \mathbf{M}_v^{\frac{1}{2}} \mathbf{M}_v^{\frac{1}{2}} \mathbf{M}_v^{-\frac{1}{2}} \mathbf{w}\right)^{\frac{1}{2}}}\right) = \\[10pt]
+    &= \frac{1}{\left(\mathbf{p}^T \mathbf{M}_p \mathbf{p}\right)^{\frac{1}{2}}} 
+    \max_{\mathbf{w} \not= \mathbf{0}} \frac{\left( \mathbf{M}_v^{-\frac{1}{2}} \mathbf{B}^T \mathbf{p} \right)^T \mathbf{w}}{\|\mathbf{w}\|_2}
+    = \left| 
+    \begin{array}{c}
+        \mathbf{a} = c \mathbf{x}\\
+        \displaystyle
+        \max_{\mathbf{a} \ne 0}\frac{\mathbf{x}^T \mathbf{a}}{\|\mathbf{a}\|_2} =
+        \displaystyle 
+        \max_{\mathbf{x} \ne 0}\frac{c \mathbf{x}^T \mathbf{x}}{c\|\mathbf{x}\|_2}
+        =\|\mathbf{x}\|_2         
+    \end{array}
+    \right| = \\[10pt]
+    &= \frac{1}{\left(\mathbf{p}^T \mathbf{M}_p \mathbf{p}\right)^{\frac{1}{2}}}
+   \lVert\mathbf{M}_v^{-\frac{1}{2}} \mathbf{B}^T \mathbf{p}\rVert_2
+\end{aligned}
 \]
 
 \newpage
