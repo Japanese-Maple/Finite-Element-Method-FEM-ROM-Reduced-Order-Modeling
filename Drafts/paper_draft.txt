@@ -787,6 +787,25 @@ We start with the maximization of with respect to $\mathbf{u}$:
 \end{aligned}
 \]
 
+With the maximization out of the way it is now possible to minimize over pressure $\mathbf{p}$:
+\[
+\begin{aligned}
+    \min_{\mathbf{p} \ne 0} \frac{
+   \lVert\mathbf{M}_v^{-\frac{1}{2}} \mathbf{B}^T \mathbf{p}\rVert_2 }{\left(\mathbf{p}^T \mathbf{M}_p \mathbf{p}\right)^{\frac{1}{2}}}
+   \quad
+   &\longrightarrow\quad
+   \left(\min_{\mathbf{p} \ne 0} \frac{
+   \lVert\mathbf{M}_v^{-\frac{1}{2}} \mathbf{B}^T \mathbf{p}\rVert_2 }{\left(\mathbf{p}^T \mathbf{M}_p \mathbf{p}\right)^{\frac{1}{2}}}
+   \right)^2
+   = \min_{\mathbf{p} \ne 0} \frac{
+   \left(\mathbf{M}_v^{-\frac{1}{2}} \mathbf{B}^T \mathbf{p}\right)^T \left(\mathbf{M}_v^{-\frac{1}{2}} \mathbf{B}^T \mathbf{p}\right)}{\mathbf{p}^T \mathbf{M}_p \mathbf{p}} = \\[10pt]
+   &= \min_{\mathbf{p} \ne 0} \frac{
+   \left(\mathbf{M}_v^{-\frac{1}{2}} \mathbf{B}^T \mathbf{p}\right)^T \left(\mathbf{M}_v^{-\frac{1}{2}} \mathbf{B}^T \mathbf{p}\right)}{\mathbf{p}^T \mathbf{M}_p \mathbf{p}} 
+\end{aligned}
+\]
+
+%-------------------------------------------------------------------
+
 \newpage
 \section{Reverse Techniques: Einsum}
 
@@ -895,6 +914,8 @@ So by using indexation and sums we notice that the structure has not really chan
 \sum_{i=1}^2\sum_{j=1}^2\psi^m_iq^t_{ij}\psi^n_j = A^t_{mn}\in\mathbb{R}^{t \times m\times n}
 \]
 
+%-------------------------------------------------------------------
+
 \newpage
 \section{Numerical Experiments and Applications}
 In this section, we validate our $P_1\text{-iso-}P_1$ finite element solver using two distinct fluid engineering case studies: an \textit{Exchanger Device} and a \textit{Winding Pipe}. Both configurations operate under a creeping flow regime ($\mathrm{Re} \ll 1$), where viscous forces dominate. 
@@ -958,9 +979,10 @@ The \textit{Winding Pipe} models an internal distribution manifold containing ge
 
 As observed in Figure~\ref{fig:winding_pipe_full}, the velocity streamlines adapt smoothly around the internal channel obstacles without displaying spurious velocity vector spikes. Concurrently, the pressure distribution field (Figure~\ref{fig:winding_pipe_pressure}) displays a continuous linear gradient drop, confirming the inf-sup spatial stability of the dual-grid discretization matrix configuration.
 
+%-------------------------------------------------------------------
+
 \newpage
 \section{Convergence of Numerical Solutions}
-
 
 \subsection{Convergence Analysis via a Reference Solution on an Exchanger Device}
 
