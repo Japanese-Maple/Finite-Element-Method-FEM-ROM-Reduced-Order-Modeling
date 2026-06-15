@@ -1,12 +1,12 @@
 \documentclass[11pt]{article}
 \usepackage[a4paper,margin=0.55in]{geometry} % Standard academic formatting
 \usepackage{amsmath, amssymb, amsthm} % Essential packages for math symbols and environments
-\usepackage{hyperref} % Adds hyperlinks to references and table of contents
-\usepackage{graphicx} % Allows inserting images (if needed)
-\usepackage{svg}      % Allows inclusion of SVG images
-\usepackage{fancyhdr} % For custom headers
-\usepackage{setspace} % Adjusts line spacing
-\usepackage{enumitem} % For better control over lists
+\usepackage{hyperref}   % Adds hyperlinks to references and table of contents
+\usepackage{graphicx}   % Allows inserting images (if needed)
+\usepackage{svg}        % Allows inclusion of SVG images
+\usepackage{fancyhdr}   % For custom headers
+\usepackage{setspace}   % Adjusts line spacing
+\usepackage{enumitem}   % For better control over lists
 \usepackage{float}
 \usepackage{multicol}
 \usepackage{tcolorbox}  % For colored and boxed environments
@@ -34,6 +34,8 @@
 \date{Summer Semester, 2026}
 
 \usepackage{amsmath}
+\allowdisplaybreaks
+
 \begin{document}
 
 
@@ -757,8 +759,8 @@ The optimization problem is of the following appearence:
 
 We start with the maximization of with respect to $\mathbf{u}$:
 
-\[
-\begin{aligned}
+\small
+\begin{align*}
     \max_{\mathbf{u} \not= \mathbf{0}} \left(\frac{\mathbf{p}^T \mathbf{B} \mathbf{u}}{\left(\mathbf{u}^T \mathbf{M}_v \mathbf{u}\right)^{\frac{1}{2}} \cdot \left(\mathbf{p}^T \mathbf{M}_p \mathbf{p}\right)^{\frac{1}{2}}}\right) 
     &= \frac{1}{\left(\mathbf{p}^T \mathbf{M}_p \mathbf{p}\right)^{\frac{1}{2}}} \max_{\mathbf{u} \not= \mathbf{0}} \left(\frac{\mathbf{p}^T \mathbf{B} \mathbf{u}}{\left(\mathbf{u}^T \mathbf{M}_v \mathbf{u}\right)^{\frac{1}{2}}}\right) = \left|
     \begin{array}{c}
@@ -776,33 +778,91 @@ We start with the maximization of with respect to $\mathbf{u}$:
     \begin{array}{c}
         \mathbf{a} = c \mathbf{x}\\
         \displaystyle
-        \max_{\mathbf{a} \ne 0}\frac{\mathbf{x}^T \mathbf{a}}{\|\mathbf{a}\|_2} =
+        \max_{\mathbf{a} \ne \mathbf{0}}\frac{\mathbf{x}^T \mathbf{a}}{\|\mathbf{a}\|_2} =
         \displaystyle 
-        \max_{\mathbf{x} \ne 0}\frac{c \mathbf{x}^T \mathbf{x}}{c\|\mathbf{x}\|_2}
+        \max_{\mathbf{x} \ne \mathbf{0}}\frac{c \mathbf{x}^T \mathbf{x}}{c\|\mathbf{x}\|_2}
         =\|\mathbf{x}\|_2         
     \end{array}
     \right| = \\[10pt]
     &= \frac{1}{\left(\mathbf{p}^T \mathbf{M}_p \mathbf{p}\right)^{\frac{1}{2}}}
    \lVert\mathbf{M}_v^{-\frac{1}{2}} \mathbf{B}^T \mathbf{p}\rVert_2
-\end{aligned}
-\]
+\end{align*}
+\normalsize
 
 With the maximization out of the way it is now possible to minimize over pressure $\mathbf{p}$:
-\[
-\begin{aligned}
-    \min_{\mathbf{p} \ne 0} \frac{
+
+\small
+\begin{align*}
+    \min_{\mathbf{p} \ne \mathbf{0}} \frac{
    \lVert\mathbf{M}_v^{-\frac{1}{2}} \mathbf{B}^T \mathbf{p}\rVert_2 }{\left(\mathbf{p}^T \mathbf{M}_p \mathbf{p}\right)^{\frac{1}{2}}}
    \quad
    &\longrightarrow\quad
-   \left(\min_{\mathbf{p} \ne 0} \frac{
+   \left(\min_{\mathbf{p} \ne \mathbf{0}} \frac{
    \lVert\mathbf{M}_v^{-\frac{1}{2}} \mathbf{B}^T \mathbf{p}\rVert_2 }{\left(\mathbf{p}^T \mathbf{M}_p \mathbf{p}\right)^{\frac{1}{2}}}
    \right)^2
-   = \min_{\mathbf{p} \ne 0} \frac{
+   = \min_{\mathbf{p} \ne \mathbf{0}} \frac{
    \left(\mathbf{M}_v^{-\frac{1}{2}} \mathbf{B}^T \mathbf{p}\right)^T \left(\mathbf{M}_v^{-\frac{1}{2}} \mathbf{B}^T \mathbf{p}\right)}{\mathbf{p}^T \mathbf{M}_p \mathbf{p}} = \\[10pt]
-   &= \min_{\mathbf{p} \ne 0} \frac{
-   \left(\mathbf{M}_v^{-\frac{1}{2}} \mathbf{B}^T \mathbf{p}\right)^T \left(\mathbf{M}_v^{-\frac{1}{2}} \mathbf{B}^T \mathbf{p}\right)}{\mathbf{p}^T \mathbf{M}_p \mathbf{p}} 
-\end{aligned}
+   &= \min_{\mathbf{p} \ne \mathbf{0}} \frac{
+   \mathbf{p}^T\mathbf{B}\mathbf{M}_v^{-\frac{1}{2}}\mathbf{M}_v^{-\frac{1}{2}} \mathbf{B}^T \mathbf{p}}{\mathbf{p}^T \mathbf{M}_p \mathbf{p}}
+   = \min_{\mathbf{p} \ne \mathbf{0}} \frac{\mathbf{p}^T\left(\mathbf{B}\mathbf{M}_v^{-1}\mathbf{B}^T\right)\mathbf{p}}{\mathbf{p}^T \mathbf{M}_p \mathbf{p}} 
+   = 
+   \left|
+   \begin{array}{c}
+        R(\mathbf{A}, \mathbf{B}; \mathbf{x}) = \frac{\mathbf{x}^T\mathbf{A}\mathbf{x}}{\mathbf{x}^T\mathbf{B}\mathbf{x}} \\[5pt]
+        \mathbf{q} = \mathbf{M}_p^{1/2}\mathbf{p} \\
+        \mathbf{p} = \mathbf{M}_p^{-1/2}\mathbf{q}
+   \end{array}
+   \right| = \\[10pt]
+   &= \min_{\mathbf{q} \ne \mathbf{0}} \frac{\left(\mathbf{M}_p^{-1/2}\mathbf{q} \right)^T\left(\mathbf{B}\mathbf{M}_v^{-1}\mathbf{B}^T\right)\left(\mathbf{M}_p^{-1/2}\mathbf{q} \right)}{\left(\mathbf{M}_p^{-1/2}\mathbf{q} \right)^T \mathbf{M}_p \left(\mathbf{M}_p^{-1/2}\mathbf{q} \right)} 
+   = \min_{\mathbf{q} \ne \mathbf{0}} \frac{\mathbf{q}^T\left(\mathbf{M}_p^{-1/2}\mathbf{B}\mathbf{M}_v^{-1}\mathbf{B}^T\mathbf{M}_p^{-1/2}\right)\mathbf{q}}{\mathbf{q}^T\mathbf{q}} = \\[10pt]  
+   &= \left|
+   \begin{array}{c}
+        \text{Rayleigh quotient:}\\
+        R(\mathbf{K};\mathbf{x}) = \frac{\mathbf{x}^T\mathbf{K}\mathbf{x}}{\mathbf{x}^T\mathbf{x}}\\[5pt]
+        \mathbf{K} = \mathbf{M}_p^{-1/2}\mathbf{B}\mathbf{M}_v^{-1}\mathbf{B}^T\mathbf{M}_p^{-1/2}
+   \end{array}
+   \right| 
+   = \min_{\mathbf{q} \ne \mathbf{0}} R(\mathbf{K};\mathbf{q}) 
+   = \lambda_{min}\left(\mathbf{K}\right)
+\end{align*}
+\normalsize
+
+To compute minimum of the Rayleigh quotient we would need to compute its minimal eigenvalue and get rid of the substitution $\mathbf{q}$:
+
+\small
+\begin{align*}
+    \mathbf{K}\mathbf{q}
+    &=\lambda\mathbf{q}\\[10pt]
+    \mathbf{K}\mathbf{M}_p^{1/2}\mathbf{p}
+    &=\lambda\mathbf{M}_p^{1/2}\mathbf{p} \quad \Big| \cdot \mathbf{M}_p^{-1/2}\\    \mathbf{M}_p^{-1/2}\mathbf{K}\mathbf{M}_p^{1/2}\mathbf{p}
+    &=\lambda\mathbf{M}_p^{-1/2}\mathbf{M}_p^{1/2}\mathbf{p}\\    \mathbf{M}_p^{-1/2}\left(\mathbf{M}_p^{-1/2}\mathbf{B}\mathbf{M}_v^{-1}\mathbf{B}^T\mathbf{M}_p^{-1/2}\right)\mathbf{M}_p^{1/2}\mathbf{p}
+    &=\lambda\mathbf{p}\\    \left(\mathbf{M}_p^{-1}\mathbf{B}\mathbf{M}_v^{-1}\mathbf{B}^T\right)\mathbf{p}
+    &=\lambda\mathbf{p}\\[10pt]    \lambda_{min}\left(\hat{\mathbf{K}}\right)&, \quad \text{where: }\hat{\mathbf{K}} = \mathbf{M}_p^{-1}\mathbf{B}\mathbf{M}_v^{-1}\mathbf{B}^T
+\end{align*}
+\normalsize
+
+We also have to revert the squaring of the term used earlier:
+
+\small
+\begin{align*}
+   \left(\min_{\mathbf{p} \ne 0} \frac{
+   \lVert\mathbf{M}_v^{-\frac{1}{2}} \mathbf{B}^T \mathbf{p}\rVert_2 }{\left(\mathbf{p}^T \mathbf{M}_p \mathbf{p}\right)^{\frac{1}{2}}} \right)^2
+   &= \lambda_{min}\left(\hat{\mathbf{K}}\right)\\[10pt]
+   \min_{\mathbf{p} \ne \mathbf{0}} \frac{
+   \lVert\mathbf{M}_v^{-\frac{1}{2}} \mathbf{B}^T \mathbf{p}\rVert_2 }{\left(\mathbf{p}^T \mathbf{M}_p \mathbf{p}\right)^{\frac{1}{2}}} 
+   &= \sqrt{\lambda_{min}\left(\hat{\mathbf{K}}\right)}
+\end{align*}
+\normalsize
+
+Lastly, we can take a look at the condition once again.
+
+\[
+\exists \beta>0: \quad
+\inf_{\mathbf{p} \not= \mathbf{0}} \space \sup_{\mathbf{u} \not= \mathbf{0}} \left(\frac{\mathbf{p}^T \mathbf{B} \mathbf{u}}{\left(\mathbf{u}^T \mathbf{M}_v \mathbf{u}\right)^{1/2} \cdot \left(\mathbf{p}^T \mathbf{M}_p \mathbf{p}\right)^{1/2}}\right) 
+= \sqrt{\lambda_{min}\left(\hat{\mathbf{K}}\right)}
+\ge \beta \\[10pt]
 \]
+
 
 %-------------------------------------------------------------------
 
