@@ -461,10 +461,6 @@ After calculating the vector-matrix-vector products explicitly using the constan
 
 Please note that the matrices $\mathbf{Q}$ and $\mathbf{A}^{loc}$ are symmetric. This structural property is highly advantageous for optimizing numerical calculations.
 
-
-\subsection{Mass Matrix \texorpdfstring{$\mathbf{M}_p$}{Mp}}
-
-
 \subsection{Pressure Matrices \texorpdfstring{$\mathbf{B}_x$ and $\mathbf{B}_y$}{Bx and By}}
 
 To enforce the incompressibility constraint and couple the pressure field to the momentum equations, we discretize the divergence of the velocity field field mixed with the pressure test space. This interaction is governed by the bilinear form:
@@ -601,10 +597,18 @@ In numerical partial differential equations, the \textit{Ladyzhenskaya–Babušk
 
 At the continuous level, the velocity space $V$ and pressure space $Q$ must satisfy:
 
-\[
-\exists \beta>0: \quad
-\inf_{q \in Q_{\setminus\{0\}}} \space \sup_{v \in V_{\setminus\{0\}}} \left(\frac{\int_{\Omega}q(\nabla \cdot v)d\Omega}{\|v\|_{V}\cdot\|q\|_{Q}}\right) \ge \beta 
-\]
+\begin{tcolorbox}[
+    colframe=RoyalBlue, 
+    colback=RoyalBlue!7!white, 
+    sharp corners
+]
+\begin{center}
+\begin{align*}
+    \exists \beta>0: \quad
+    \inf_{q \in Q_{\setminus\{0\}}} \space \sup_{v \in V_{\setminus\{0\}}} \left(\frac{\int_{\Omega}q(\nabla \cdot v)d\Omega}{\|v\|_{V}\cdot\|q\|_{Q}}\right) \ge \beta 
+\end{align*}
+\end{center}
+\end{tcolorbox}
 
 \subsection{Discrete Mapping and Coordinate Representation}
 For this problem it is useful to reformulate the condition in a discrete way. We can start by mapping the continuous functions to their nodal coordinate representations:
@@ -637,12 +641,16 @@ The corresponding discrete differential bilinear forms translate directly into t
     \mathbf{A}_{ij} = \int_{\Omega} \nu \nabla \phi_i(x,y) \cdot \nabla \phi_j(x,y) \, d\Omega \quad & 
     \displaystyle \left(\mathbf{B}_x\right)_{ij} = -\int_{\Omega} \psi_j(x,y)\frac{\partial \phi_i(x,y)}{\partial x} \, d\Omega \quad & 
     \displaystyle \left(\mathbf{B}_y\right)_{ij} = -\int_{\Omega} \psi_j(x,y) \frac{\partial \phi_i(x,y)}{\partial y} \, d\Omega \\[15pt]
-    \displaystyle \mathbf{B}=\left[\mathbf{B}_x \quad\mathbf{B}_y\right] \quad & \displaystyle \mathbf{M}_v=\left[
-\begin{array}{cc}
+    \displaystyle \mathbf{B}=
+    \begin{bmatrix}
+        \mathbf{B}_x & \mathbf{B}_y
+    \end{bmatrix}
+    \quad & \displaystyle \mathbf{M}_v=
+\begin{bmatrix}
     \mathbf{A} & \mathbf{0} \\
     \mathbf{0} & \mathbf{A}
-\end{array}
-\right] \quad & \displaystyle \left(\mathbf{M}_p\right)_{ij} = \int_{\Omega} \psi_j(x,y)\psi_i(x,y)\, d\Omega
+\end{bmatrix}
+\quad & \displaystyle \left(\mathbf{M}_p\right)_{ij} = \int_{\Omega} \psi_j(x,y)\psi_i(x,y)\, d\Omega
 \end{array}
 \]
 \normalsize
@@ -848,21 +856,67 @@ We also have to revert the squaring of the term used earlier:
    \left(\min_{\mathbf{p} \ne 0} \frac{
    \lVert\mathbf{M}_v^{-\frac{1}{2}} \mathbf{B}^T \mathbf{p}\rVert_2 }{\left(\mathbf{p}^T \mathbf{M}_p \mathbf{p}\right)^{\frac{1}{2}}} \right)^2
    &= \lambda_{min}\left(\hat{\mathbf{K}}\right)\\[10pt]
-   \min_{\mathbf{p} \ne \mathbf{0}} \frac{
-   \lVert\mathbf{M}_v^{-\frac{1}{2}} \mathbf{B}^T \mathbf{p}\rVert_2 }{\left(\mathbf{p}^T \mathbf{M}_p \mathbf{p}\right)^{\frac{1}{2}}} 
-   &= \sqrt{\lambda_{min}\left(\hat{\mathbf{K}}\right)}
+   \min_{\mathbf{p} \not= \mathbf{0}} \space \max_{\mathbf{u} \not= \mathbf{0}} \left(\frac{\mathbf{p}^T \mathbf{B} \mathbf{u}}{\left(\mathbf{u}^T \mathbf{M}_v \mathbf{u}\right)^{1/2} \cdot \left(\mathbf{p}^T \mathbf{M}_p \mathbf{p}\right)^{1/2}}\right)&= \sqrt{\lambda_{min}\left(\hat{\mathbf{K}}\right)}\\[10pt]
 \end{align*}
 \normalsize
 
-Lastly, we can take a look at the condition once again.
+\subsection{Numerical Stability Assessment}
+Lastly, we can look at the stability condition in its final, practical form. In a two-dimensional simulation, the velocity field is split into horizontal and vertical components. Because of this, the global divergence matrix $\mathbf{B}$ and the velocity matrix $\mathbf{M}_v$ must be expanded into their individual block components $\mathbf{B}_x$, $\mathbf{B}_y$, and the velocity stiffness matrix $\mathbf{A}$. 
 
-\[
-\exists \beta>0: \quad
-\inf_{\mathbf{p} \not= \mathbf{0}} \space \sup_{\mathbf{u} \not= \mathbf{0}} \left(\frac{\mathbf{p}^T \mathbf{B} \mathbf{u}}{\left(\mathbf{u}^T \mathbf{M}_v \mathbf{u}\right)^{1/2} \cdot \left(\mathbf{p}^T \mathbf{M}_p \mathbf{p}\right)^{1/2}}\right) 
-= \sqrt{\lambda_{min}\left(\hat{\mathbf{K}}\right)}
-\ge \beta \\[10pt]
-\]
+Substituting these block matrices into our eigenvalue problem yields the fully expanded discrete inf-sup condition:
 
+\begin{align*}
+    \exists \beta>0: \quad
+    \inf_{\mathbf{p} \not= \mathbf{0}} \space \sup_{\mathbf{u} \not= \mathbf{0}} \left(\frac{\mathbf{p}^T \mathbf{B} \mathbf{u}}{\left(\mathbf{u}^T \mathbf{M}_v \mathbf{u}\right)^{1/2} \cdot \left(\mathbf{p}^T \mathbf{M}_p \mathbf{p}\right)^{1/2}}\right) 
+    = \sqrt{\lambda_{min}\left(\hat{\mathbf{K}}\right)}
+    &\ge \beta \\[10pt]
+    \exists \beta>0: \quad    \sqrt{\lambda_{min}\left(\mathbf{M}_p^{-1}\mathbf{B}\mathbf{M}_v^{-1}\mathbf{B}^T\right)} 
+    = \sqrt{\lambda_{min}\left(\mathbf{M}_p^{-1}    
+    \begin{bmatrix}
+        \mathbf{B}_x & \mathbf{B}_y
+    \end{bmatrix}
+    \begin{bmatrix}
+        \mathbf{A} & \mathbf{0} \\
+        \mathbf{0} & \mathbf{A}
+    \end{bmatrix}^{-1}
+    \begin{bmatrix}
+        \mathbf{B}_x^T\\
+        \mathbf{B}_y^T
+    \end{bmatrix}    
+    \right)}
+    &\ge \beta\\[10pt]  
+    \exists \beta>0: \quad
+    \sqrt{\lambda_{min}\left(\mathbf{M}_p^{-1}\left(
+    \mathbf{B}_x \mathbf{A}^{-1} \mathbf{B}_x^T
+    + \mathbf{B}_y \mathbf{A}^{-1} \mathbf{B}_y^T
+    \right)\right)}
+    &\ge \beta \\[10pt]      
+\end{align*}
+
+The minimum eigenvalue $\lambda_{\min}$ serves as a direct numerical test for the stability of our chosen velocity and pressure finite element grids. To verify if a grid combination is safe to use, we look at how $\lambda_{\min}$ behaves as the mesh is refined:
+
+\begin{itemize}
+    \item \textbf{Stable Elements:} If the chosen grid pair is stable, $\lambda_{\min}$ will level off and remain strictly greater than a positive constant ($\lambda_{\min} \ge \beta^2 > 0$) even on very fine meshes. This guarantees a clean, reliable solution.
+    \item \textbf{Unstable Elements:} If the grid pair is unstable, $\lambda_{\min}$ will continuously drop toward zero as the mesh size decreases. This acts as a clear warning that the simulation will suffer from fake pressure spikes and oscillations (often called checkerboard patterns).
+\end{itemize}
+
+
+\subsection{Mass Matrix \texorpdfstring{$\mathbf{M}_p$}{Mp}}
+To check our results numerically we will have to construct the pressure mass matrix as well:
+
+\begin{align*}
+    \left(\mathbf{M}_p\right)_{ij} 
+    = \int_{\Omega} \psi_j(x,y)\psi_i(x,y) \, d\Omega 
+    &= \sum_T \int_{T} \psi_j(x,y)\psi_i(x,y) dxdy
+    = \sum_T \int_{\hat{T}} \hat\psi_j(\xi_1,\xi_2)\hat\psi_i(\xi_1,\xi_2) \left|\mathbf{J}_T\right| \, d\xi_1d\xi_2\\[10pt]
+    &= \sum_T \left|\mathbf{J}_T\right| \int_{\hat{T}} \hat\psi_j \hat\psi_i \, d\xi_1d\xi_2
+\end{align*}
+
+We can now turn to the local mass matrix:
+
+\begin{align*}
+    \left(\mathbf{M}_p^{loc}\right)_{ij}
+\end{align*}
 
 %-------------------------------------------------------------------
 
