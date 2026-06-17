@@ -84,7 +84,19 @@ def calculate_mass_M(p, t,):
     Np = p.shape[0]
     Nt = t.shape[0]
 
-    M_local = None
+    jacobian = np.zeros(shape=(Nt, 2, 2))
+    jacobian[:, 0, :] = p[t[:, 1]] - p[t[:, 0]] 
+    jacobian[:, 1, :] = p[t[:, 2]] - p[t[:, 0]] 
+
+    det_J = jacobian[:, 0, 0] * jacobian[:, 1, 1] - jacobian[:, 0, 1] * jacobian[:, 1, 0]
+
+    M_local = np.einsum("n,ij->nij", 
+                        det_J/24, 
+                        np.array([
+                            [2, 1, 1],
+                            [1, 2, 1],
+                            [1, 1, 2]
+                        ]))
 
     rowidx = np.einsum("ni,j->nij", t[:,0:3], [1,1,1])
     colidx = np.einsum("nj,i->nij", t[:,0:3], [1,1,1])
