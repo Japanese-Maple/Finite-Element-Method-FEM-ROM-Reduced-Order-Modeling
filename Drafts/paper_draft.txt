@@ -19,6 +19,7 @@
 
 % Define your custom color
 \definecolor{deepdarkgreen}{RGB}{53, 94, 59}
+\definecolor{heaven}{RGB}{153, 179, 255}
 \titleformat{\section}
   {\color{deepdarkgreen}\normalfont\Large\bfseries} % format: color + font
   {\thesection}{1em}{} % section number formatting
@@ -185,8 +186,8 @@ To compute integrals efficiently, we map every arbitrary triangle in our mesh on
 
 
 \begin{tcolorbox}[
-    colframe=RoyalBlue, 
-    colback=RoyalBlue!7!white, 
+    colframe=heaven, 
+    colback=heaven!7!white, 
     sharp corners
 ]
 \begin{center}
@@ -219,8 +220,8 @@ $
 We will also take the gradients for easier future derivations and implementations:
 
 \begin{tcolorbox}[
-    colframe=RoyalBlue, 
-    colback=RoyalBlue!7!white, 
+    colframe=heaven, 
+    colback=heaven!7!white, 
     sharp corners
 ]
 \begin{center}
@@ -598,8 +599,8 @@ In numerical partial differential equations, the \textit{Ladyzhenskaya–Babušk
 At the continuous level, the velocity space $V$ and pressure space $Q$ must satisfy:
 
 \begin{tcolorbox}[
-    colframe=RoyalBlue, 
-    colback=RoyalBlue!7!white, 
+    colframe=heaven, 
+    colback=heaven!7!white, 
     sharp corners
 ]
 \begin{center}
@@ -915,7 +916,49 @@ To check our results numerically we will have to construct the pressure mass mat
 We can now turn to the local mass matrix:
 
 \begin{align*}
-    \left(\mathbf{M}_p^{loc}\right)_{ij}
+    \mathbf{M}_p^{loc}
+    &= \left|\mathbf{J}_T\right| \int_{\hat{T}} \hat\psi_j \hat\psi_i \, d\xi_1d\xi_2 
+    = \left|\mathbf{J}_T\right| \int_{\hat{T}}
+    \begin{bmatrix} 
+    \displaystyle
+        \hat{\psi}_1\hat{\psi}_1 & 
+        \hat{\psi}_1\hat{\psi}_2 & 
+        \hat{\psi}_1\hat{\psi}_3 \\ 
+        \hat{\psi}_2\hat{\psi}_1 & 
+        \hat{\psi}_2\hat{\psi}_2 & 
+        \hat{\psi}_2\hat{\psi}_3 \\ 
+        \hat{\psi}_3\hat{\psi}_1 & 
+        \hat{\psi}_3\hat{\psi}_2 & 
+        \hat{\psi}_3\hat{\psi}_3 
+    \end{bmatrix}
+    \, d\xi_1d\xi_2 
+    = \left| 
+    \begin{array}{l}
+         \hat{\psi}_1 = 1 - \xi_1 - \xi_2 \\
+         \hat{\psi}_2 = \xi_1 \\
+         \hat{\psi}_3 = \xi_2
+    \end{array} 
+    \right| = \\[15pt]
+    &= \left|\mathbf{J}_T\right| \int_{0}^{1}\int_{0}^{1-\xi_1}      
+    \begin{bmatrix}
+    \displaystyle
+        (1 - \xi_1 - \xi_2)(1 - \xi_1 - \xi_2) &
+        \xi_1(1 - \xi_1 - \xi_2) &
+        \xi_2(1 - \xi_1 - \xi_2) \\
+        \xi_1(1 - \xi_1 - \xi_2) &
+        \xi_1\xi_1 &
+        \xi_2 \xi_1\\
+        \xi_2(1 - \xi_1 - \xi_2) &
+        \xi_2 \xi_1 &
+        \xi_2\xi_2
+    \end{bmatrix}
+    \, d\xi_2d\xi_1 = \\[10pt]
+    &= \frac{\left|\mathbf{J}_T\right|}{24}
+    \begin{bmatrix}
+        2 & 1 & 1\\
+        1 & 2 & 1\\
+        1 & 1 & 2
+    \end{bmatrix}
 \end{align*}
 
 %-------------------------------------------------------------------
@@ -1108,10 +1151,10 @@ As observed in Figure~\ref{fig:winding_pipe_full}, the velocity streamlines adap
 \begin{tabular}{cccccccc}
 \hline \hline
 \textbf{Level} & \textbf{Mesh Size} & \textbf{Velocity DOFs} & \textbf{Pressure DOFs} & \textbf{$L^2$ Error $\mathbf{u}$} & \textbf{Rate ($r_u$)} & \textbf{$L^2$ Error $p$} & \textbf{Rate ($r_p$)} \\ \hline
-0              & $h_0/1$            & 3,262                  & 442                    & 1.1575e-01                       & —                     & 1.7831e+00               & —                     \\
-1              & $h_0/2$            & 12,506                 & 1,631                  & 6.7977e-02                       & 0.768                 & 9.8238e-01               & 0.860                 \\
-2              & $h_0/4$            & 48,946                 & 6,253                  & 4.3875e-02                       & 0.632                 & 4.9816e-01               & 0.980                 \\
-3              & $h_0/8$            & 193,634                & 24,473                 & 3.1974e-02                       & 0.457                 & 2.3816e-01               & 1.065                 \\ \hline \hline
+0              & $h_0/1$            & 3,262                & 442                    & 5.0936                          & —                  & 11.4430              & —                     \\
+1              & $h_0/2$            & 12,506               & 1,631                  & 2.9176                          & 0.804              & 9.7062               & 0.238                 \\
+2              & $h_0/4$            & 48,946               & 6,253                  & 1.7175                          & 0.765              & 8.5024               & 0.191                 \\
+3              & $h_0/8$            & 193,634              & 24,473                 & 0.97247                         & 0.821              & 6.5659               & 0.373                 \\ \hline \hline
 \end{tabular}%
 }
 \end{table}

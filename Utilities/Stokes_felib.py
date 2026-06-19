@@ -254,6 +254,8 @@ def Stokes_matrix_structure(A_B_M_K_mat, mat_name:str='A/B_x/B_y/M/K',
     """Plots the B matrix values and color codes them."""
 
     A_B_K_coo = A_B_M_K_mat.tocoo()
+    data_abs = np.abs(A_B_K_coo.data)
+    
     fig, mat_plot = plt.subplots(figsize=figsize)
     sc = mat_plot.scatter(A_B_K_coo.col, A_B_K_coo.row, 
                           c=A_B_K_coo.data,      
