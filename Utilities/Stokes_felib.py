@@ -1,12 +1,19 @@
 import numpy as np
 from scipy import sparse
+from scipy.sparse import bmat, linalg
 from scipy.interpolate import griddata
+
 import matplotlib.pyplot as plt
 import matplotlib.tri as tri
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib.patches as patches
-from scipy.sparse import bmat, linalg
-from .Mesh_processing import refine, refine_n_times, fix_orientation, build_stable_mesh, Plot_Initial_Refined_meshes
+from matplotlib.colors import LogNorm
+
+from .Mesh_processing import (refine, 
+                              refine_n_times, 
+                              fix_orientation, 
+                              build_stable_mesh, 
+                              Plot_Initial_Refined_meshes)
 
 #===============================================================================================================================================================
 # MAIN COMPUTATIONAL FUNCTIONS
@@ -67,7 +74,6 @@ def calculate_velocity_A(p, t, kinematic_viscosity):
     #         A_local[:, i, j] = val
     #         A_local[:, j, i] = val
 
-    # INVESTIGATE:
     A_local = np.einsum('mi,txy,nj->tmn', test_function_derivatives, Q_mat, test_function_derivatives)
     A_local *= (kinematic_viscosity / (2.0 * det_J))[:, None, None]
 
@@ -77,7 +83,7 @@ def calculate_velocity_A(p, t, kinematic_viscosity):
     # Return corresponding csc_matrix
     return sparse.csc_matrix((np.ravel(A_local),(np.ravel(rowidx),np.ravel(colidx))),shape=(Np,Np))
 
-#===============================================================================================================================================================
+#_______________________________________________________________________________________________________________________________________________________________
 
 def calculate_mass_M(p, t,):
 
@@ -91,7 +97,7 @@ def calculate_mass_M(p, t,):
     det_J = jacobian[:, 0, 0] * jacobian[:, 1, 1] - jacobian[:, 0, 1] * jacobian[:, 1, 0]
 
     M_local = np.einsum("n,ij->nij", 
-                        det_J/24, 
+                        np.abs(det_J)/24, 
                         np.array([
                             [2, 1, 1],
                             [1, 2, 1],
@@ -103,7 +109,8 @@ def calculate_mass_M(p, t,):
 
     return sparse.csc_matrix((np.ravel(M_local),(np.ravel(rowidx),np.ravel(colidx))),shape=(Np,Np))
 
-#===============================================================================================================================================================
+#_______________________________________________________________________________________________________________________________________________________________
+
 
 def calculate_pressure_B(p_fine, t_fine, p_coarse, t_coarse):
     """Calculates the pressure matrices **Bx**, **By**"""
@@ -153,7 +160,7 @@ def calculate_pressure_B(p_fine, t_fine, p_coarse, t_coarse):
 
     return B_x, B_y
 
-#===============================================================================================================================================================
+#_______________________________________________________________________________________________________________________________________________________________
 
 def calculate_Saddle_point_K(A, B_x, B_y):
     """Calculates the Saddle-Point matrix **K**"""
@@ -169,24 +176,24 @@ def calculate_Saddle_point_K(A, B_x, B_y):
 
     return K_mat
 
-#===============================================================================================================================================================
+#_______________________________________________________________________________________________________________________________________________________________
 
 def calculate_Neumann_BCs():
     return
 
-#===============================================================================================================================================================
+#_______________________________________________________________________________________________________________________________________________________________
 
 def calculate_Dirichlet_BCs(A_mat, lifting_function):
     lf_x, lf_y = lifting_function
     return A_mat @ lf_x, A_mat @ lf_y
 
-#===============================================================================================================================================================
+#_______________________________________________________________________________________________________________________________________________________________
 
 def calculate_pressure_lifting(B_x, B_y, lifting_function):
     lf_x, lf_y = lifting_function
     return B_x @ lf_x + B_y @ lf_y
 
-#===============================================================================================================================================================
+#_______________________________________________________________________________________________________________________________________________________________
 
 def calculate_F(A_mat, B_x, B_y, lifting_function):
     F_x, F_y = calculate_Dirichlet_BCs(A_mat, lifting_function)
@@ -216,7 +223,7 @@ def save_simulation_data(p_fine, e_fine, t_fine,
     
     print(f"Simulation '{name}' data saved.")  
 
-#===============================================================================================================================================================
+#_______________________________________________________________________________________________________________________________________________________________
 
 def load_simulation_data(file_path:str='Solutions/Exchanger_device.npz'):
     """Loads the data from the compressed ```.npz``` format."""
@@ -241,24 +248,25 @@ def load_simulation_data(file_path:str='Solutions/Exchanger_device.npz'):
 # VISUALIZATIONS
 #===============================================================================================================================================================
 
-def Stokes_matrix_structure(A_B_K_mat, mat_name:str='A/B_x/B_y',
+def Stokes_matrix_structure(A_B_M_K_mat, mat_name:str='A/B_x/B_y/M/K',
                             figsize:tuple=(13,13), cmap:str='viridis',
                             savetype:str='jpeg'):
     """Plots the B matrix values and color codes them."""
 
-    A_B_K_coo = A_B_K_mat.tocoo()
+    A_B_K_coo = A_B_M_K_mat.tocoo()
     fig, mat_plot = plt.subplots(figsize=figsize)
     sc = mat_plot.scatter(A_B_K_coo.col, A_B_K_coo.row, 
                           c=A_B_K_coo.data,      
                           s=1,
+                          norm=LogNorm(vmin=data_abs.min() + 1e-16, vmax=data_abs.max()),
                           cmap=cmap,   
                           marker='s',
                           linewidths=0,
                           edgecolors='none', 
                           antialiaseds=False)
     
-    mat_plot.set_xlim([0, A_B_K_mat.shape[1]])
-    mat_plot.set_ylim([0, A_B_K_mat.shape[0]])
+    mat_plot.set_xlim([0, A_B_M_K_mat.shape[1]])
+    mat_plot.set_ylim([0, A_B_M_K_mat.shape[0]])
     mat_plot.invert_yaxis()
 
     divider = make_axes_locatable(mat_plot)
@@ -266,13 +274,13 @@ def Stokes_matrix_structure(A_B_K_mat, mat_name:str='A/B_x/B_y',
     plt.colorbar(sc, cax=cax, label='Matrix Entry Value')  
     
     mat_plot.set_aspect('equal')
-    mat_plot.set_title(f"{mat_name}: {A_B_K_mat.shape[0]}x{A_B_K_mat.shape[1]}")
+    mat_plot.set_title(f"{mat_name}: {A_B_M_K_mat.shape[0]}x{A_B_M_K_mat.shape[1]}")
 
     plt.tight_layout()    
     plt.savefig(f'Outputs/Stokes_{mat_name}_matrix.{savetype}')
     plt.show()
 
-#===============================================================================================================================================================
+#_______________________________________________________________________________________________________________________________________________________________
 
 def K_matrix_structure(K_mat, dim_A, dim_B, 
                        figsize:tuple=(13,13), cmap:str='viridis',
@@ -326,7 +334,7 @@ def K_matrix_structure(K_mat, dim_A, dim_B,
     plt.savefig(f'Outputs/Stokes_K_matrix_labeled.{savetype}')
     plt.show()
 
-#===============================================================================================================================================================
+#_______________________________________________________________________________________________________________________________________________________________
 
 def plot_streamlines(p_fine, t_fine, ux, uy,
                      density:float=3.5, 
@@ -401,7 +409,7 @@ def plot_streamlines(p_fine, t_fine, ux, uy,
     plt.savefig(f'Outputs/Solution_Streamlines.{savetype}')
     plt.show()
 
-#===============================================================================================================================================================
+#_______________________________________________________________________________________________________________________________________________________________
 
 def plot_pressure(p_coarse, t_coarse, p_sol,
                   levels:int=90,
