@@ -1141,7 +1141,79 @@ As observed in Figure~\ref{fig:winding_pipe_full}, the velocity streamlines adap
 \newpage
 \section{Convergence of Numerical Solutions}
 
+\subsection{Embedding Matrix}
+
 \subsection{Convergence Analysis via a Reference Solution on an Exchanger Device}
+
+To investigate the convergence behavior of the P1-iso-P1 discretization, a reference solution was first computed on the finest available mesh, obtained after four uniform refinements of the exchanger-device geometry. Solutions on coarser meshes were then compared against this reference solution.
+
+Since the discrete velocity and pressure spaces have different dimensions on different refinement levels, the solutions cannot be compared directly. Therefore, each coarse-grid solution was recursively transferred to the reference mesh using the finite-element embedding operator returned by \texttt{embeddingForRefined}. For a solution computed on refinement level \(i\), the embedding matrices corresponding to all subsequent refinements were applied successively,
+\[
+\mathbf{u}^{(i)}_{\mathrm{emb}}
+=
+\mathbf{E}_{N}
+\cdots
+\mathbf{E}_{i+1}
+\mathbf{E}_{i}
+\mathbf{u}^{(i)},
+\]
+and analogously for the pressure field. After each embedding step, the mesh was refined and the next embedding matrix was constructed on the newly generated mesh. This recursive procedure produced velocity and pressure approximations living in the same finite-element spaces as the reference solution.
+
+The errors were then defined by
+\[
+\mathbf{e}_{u_x}
+=
+\mathbf{u}_{x,\mathrm{emb}}
+-
+\mathbf{u}_{x,\mathrm{ref}},
+\qquad
+\mathbf{e}_{u_y}
+=
+\mathbf{u}_{y,\mathrm{emb}}
+-
+\mathbf{u}_{y,\mathrm{ref}},
+\]
+and
+\[
+\mathbf{e}_{p}
+=
+\mathbf{p}_{\mathrm{emb}}
+-
+\mathbf{p}_{\mathrm{ref}}.
+\]
+
+Their discrete \(L^2\)-norms were evaluated using the mass matrices on the reference mesh,
+\[
+\|\mathbf{e}_u\|_{L^2(\Omega)}
+=
+\sqrt{
+\mathbf{e}_{u_x}^{T}
+\mathbf{M}_u
+\mathbf{e}_{u_x}
++
+\mathbf{e}_{u_y}^{T}
+\mathbf{M}_u
+\mathbf{e}_{u_y}
+},
+\]
+and
+\[
+\|\mathbf{e}_p\|_{L^2(\Omega)}
+=
+\sqrt{
+\mathbf{e}_{p}^{T}
+\mathbf{M}_p
+\mathbf{e}_{p}
+}.
+\]
+
+Finally, the experimental convergence rates were estimated from two consecutive refinement levels according to
+\[
+r
+=
+\frac{\log(E_h/E_{h/2})}{\log(2)},
+\]
+where \(E_h\) denotes the corresponding \(L^2\)-error.
 
 \begin{table}[H]
 \centering
@@ -1158,5 +1230,7 @@ As observed in Figure~\ref{fig:winding_pipe_full}, the velocity streamlines adap
 \end{tabular}%
 }
 \end{table}
+
+Table~\ref{tab:stokes_convergence} demonstrates a consistent reduction of both the velocity and pressure errors as the mesh is refined, indicating convergence of the numerical solution toward the reference solution. The velocity error decreases from \(5.0936\) on the coarsest mesh to \(0.9725\) on the finest mesh considered, with observed convergence rates ranging between \(0.76\) and \(0.82\). The pressure error also decreases monotonically, although at a slower rate, from \(11.4430\) to \(6.5659\). This behavior is expected, as the pressure approximation is computed on the coarser mesh of the P1-iso-P1 discretization and therefore converges more slowly than the velocity field. Overall, the results confirm that mesh refinement improves the accuracy of both solution components and provide numerical evidence for the convergence of the implemented Stokes finite element method on the exchanger-device geometry.
 
 \end{document}
