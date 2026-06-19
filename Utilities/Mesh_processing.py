@@ -1,12 +1,18 @@
 import numpy as np
+from scipy import sparse
+
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.tri as tri
 
 #=================================================================================================================
+# Main Mesh Processing Functions
+#=================================================================================================================
 
-def refine(p, e, t):
-    """Uniformly refine mesh by subdividing all triangles into 4 congruent ones."""
+def refine(p, e, t): # by Stefan Takacs
+    """
+    Uniformly refine mesh by subdividing all triangles into 4 congruent ones.
+    """
     Np = p.shape[0]
     Ne = e.shape[0]
     Nt = t.shape[0]
@@ -141,6 +147,29 @@ def build_stable_mesh(p, tri_idx):
     e[counts == 1, 2] = 1  # boundary flag
 
     return p, e, t
+
+def embeddingForRefined(p, e, t):  # by Stefan Takacs
+     """
+     Get embedding of Courant element for mesh into uniformly refined mesh.
+     """
+     Np = p.shape[0]
+     Ne = e.shape[0]
+     data = np.zeros( (Np+2*Ne,) )
+     data[:Np] = 1.
+     data[Np:] = .5
+
+     rowidx = np.arange(Np+2*Ne)
+     rowidx[Np:] = np.ravel(np.kron(np.arange(Np,Np+Ne),[1,1]))
+     colidx = np.arange(Np+2*Ne)
+     colidx[Np:] = np.ravel(e[:,0:2])
+     
+     embedding = sparse.csc_matrix((np.ravel(data),(rowidx,colidx)),shape=(Np+Ne,Np))
+     
+     return embedding
+
+#=================================================================================================================
+# Visuals
+#=================================================================================================================
 
 def mesh_df(p, e, t, 
             first_n_entries: int = 9):
