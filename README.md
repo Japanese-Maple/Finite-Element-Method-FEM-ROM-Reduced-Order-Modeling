@@ -140,15 +140,6 @@ B^T
 }
 ```
 
-with
-
-```math
-B=
-\begin{bmatrix}
-B_x & B_y
-\end{bmatrix}.
-```
-
 A strictly positive value of $\beta$ confirms stability of the chosen velocity-pressure pair.
 
 ---
@@ -218,9 +209,8 @@ A strictly positive value of $\beta$ confirms stability of the chosen velocity-p
 │   ├── Winding_pipe.npz
 │   └── Winding_pipe_solution.npz
 ├── Solvers
-│   ├── Exchanger_Device.py
-│   └── __pycache__
-│       └── Exchanger_Device.cpython-312.pyc
+│   └── Exchanger_Device.py
+│   
 └── Utilities
     ├── Mesh_processing.py
     └── Stokes_felib.py
