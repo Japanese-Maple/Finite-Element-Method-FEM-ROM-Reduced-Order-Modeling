@@ -112,54 +112,132 @@ def calculate_mass_M(p, t,):
 #_______________________________________________________________________________________________________________________________________________________________
 
 
-def calculate_pressure_B(p_fine, t_fine, p_coarse, t_coarse):
-    """Calculates the pressure matrices **Bx**, **By**"""
+# def calculate_pressure_B(p_fine, t_fine, p_coarse, t_coarse):
+#     """Calculates the pressure matrices **Bx**, **By**"""
 
-    Np_fine = p_fine.shape[0]
-    Nt_fine = t_fine.shape[0]
+#     Np_fine = p_fine.shape[0]
+#     Nt_fine = t_fine.shape[0]
 
-    Np_coarse = p_coarse.shape[0]
-    Nt_coarse = t_coarse.shape[0]
+#     Np_coarse = p_coarse.shape[0]
+#     Nt_coarse = t_coarse.shape[0]
 
-    jacobian = np.zeros(shape=(Nt_fine, 2, 2))
-    jacobian[:, 0, :] = p_fine[t_fine[:, 1]] - p_fine[t_fine[:, 0]] 
-    jacobian[:, 1, :] = p_fine[t_fine[:, 2]] - p_fine[t_fine[:, 0]] 
+#     jacobian = np.zeros(shape=(Nt_fine, 2, 2))
+#     jacobian[:, 0, :] = p_fine[t_fine[:, 1]] - p_fine[t_fine[:, 0]] 
+#     jacobian[:, 1, :] = p_fine[t_fine[:, 2]] - p_fine[t_fine[:, 0]] 
 
-    test_function_derivatives = np.array([[-1, -1],   # ф1 = 1 - s_1 - s_2
-                                          [ 1,  0],   # ф2 = s_1
-                                          [ 0,  1]])  # ф3 = s_2
+#     test_function_derivatives = np.array([[-1, -1],   # ф1 = 1 - s_1 - s_2
+#                                           [ 1,  0],   # ф2 = s_1
+#                                           [ 0,  1]])  # ф3 = s_2
     
-    # We can now construct local matrices Bx, By for each triangle:
+#     # We can now construct local matrices Bx, By for each triangle:
 
-    Bx_local = np.zeros(shape=(Nt_fine, 3, 3))
-    By_local = np.zeros(shape=(Nt_fine, 3, 3))
+#     Bx_local = np.zeros(shape=(Nt_fine, 3, 3))
+#     By_local = np.zeros(shape=(Nt_fine, 3, 3))
             
-    Bx_vals = 1/6 * (  jacobian[:, 0, 1, None] * test_function_derivatives[:, 1]       
-                     - jacobian[:, 1, 1, None] * test_function_derivatives[:, 0])
+#     Bx_vals = 1/6 * (  jacobian[:, 0, 1, None] * test_function_derivatives[:, 1]       
+#                      - jacobian[:, 1, 1, None] * test_function_derivatives[:, 0])
     
-    By_vals = 1/6 * (  jacobian[:, 1, 0, None] * test_function_derivatives[:, 0] 
-                     - jacobian[:, 0, 0, None] * test_function_derivatives[:, 1])
+#     By_vals = 1/6 * (  jacobian[:, 1, 0, None] * test_function_derivatives[:, 0] 
+#                      - jacobian[:, 0, 0, None] * test_function_derivatives[:, 1])
     
-    Bx_local = np.repeat(Bx_vals[:, :, None], 3, axis=2)
-    By_local = np.repeat(By_vals[:, :, None], 3, axis=2)
+#     Bx_local = np.repeat(Bx_vals[:, :, None], 3, axis=2)
+#     By_local = np.repeat(By_vals[:, :, None], 3, axis=2)
 
-    # We now adress the global matrix problem for Bx and By:
+#     # We now adress the global matrix problem for Bx and By:
 
-    fine_to_coarse_idx = np.repeat(np.arange(Nt_coarse), 4)[:Nt_fine]
-    colidx = np.tile(t_fine[:, :3, None], (1, 1, 3)).ravel()
-    parent_coarse_nodes = t_coarse[fine_to_coarse_idx, :3]
-    rowidx = np.tile(parent_coarse_nodes[:, None, :], (1, 3, 1)).ravel()
+#     fine_to_coarse_idx = np.repeat(np.arange(Nt_coarse), 4)[:Nt_fine]
+#     colidx = np.tile(t_fine[:, :3, None], (1, 1, 3)).ravel()
+#     parent_coarse_nodes = t_coarse[fine_to_coarse_idx, :3]
+#     rowidx = np.tile(parent_coarse_nodes[:, None, :], (1, 3, 1)).ravel()
     
-    B_x = sparse.csc_matrix((np.ravel(Bx_local),
-                            (np.ravel(rowidx), np.ravel(colidx))),
-                            shape=(Np_coarse, Np_fine))
+#     B_x = sparse.csc_matrix((np.ravel(Bx_local),
+#                             (np.ravel(rowidx), np.ravel(colidx))),
+#                             shape=(Np_coarse, Np_fine))
     
-    B_y = sparse.csc_matrix((np.ravel(By_local),
-                            (np.ravel(rowidx), np.ravel(colidx))),
-                            shape=(Np_coarse, Np_fine))
+#     B_y = sparse.csc_matrix((np.ravel(By_local),
+#                             (np.ravel(rowidx), np.ravel(colidx))),
+#                             shape=(Np_coarse, Np_fine))
+
+#     return B_x, B_y
+def calculate_pressure_B(p_fine, t_fine, p_coarse, t_coarse):
+    """Assemble Bx, By for P1-iso-P1 correctly."""
+
+    from scipy import sparse
+    import numpy as np
+
+    Nt_fine = t_fine.shape[0]
+    Nt_coarse = t_coarse.shape[0]
+    Np_fine = p_fine.shape[0]
+    Np_coarse = p_coarse.shape[0]
+
+    # Parent coarse triangle for each fine triangle
+    # valid for your refine() ordering
+    fine_to_coarse = np.repeat(np.arange(Nt_coarse), 4)[:Nt_fine]
+
+    grad_hat = np.array([
+        [-1.0, -1.0],
+        [ 1.0,  0.0],
+        [ 0.0,  1.0]
+    ])
+
+    rowidx_x = []
+    colidx_x = []
+    data_x = []
+
+    rowidx_y = []
+    colidx_y = []
+    data_y = []
+
+    for k in range(Nt_fine):
+        tf = t_fine[k, :3]
+        tc = t_coarse[fine_to_coarse[k], :3]
+
+        pf = p_fine[tf]
+        pc = p_coarse[tc]
+
+        # Fine triangle Jacobian
+        Jf = np.array([
+            [pf[1, 0] - pf[0, 0], pf[2, 0] - pf[0, 0]],
+            [pf[1, 1] - pf[0, 1], pf[2, 1] - pf[0, 1]]
+        ])
+
+        detJ = np.linalg.det(Jf)
+        area = 0.5 * abs(detJ)
+
+        invJf_T = np.linalg.inv(Jf).T
+        grads = (invJf_T @ grad_hat.T).T   # shape (3,2)
+
+        # Centroid of fine triangle
+        q = pf.mean(axis=0)
+
+        # Barycentric coordinates of q in the parent coarse triangle
+        Jc = np.array([
+            [pc[1, 0] - pc[0, 0], pc[2, 0] - pc[0, 0]],
+            [pc[1, 1] - pc[0, 1], pc[2, 1] - pc[0, 1]]
+        ])
+        lam1_lam2 = np.linalg.solve(Jc, q - pc[0])
+        lam0 = 1.0 - lam1_lam2[0] - lam1_lam2[1]
+        psi = np.array([lam0, lam1_lam2[0], lam1_lam2[1]])  # coarse pressure basis values
+
+        # Local blocks: rows = pressure nodes, cols = velocity nodes
+        Bx_loc = -area * np.outer(psi, grads[:, 0])
+        By_loc = -area * np.outer(psi, grads[:, 1])
+
+        rowidx = np.repeat(tc, 3)
+        colidx = np.tile(tf, 3)
+
+        rowidx_x.extend(rowidx)
+        colidx_x.extend(colidx)
+        data_x.extend(Bx_loc.ravel())
+
+        rowidx_y.extend(rowidx)
+        colidx_y.extend(colidx)
+        data_y.extend(By_loc.ravel())
+
+    B_x = sparse.csc_matrix((data_x, (rowidx_x, colidx_x)), shape=(Np_coarse, Np_fine))
+    B_y = sparse.csc_matrix((data_y, (rowidx_y, colidx_y)), shape=(Np_coarse, Np_fine))
 
     return B_x, B_y
-
 #_______________________________________________________________________________________________________________________________________________________________
 
 def calculate_Saddle_point_K(A, B_x, B_y):
