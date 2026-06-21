@@ -26,25 +26,43 @@ where:
 
 These equations model low-Reynolds-number flows where viscous forces dominate inertial effects.
 
----
-
 ## Weak Formulation
 
-The finite element method is based on the variational formulation
+Let
 
 ```math
-\int_\Omega \nu \nabla \mathbf{u} : \nabla \mathbf{v}\, d\Omega
+u = \tilde u - r_g,
+```
+
+where $r_g$ is a lifting function satisfying the non-homogeneous Dirichlet boundary conditions.
+
+The weak formulation reads:
+
+```math
+\int_{\Omega} \nu \nabla u : \nabla v \, d\Omega
 -
-\int_\Omega p(\nabla\cdot\mathbf{v})\, d\Omega
+\int_{\Omega} p \, (\nabla \cdot v)\, d\Omega
 =
-\int_{\Gamma_N} h\cdot\mathbf{v}\, d\Gamma
+\int_{\Gamma_N} h \cdot v \, d\Gamma
+-
+\int_{\Omega} \nu \nabla r_g : \nabla v \, d\Omega,
+\qquad \forall v \in X.
 ```
 
 ```math
--\int_\Omega q(\nabla\cdot\mathbf{u})\, d\Omega = 0
+-\int_{\Omega} q \, (\nabla \cdot u)\, d\Omega
+=
+\int_{\Omega} q \, (\nabla \cdot r_g)\, d\Omega,
+\qquad \forall q \in Q.
 ```
 
-for all admissible test functions $\mathbf{v}$ and $q$.
+where
+
+- $u$ is the velocity field,
+- $p$ is the pressure,
+- $u$ is the kinematic viscosity,
+- $h$ denotes Neumann boundary data,
+- $r_g$ is the lifting function associated with the Dirichlet boundary conditions.
 
 ---
 
@@ -223,3 +241,5 @@ A strictly positive value of $\beta$ confirms stability of the chosen velocity-p
 **Oleksandr Samoliuk**  
 Johannes Kepler University Linz  
 Summer Semester 2026
+
+(Huge thanks to **Stefan Takacs** for providing guidence and support)
