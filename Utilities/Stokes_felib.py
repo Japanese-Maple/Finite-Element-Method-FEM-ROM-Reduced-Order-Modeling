@@ -5,8 +5,7 @@ from scipy.sparse import bmat, linalg
 from .Mesh_processing import (refine, 
                               refine_n_times, 
                               fix_orientation, 
-                              build_stable_mesh, 
-                              Plot_Initial_Refined_meshes)
+                              build_stable_mesh)
 
 #===============================================================================================================================================================
 # MAIN COMPUTATIONAL FUNCTIONS
