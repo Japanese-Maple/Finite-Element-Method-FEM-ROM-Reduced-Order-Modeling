@@ -1,10 +1,9 @@
 import sys
 import os
 
-script_dir = os.path.dirname(os.path.abspath(__file__))  # Points to .../FEM/Solvers
-fem_dir = os.path.dirname(script_dir)                    # Points to .../FEM
+script_dir = os.path.dirname(os.path.abspath(__file__))
+fem_dir = os.path.dirname(script_dir)
 
-# 2. Fix the Python path import safely
 if fem_dir not in sys.path:
     sys.path.append(fem_dir)
 
@@ -16,18 +15,23 @@ from Utilities.Mesh_processing import *
 
 # Mesh
 
-p_coarse, e_coarse, t_coarse = Plot_Initial_Refined_meshes(data_path='Meshes/exchanger_device_altered_mesh_data.npz', 
-                                                           num_of_refinements=3, 
-                                                           figsize=(16,4), plot=False)
+p_coarse, e_coarse, t_coarse = Plot_Initial_Refined_meshes(
+    data_path='Meshes/exchanger_device_altered_mesh_data.npz',
+    num_of_refinements=3,
+    figsize=(16, 4),
+    plot=False
+)
 p_fine, e_fine, t_fine = refine(p_coarse, e_coarse, t_coarse)
 
 #==============================================================================================================================
 
-def compute_U_P_solution(p_fine, t_fine, e_fine, p_coarse, t_coarse):
+def compute_U_P_solution(p_fine, t_fine, e_fine, p_coarse, t_coarse,
+                         inlet_velocity: float = 1.0,
+                         kinematic_viscosity: float = 0.01):
 
     Nv = p_fine.shape[0]
     Np = p_coarse.shape[0]
-    eps = 1e-17
+    eps = 1e-10   # 1e-17 is too tight for float arithmetic after refinement
 
     xmin = p_fine[:, 0].min()
     xmax = p_fine[:, 0].max()
@@ -35,74 +39,101 @@ def compute_U_P_solution(p_fine, t_fine, e_fine, p_coarse, t_coarse):
     inlet_idx  = np.where(np.abs(p_fine[:, 0] - xmin) < eps)[0]
     outlet_idx = np.where(np.abs(p_fine[:, 0] - xmax) < eps)[0]
 
-    # Extract all physical boundary nodes from edge flags
     boundary_nodes = np.unique(e_fine[e_fine[:, 2] > 0, 0:2])
-
-    # Exclude inlet and outlet from solid walls
     v_wall_idx = np.setdiff1d(boundary_nodes, np.concatenate([inlet_idx, outlet_idx]))
+    dirichlet_nodes = np.unique(np.concatenate([inlet_idx, v_wall_idx]))
 
+    # ------------------------------------------------------------------
+    # FIX 1: inlet velocity is +1 (flow goes right, i.e. in +x direction)
+    # ------------------------------------------------------------------
     lf_x = np.zeros(Nv)
     lf_y = np.zeros(Nv)
-    lf_x[inlet_idx] = -1.0  
+    lf_x[inlet_idx] = inlet_velocity          # was -1.0  ← sign error
 
-    A = calculate_velocity_A(p_fine, t_fine, kinematic_viscosity=0.01)
+    # ------------------------------------------------------------------
+    # FIX 2: build F from the lifting correction, not from calculate_F
+    #   The homogeneous problem for u0 = u - g gives:
+    #     F[:Nv]   = -A  @ lf_x
+    #     F[2Nv:]  = -Bx @ lf_x   (divergence correction)
+    # ------------------------------------------------------------------
+    A  = calculate_velocity_A(p_fine, t_fine, kinematic_viscosity)
     Bx, By = calculate_pressure_B(p_fine, t_fine, p_coarse, t_coarse)
-    F = calculate_F(A, Bx, By, (lf_x, lf_y))
-    K = calculate_Saddle_point_K(A, Bx, By)
+    K  = calculate_Saddle_point_K(A, Bx, By)
+
+    F = np.zeros(2 * Nv + Np)
+    F[:Nv]    -= A.dot(lf_x)
+    F[2*Nv:]  -= Bx.dot(lf_x)   # lf_y = 0, so By term vanishes
+
     print(f"K is of the shape {K.shape}")
 
-    dirichlet_nodes = np.unique(np.concatenate([inlet_idx, v_wall_idx]))
+    # ------------------------------------------------------------------
+    # Dirichlet BCs for u0 (homogeneous: u0 = 0 at inlet + walls)
+    # ------------------------------------------------------------------
     K = K.tolil()
 
     for i in dirichlet_nodes:
-        # X-velocity tracks
-        K[i, :] = 0.0
-        K[i, i] = 1.0
-        F[i] = 0.0  
+        K[i, :]  = 0.0
+        K[i, i]  = 1.0
+        F[i]     = 0.0
 
-        # Y-velocity tracks (shifted by Nv)
         iy = i + Nv
         K[iy, :] = 0.0
         K[iy, iy] = 1.0
-        F[iy] = 0.0  
+        F[iy]    = 0.0
 
-    is_outlet_p = (np.abs(p_coarse[:, 0] - xmax) < eps)
-    p_ref_idx = np.where(is_outlet_p)[0]
-    p_ref = p_ref_idx[0]
-    p_row = 2 * Nv + p_ref
+    # ------------------------------------------------------------------
+    # FIX 3: pin pressure row only — do NOT zero the column
+    #   Zeroing K[:, p_row] breaks saddle-point symmetry and corrupts
+    #   the velocity rows that couple to that pressure DOF.
+    # ------------------------------------------------------------------
+    is_outlet_p = np.abs(p_coarse[:, 0] - xmax) < eps
+    p_ref_idx   = np.where(is_outlet_p)[0]
 
+    if len(p_ref_idx) == 0:
+        p_ref_idx = [np.argmin(np.abs(p_coarse[:, 0] - xmax))]
+        print("Warning: no coarse node exactly on outlet x; using nearest.")
+
+    p_row = 2 * Nv + p_ref_idx[0]
     K[p_row, :] = 0.0
+    # K[:, p_row] = 0.0   ← removed: this was destroying symmetry
     K[p_row, p_row] = 1.0
-    F[p_row] = 0.0
+    F[p_row] = 0.0         # p = 0 at outlet reference node
 
+    # ------------------------------------------------------------------
+    # Solve
+    # ------------------------------------------------------------------
     print("Solving lifted system...")
     sol = spsolve(K.tocsc(), F)
 
     if np.any(np.isnan(sol)):
-        print("Warning: NaNs detected!")
+        raise RuntimeError("NaNs in solution — check mesh connectivity and BCs.")
 
-    u0_x = sol[:Nv]
-    u0_y = sol[Nv:2*Nv]
+    u0_x     = sol[:Nv]
+    u0_y     = sol[Nv:2*Nv]
     pressure = sol[2*Nv:]
 
+    # Recover full velocity
     ux = u0_x + lf_x
     uy = u0_y + lf_y
 
+    # ------------------------------------------------------------------
+    # Diagnostics
+    # ------------------------------------------------------------------
     div = Bx @ ux + By @ uy
-    print("||div|| =", np.linalg.norm(div))
-    print("max div =", np.max(np.abs(div)))
+    print(f"||div u|| = {np.linalg.norm(div):.3e}")
+    print(f"max |div| = {np.max(np.abs(div)):.3e}")
+    print(f"pressure  min/mean/max = "
+          f"{pressure.min():.4f} / {pressure.mean():.4f} / {pressure.max():.4f}")
 
     return ux, uy, pressure
 
 #==============================================================================================================================
 
-# Solution computation and logging
-
 if __name__ == "__main__":
-    
+
     ux, uy, p_sol = compute_U_P_solution(p_fine, t_fine, e_fine, p_coarse, t_coarse)
 
-    save_simulation_data(p_fine, e_fine, t_fine, 
-                        p_coarse, e_coarse, t_coarse, 
-                        ux, uy, p_sol,
-                        name='Exchanger_device')
+    save_simulation_data(p_fine, e_fine, t_fine,
+                         p_coarse, e_coarse, t_coarse,
+                         ux, uy, p_sol,
+                         name='Exchanger_device')

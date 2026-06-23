@@ -1,10 +1,6 @@
 import numpy as np
 from scipy import sparse
 
-import pandas as pd
-import matplotlib.pyplot as plt
-import matplotlib.tri as tri
-
 #=================================================================================================================
 # Main Mesh Processing Functions
 #=================================================================================================================
@@ -167,90 +163,3 @@ def embeddingForRefined(p, e, t):  # by Stefan Takacs
      
      return embedding
 
-#=================================================================================================================
-# Visuals
-#=================================================================================================================
-
-def mesh_df(p, e, t, 
-            first_n_entries: int = 9):
-
-    print(f"p is of shape: {p.shape}\ne is of shape: {e.shape}\nt is of shape: {t.shape}")
-
-    df_p = pd.DataFrame(p[:first_n_entries,:], columns=["x1", "x2"])
-    df_e = pd.DataFrame(e[:first_n_entries,:], columns=["Node1", "Node2", "Flag"])
-    df_t = pd.DataFrame(t[:first_n_entries,:], columns=["V1", "V2", "V3", "E1", "E2", "E3", "Sub"])
-
-    df = pd.concat([df_p, df_e, df_t], axis=1, keys=['p', 'e', 't'])
-
-    def highlight_by_category(col):
-        category = col.name[0] 
-        
-        if category == 'p':
-            return ["background-color: #73BA40; color: black"] * len(col) # Blue
-        elif category == 'e':
-            return ["background-color: #96D44A; color: black"] * len(col) # Green
-        elif category == 't':
-            return ["background-color: #34623F; color: white"] * len(col) # Red
-        return [""] * len(col)
-
-    return (
-        df.style
-          .apply(highlight_by_category, axis=0)
-          .hide(axis="index")
-          .set_table_styles([
-              {'selector': 'th', 'props': [('text-align', 'center'), 
-                                           ('border', '1px solid #ddd'),
-                                           ('padding', '8px')]}
-          ])
-          .format(precision=4)
-    )
-
-def Plot_Initial_Refined_meshes(data_path: str, num_of_refinements: int = 3,
-                                plot: bool=True,
-                                figsize: tuple=(16,8),
-                                savetype:str="jpeg"):
-    """
-    Plots the initial blender mesh and the refined counterpart. 
-    Additionally outputs the refined mesh arrays.
-    """
-    
-    data = np.load(data_path)
-    p_raw = data['p']
-    tri_idx = data['t_raw']
-    data.close()
-
-    p, e, t = build_stable_mesh(p_raw, tri_idx)
-    p, e, t = refine_n_times(p, e, t, number_of_refinements=num_of_refinements)
-
-    fig, ax = plt.subplots(nrows=1, ncols=2, figsize=figsize)
-
-    ax[0].set_title('Initial Mesh')
-    ax[1].set_title('Refined Mesh')
-
-    ax[0].triplot(p_raw[:, 0], p_raw[:, 1], tri_idx, color='blue', lw=1, label='Edges')
-    ax[0].plot(p_raw[:, 0], p_raw[:, 1], 'ro', markersize=3, label='Nodes')
-
-    ax[1].triplot(p[:, 0], p[:, 1], t[:, :3], color='blue', lw=0.3, label='Edges')
-    ax[1].plot(p[:, 0], p[:, 1], 'ro', markersize=1, label='Nodes')
-
-    for i in [0,1]:
-        x_min, x_max = ax[i].get_xlim()
-        y_min, y_max = ax[i].get_ylim()
-
-        margin_x = np.abs(x_max-x_min)*0.05
-        margin_y = np.abs(y_max-y_min)*0.05
-
-        ax[i].set_xlim(x_min - margin_x, x_max + margin_x)
-        ax[i].set_ylim(y_min - margin_y, y_max + margin_y)
-        ax[i].set_aspect('equal')
-        ax[i].legend()
- 
-    plt.suptitle(f'Initial Mesh ({len(p_raw)} Nodes, {len(tri_idx)} Triangles) --> Refined Mesh ({len(p)} Nodes, {len(t)} Triangles)')
-    plt.savefig(f"Outputs/Mesh_Refinement.{savetype}")
-
-    if plot==True:        
-        plt.show()
-    else:
-        plt.close()
-
-    return (p, e, t)
