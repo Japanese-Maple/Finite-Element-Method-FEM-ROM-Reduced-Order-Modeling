@@ -462,84 +462,236 @@ After calculating the vector-matrix-vector products explicitly using the constan
 
 Please note that the matrices $\mathbf{Q}$ and $\mathbf{A}^{loc}$ are symmetric. This structural property is highly advantageous for optimizing numerical calculations.
 
-\subsection{Pressure Matrices \texorpdfstring{$\mathbf{B}_x$ and $\mathbf{B}_y$}{Bx and By}}
+%----------------------------------------------------------------------------
 
-To enforce the incompressibility constraint and couple the pressure field to the momentum equations, we discretize the divergence of the velocity field field mixed with the pressure test space. This interaction is governed by the bilinear form:
+% \subsection{Pressure Matrices \texorpdfstring{$\mathbf{B}_x$ and $\mathbf{B}_y$}{Bx and By}}
 
-\begin{tcolorbox}[
-    colframe=ForestGreen, 
-    colback=ForestGreen!7!white, 
-    sharp corners
-]
+% To enforce the incompressibility constraint and couple the pressure field to the momentum equations, we discretize the divergence of the velocity field field mixed with the pressure test space. This interaction is governed by the bilinear form:
+
+% \begin{tcolorbox}[
+%     colframe=ForestGreen, 
+%     colback=ForestGreen!7!white, 
+%     sharp corners
+% ]
+% \begin{center}
+%    $\displaystyle -\int_{\Omega} p \, (\nabla \cdot v)\, d\Omega$ 
+% \end{center}
+% \end{tcolorbox}
+
+% By splitting the velocity test function into its component channels $\mathbf{v} = [v_x, v_y]^T$ and expanding the fields using the mixed finite element bases ($\phi_i$ for velocity and $\psi_j$ for pressure), this integral yields two distinct rectangular coupling matrices. The matrix $\mathbf{B}_x$ maps the $x$-velocity components to the pressure nodes, while $\mathbf{B}_y$ handles the $y$-velocity components, forming the weak gradient and divergence operations in our discrete system.
+
+% \[
+% \begin{aligned}
+% \displaystyle
+% -\int_{\Omega} p \, (\nabla \cdot v)\, d\Omega 
+% &= \left| 
+% \begin{array}{c}
+%      p(x,y) \approx \sum_{j=1}^{N_p}p_j \psi_j \\[15pt]
+%      \mathbf{v}(x,y) =\begin{bmatrix}
+%        v_x(x,y) \\
+%        v_y(x,y) 
+%    \end{bmatrix}
+% \end{array}\right|
+% = - \int_\Omega \sum_{j=1}^{N_p}p_j \psi_j
+% \begin{bmatrix}
+%     \frac{\partial}{\partial x}\\[1pt]
+%     \frac{\partial}{\partial y}
+% \end{bmatrix}
+% \cdot 
+% \begin{bmatrix}
+%     v_x\\[7pt]
+%     v_y
+% \end{bmatrix} \, d\Omega = \\[10pt]
+% &= \left[\sum_{j=1}^{N_p}p_j \cdot \left(-\int_\Omega \psi_j \frac{\partial v_x}{\partial x} \, d_\Omega\right)\right] + \left[ \sum_{j=1}^{N_p}p_j \cdot \left(-\int_\Omega \psi_j \frac{\partial v_y}{\partial y} \, d_\Omega\right)\right]
+% = \left|\begin{array}{c}
+%     v_x(x,y) = \phi_i(x,y)\\
+%     v_y(x,y) = \phi_i(x,y)
+% \end{array}\right| =\\[10pt]
+% &= \sum_{j=1}^{N_p}p_j \cdot \left(-\int_\Omega \psi_j \frac{\partial \phi_i}{\partial x} \, d_\Omega\right) + \sum_{j=1}^{N_p}p_j \cdot \left(-\int_\Omega \psi_j \frac{\partial \phi_i}{\partial y} \, d_\Omega\right)
+% = \sum_{j=1}^{N_p}p_j \left(B_x\right)_{ij} + \sum_{j=1}^{N_p}p_j \left(B_y\right)_{ij}=\\[10pt]
+% &= \mathbf{B}_x^T\mathbf{p} + \mathbf{B}_y^T\mathbf{p}
+% =\left[
+% \begin{array}{cc}
+%     \mathbf{B}_x^T & \mathbf{B}_y^T
+% \end{array}
+% \right] 
+% \begin{bmatrix}
+%     \mathbf{p}\\
+%     \mathbf{p}
+% \end{bmatrix}
+% \end{aligned}
+% \]
+
+% We are now moving on to computing the local $\mathbf{B}^{loc}_x$ and $\mathbf{B}^{loc}_y$ using the help of our earlier derived gradient of $\phi_i(x,y)$ (~\ref{eq:grad_for_Bx_By}):
+
+% \[
+% \begin{aligned}
+%     \left(\mathbf{B}^{loc}_x\right)_{ij} 
+%     &= -\int_\Omega \psi_j \frac{\partial \phi_i}{\partial x} \, d_\Omega\\[10pt]
+%     \left(\mathbf{B}^{loc}_x\right)_{ij} 
+%     &= - \int_{\hat{T}} \hat{\psi}_j\frac{1}{\left|\mathbf{J}_T\right|}\left((y_3 - y_1)\frac{\partial \hat{\phi} _i}{\partial \xi _1} - (y_2 - y_1)\frac{\partial \hat{\phi} _i}{\partial \xi _2}\right)\left|\mathbf{J}_T\right| \, d\xi_1 d\xi_2 = \\[10pt]
+%     &= \left((y_2 - y_1)\frac{\partial \hat{\phi} _i}{\partial \xi _2} - (y_3 - y_1)\frac{\partial \hat{\phi} _i}{\partial \xi _1}\right) \int_{\hat{T}} \hat{\psi}_j \, d\xi_1 d\xi_2 = \frac{1}{6}\left((y_2 - y_1)\frac{\partial \hat{\phi} _i}{\partial \xi _2} - (y_3 - y_1)\frac{\partial \hat{\phi} _i}{\partial \xi _1}\right)
+%     \\[10pt]
+%     \left(\mathbf{B}^{loc}_y\right)_{ij} 
+%     &= -\int_\Omega \psi_j \frac{\partial \phi_i}{\partial x} \, d_\Omega\\[10pt]
+%     \left(\mathbf{B}^{loc}_y\right)_{ij} 
+%     &= - \int_{\hat{T}} \hat{\psi}_j\frac{1}{\left|\mathbf{J}_T\right|}\left(-(x_3 - x_1)\frac{\partial \hat{\phi} _i}{\partial \xi _1} + (x_2 - x_1)\frac{\partial \hat{\phi} _i}{\partial \xi _2}\right)\left|\mathbf{J}_T\right| \, d\xi_1 d\xi_2 = \\[10pt]
+%     &= \left((x_3 - x_1)\frac{\partial \hat{\phi} _i}{\partial \xi _1} - (x_2 - x_1)\frac{\partial \hat{\phi} _i}{\partial \xi _2}\right) \int_{\hat{T}} \hat{\psi}_j \, d\xi_1 d\xi_2 = \frac{1}{6}\left((x_3 - x_1)\frac{\partial \hat{\phi} _i}{\partial \xi _1} - (x_2 - x_1)\frac{\partial \hat{\phi} _i}{\partial \xi _2}\right)\\[10pt]
+% \end{aligned}
+% \]
+
+
+
+
+
+
+
+%----------------------------------------------------------------------------
+
+\subsection{Pressure Matrices \texorpdfstring{$\mathbf{B}_x$ and $\mathbf{B}_y$}{Bx and By} on the \texorpdfstring{$P_1$-iso-$P_1$}{P1-iso-P1} Macro-Element}
+
+Unlike a conforming equal-order pairing, the pressure basis function $\psi_j$ lives on the \emph{macro} triangle
+$K \in \mathcal{T}_H$, while the velocity basis functions $\phi_i$ live on the four \emph{child} triangles
+$T_1,T_2,T_3,T_4 \in \mathcal{T}_h$ obtained by connecting the edge midpoints of $K$. Consequently the coupling
+integral must be split into a sum over the four children, and the pressure hat function must be re-expressed
+in each child's own local reference coordinates. Getting this restriction right is the entire content of the
+$P_1$-iso-$P_1$ assembly.
+
+\subsubsection{Macro Geometry and Node Labeling}
+
+Let the macro triangle $K$ have vertices $X_1,X_2,X_3$ with global barycentric (pressure) basis
+$\psi_1=\lambda_1,\ \psi_2=\lambda_2,\ \psi_3=\lambda_3$. The uniform refinement introduces the three edge
+midpoints
+\[
+X_4 = \tfrac{1}{2}(X_1+X_2), \qquad X_5 = \tfrac{1}{2}(X_2+X_3), \qquad X_6 = \tfrac{1}{2}(X_1+X_3),
+\]
+giving the four congruent children
+\[
+T_1=(X_1,X_4,X_6), \quad T_2=(X_4,X_2,X_5), \quad T_3=(X_6,X_5,X_3), \quad T_4=(X_4,X_5,X_6),
+\]
+matching the $\ell_1,\ell_2,\ell_3,\ell_4$ labeling of your Figure 1. Velocity has one degree of freedom at
+each of the six points $X_1,\dots,X_6$; pressure has one degree of freedom at each of $X_1,X_2,X_3$ only.
+
+\subsubsection{The Bilinear Form, Split Over Children}
+
+\begin{tcolorbox}[colframe=ForestGreen, colback=ForestGreen!7!white, sharp corners]
 \begin{center}
-   $\displaystyle -\int_{\Omega} p \, (\nabla \cdot v)\, d\Omega$ 
+   $\displaystyle -\int_{K} p \, (\nabla \cdot v)\, d\Omega$
 \end{center}
 \end{tcolorbox}
 
-By splitting the velocity test function into its component channels $\mathbf{v} = [v_x, v_y]^T$ and expanding the fields using the mixed finite element bases ($\phi_i$ for velocity and $\psi_j$ for pressure), this integral yields two distinct rectangular coupling matrices. The matrix $\mathbf{B}_x$ maps the $x$-velocity components to the pressure nodes, while $\mathbf{B}_y$ handles the $y$-velocity components, forming the weak gradient and divergence operations in our discrete system.
-
 \[
 \begin{aligned}
-\displaystyle
--\int_{\Omega} p \, (\nabla \cdot v)\, d\Omega 
-&= \left| 
+-\int_{K} \psi_j \frac{\partial \phi_i}{\partial x} \, d\Omega
+&= -\sum_{m=1}^{4} \int_{T_m} \psi_j \frac{\partial \phi_i}{\partial x} \, d\Omega
+= \left|
 \begin{array}{c}
-     p(x,y) \approx \sum_{j=1}^{N_p}p_j \psi_j \\[15pt]
-     \mathbf{v}(x,y) =\begin{bmatrix}
-       v_x(x,y) \\
-       v_y(x,y) 
-   \end{bmatrix}
-\end{array}\right|
-= - \int_\Omega \sum_{j=1}^{N_p}p_j \psi_j
-\begin{bmatrix}
-    \frac{\partial}{\partial x}\\[1pt]
-    \frac{\partial}{\partial y}
-\end{bmatrix}
-\cdot 
-\begin{bmatrix}
-    v_x\\[7pt]
-    v_y
-\end{bmatrix} \, d\Omega = \\[10pt]
-&= \left[\sum_{j=1}^{N_p}p_j \cdot \left(-\int_\Omega \psi_j \frac{\partial v_x}{\partial x} \, d_\Omega\right)\right] + \left[ \sum_{j=1}^{N_p}p_j \cdot \left(-\int_\Omega \psi_j \frac{\partial v_y}{\partial y} \, d_\Omega\right)\right]
-= \left|\begin{array}{c}
-    v_x(x,y) = \phi_i(x,y)\\
-    v_y(x,y) = \phi_i(x,y)
-\end{array}\right| =\\[10pt]
-&= \sum_{j=1}^{N_p}p_j \cdot \left(-\int_\Omega \psi_j \frac{\partial \phi_i}{\partial x} \, d_\Omega\right) + \sum_{j=1}^{N_p}p_j \cdot \left(-\int_\Omega \psi_j \frac{\partial \phi_i}{\partial y} \, d_\Omega\right)
-= \sum_{j=1}^{N_p}p_j \left(B_x\right)_{ij} + \sum_{j=1}^{N_p}p_j \left(B_y\right)_{ij}=\\[10pt]
-&= \mathbf{B}_x^T\mathbf{p} + \mathbf{B}_y^T\mathbf{p}
-=\left[
-\begin{array}{cc}
-    \mathbf{B}_x^T & \mathbf{B}_y^T
+    \phi_i \big|_{T_m} \text{ is affine } \Rightarrow \nabla \phi_i \text{ is \emph{constant} on } T_m \\[3pt]
+    \text{(zero unless } i \text{ is one of } T_m\text{'s three local nodes)}
 \end{array}
-\right] 
-\begin{bmatrix}
-    \mathbf{p}\\
-    \mathbf{p}
-\end{bmatrix}
+\right| \\[10pt]
+&= -\sum_{m=1}^{4} \left(\frac{\partial \phi_i}{\partial x}\right)_{T_m} \int_{T_m} \psi_j \, d\Omega
+= -\sum_{m=1}^{4} \left(\frac{\partial \phi_i}{\partial x}\right)_{T_m} \left|\mathbf{J}_{T_m}\right| \int_{\hat{T}} \hat\psi_j^{(m)}(\xi_1,\xi_2) \, d\xi_1 d\xi_2
 \end{aligned}
 \]
 
-We are now moving on to computing the local $\mathbf{B}^{loc}_x$ and $\mathbf{B}^{loc}_y$ using the help of our earlier derived gradient of $\phi_i(x,y)$ (~\ref{eq:grad_for_Bx_By}):
+Everything now hinges on evaluating $\hat\psi_j^{(m)}$: the pressure hat function $\psi_j$, pulled back onto
+child $T_m$'s \emph{own} reference triangle.
+
+\subsubsection{Restricting the Macro Pressure Basis to a Child}
+
+Because $\lambda_j$ is affine on all of $K$, its restriction to the affine sub-triangle $T_m$ is again affine,
+and an affine function on $\hat{T}$ is \emph{uniquely} determined by its three nodal values — which is exactly
+what $\hat\phi_1,\hat\phi_2,\hat\phi_3$ interpolate. Hence:
+
+\begin{tcolorbox}[colframe=heaven, colback=heaven!7!white, sharp corners]
+\[
+\hat\psi_j^{(m)}(\xi_1,\xi_2) \;=\; \lambda_j\!\left(V_1^{(m)}\right)\hat\phi_1(\xi_1,\xi_2)
++ \lambda_j\!\left(V_2^{(m)}\right)\hat\phi_2(\xi_1,\xi_2)
++ \lambda_j\!\left(V_3^{(m)}\right)\hat\phi_3(\xi_1,\xi_2)
+\]
+\end{tcolorbox}
+
+where $V_1^{(m)},V_2^{(m)},V_3^{(m)}$ are the three vertices of child $T_m$ (each one of $X_1,\dots,X_6$), and
+$\lambda_j(\cdot)$ is evaluated using the known barycentric values
+\[
+\lambda_1: (X_1,\dots,X_6) \mapsto \left(1,0,0,\tfrac12,0,\tfrac12\right), \qquad
+\lambda_2 \mapsto \left(0,1,0,\tfrac12,\tfrac12,0\right), \qquad
+\lambda_3 \mapsto \left(0,0,1,0,\tfrac12,\tfrac12\right).
+\]
+
+\subsubsection{Exact Integration of the Restricted Pressure Basis}
+
+Since $\int_{\hat T}\hat\phi_k \, d\xi_1 d\xi_2 = \tfrac16$ for $k=1,2,3$ (same identity used for $\mathbf{M}_p^{loc}$
+in \S 5.6), linearity of the integral gives the closed form:
+
+\[
+w_j^{(m)} \;:=\; \int_{\hat T} \hat\psi_j^{(m)}(\xi_1,\xi_2)\, d\xi_1 d\xi_2
+= \frac{1}{6}\Big[\lambda_j\!\left(V_1^{(m)}\right) + \lambda_j\!\left(V_2^{(m)}\right) + \lambda_j\!\left(V_3^{(m)}\right)\Big]
+\]
+
+Evaluating this for all four children and all three pressure nodes yields:
+
+\begin{table}[H]
+\centering
+\caption{Pressure-basis integration weights $w_j^{(m)}$ per child sub-triangle.}
+\begin{tabular}{lccc}
+\hline\hline
+\textbf{Child $T_m$} & $w_1^{(m)}$ (for $\psi_1$) & $w_2^{(m)}$ (for $\psi_2$) & $w_3^{(m)}$ (for $\psi_3$) \\
+\hline
+$T_1 = (X_1,X_4,X_6)$ & $1/3$  & $1/12$ & $1/12$ \\
+$T_2 = (X_4,X_2,X_5)$ & $1/12$ & $1/3$  & $1/12$ \\
+$T_3 = (X_6,X_5,X_3)$ & $1/12$ & $1/12$ & $1/3$  \\
+$T_4 = (X_4,X_5,X_6)$ & $1/6$  & $1/6$  & $1/6$  \\
+\hline\hline
+\end{tabular}
+\end{table}
+
+Note that only the central child $T_4$ reproduces a uniform $\tfrac16$ across all three pressure nodes — this
+is the case that (incorrectly) generalizes to the whole macro-element in a naive equal-order assembly. The
+corner children $T_1,T_2,T_3$ are systematically weighted \emph{unevenly}: each favors its own corner pressure
+node by a factor of $4$ relative to the other two.
+
+\subsubsection{Local Child Matrices \texorpdfstring{$\mathbf{B}_x^{(m)}, \mathbf{B}_y^{(m)}$}{Bx(m), By(m)}}
+
+Reusing the gradient identity of eq.~\eqref{eq:grad_for_Bx_By}, but built from child $T_m$'s own vertex
+coordinates $(x_1^{(m)},y_1^{(m)}),(x_2^{(m)},y_2^{(m)}),(x_3^{(m)},y_3^{(m)})$ and Jacobian $\mathbf{J}_{T_m}$:
 
 \[
 \begin{aligned}
-    \left(\mathbf{B}^{loc}_x\right)_{ij} 
-    &= -\int_\Omega \psi_j \frac{\partial \phi_i}{\partial x} \, d_\Omega\\[10pt]
-    \left(\mathbf{B}^{loc}_x\right)_{ij} 
-    &= - \int_{\hat{T}} \hat{\psi}_j\frac{1}{\left|\mathbf{J}_T\right|}\left((y_3 - y_1)\frac{\partial \hat{\phi} _i}{\partial \xi _1} - (y_2 - y_1)\frac{\partial \hat{\phi} _i}{\partial \xi _2}\right)\left|\mathbf{J}_T\right| \, d\xi_1 d\xi_2 = \\[10pt]
-    &= \left((y_2 - y_1)\frac{\partial \hat{\phi} _i}{\partial \xi _2} - (y_3 - y_1)\frac{\partial \hat{\phi} _i}{\partial \xi _1}\right) \int_{\hat{T}} \hat{\psi}_j \, d\xi_1 d\xi_2 = \frac{1}{6}\left((y_2 - y_1)\frac{\partial \hat{\phi} _i}{\partial \xi _2} - (y_3 - y_1)\frac{\partial \hat{\phi} _i}{\partial \xi _1}\right)
-    \\[10pt]
-    \left(\mathbf{B}^{loc}_y\right)_{ij} 
-    &= -\int_\Omega \psi_j \frac{\partial \phi_i}{\partial x} \, d_\Omega\\[10pt]
-    \left(\mathbf{B}^{loc}_y\right)_{ij} 
-    &= - \int_{\hat{T}} \hat{\psi}_j\frac{1}{\left|\mathbf{J}_T\right|}\left(-(x_3 - x_1)\frac{\partial \hat{\phi} _i}{\partial \xi _1} + (x_2 - x_1)\frac{\partial \hat{\phi} _i}{\partial \xi _2}\right)\left|\mathbf{J}_T\right| \, d\xi_1 d\xi_2 = \\[10pt]
-    &= \left((x_3 - x_1)\frac{\partial \hat{\phi} _i}{\partial \xi _1} - (x_2 - x_1)\frac{\partial \hat{\phi} _i}{\partial \xi _2}\right) \int_{\hat{T}} \hat{\psi}_j \, d\xi_1 d\xi_2 = \frac{1}{6}\left((x_3 - x_1)\frac{\partial \hat{\phi} _i}{\partial \xi _1} - (x_2 - x_1)\frac{\partial \hat{\phi} _i}{\partial \xi _2}\right)\\[10pt]
+\left(\mathbf{B}_x^{(m)}\right)_{ij}
+&= -\left(\frac{\partial \phi_i}{\partial x}\right)_{T_m} \left|\mathbf{J}_{T_m}\right| \, w_j^{(m)}
+= -\Big[(y_2^{(m)}-y_1^{(m)})\tfrac{\partial \hat\phi_i}{\partial \xi_2} - (y_3^{(m)}-y_1^{(m)})\tfrac{\partial \hat\phi_i}{\partial \xi_1}\Big] w_j^{(m)}, \\[10pt]
+\left(\mathbf{B}_y^{(m)}\right)_{ij}
+&= -\left(\frac{\partial \phi_i}{\partial y}\right)_{T_m} \left|\mathbf{J}_{T_m}\right| \, w_j^{(m)}
+= \Big[(x_3^{(m)}-x_1^{(m)})\tfrac{\partial \hat\phi_i}{\partial \xi_1} - (x_2^{(m)}-x_1^{(m)})\tfrac{\partial \hat\phi_i}{\partial \xi_2}\Big] w_j^{(m)},
 \end{aligned}
 \]
 
+for $i \in \{1,2,3\}$ indexing $T_m$'s three \emph{local} velocity nodes, and $j\in\{1,2,3\}$ indexing $K$'s three
+macro pressure nodes. Notice the $\left|\mathbf{J}_{T_m}\right|$ cancels exactly against the $\tfrac{1}{|\mathbf{J}_{T_m}|}$
+buried inside the gradient — the Jacobian determinant never actually survives into the final formula, exactly
+as in your original (correct) derivation of $\mathbf{B}^{loc}$ for a single conforming triangle. What changes
+is \emph{only} $w_j^{(m)}$, replacing your uniform constant $\tfrac16$.
 
+\subsubsection{Assembly Into the Macro-Local Block}
 
+Each child contributes a $3\times 3$ block coupling its own 3 local velocity nodes to the 3 macro pressure
+nodes. These are scatter-added into a single $6\times 3$ macro-local matrix indexed by the six fine velocity
+nodes $(X_1,\dots,X_6)$:
+
+\[
+\mathbf{B}_x^{K} \in \mathbb{R}^{6\times 3}, \qquad
+\left(\mathbf{B}_x^{K}\right)_{I(m,i),\,j} \mathrel{+}= \left(\mathbf{B}_x^{(m)}\right)_{ij}, \qquad m=1,\dots,4,
+\]
+
+where $I(m,i)$ maps $T_m$'s local node $i$ to its global fine-mesh index in $\{1,\dots,6\}$ (with the three
+midpoint nodes $X_4,X_5,X_6$ each shared by exactly two children and therefore receiving two additive
+contributions). $\mathbf{B}_y^K$ is assembled identically. These macro-local blocks are then assembled over
+all $K\in\mathcal{T}_H$ into the global $\mathbf{B}_x,\mathbf{B}_y \in \mathbb{R}^{N_p\times N_v}$ exactly as
+in \S 5.1.
+
+%----------------------------------------------------------------------------
 
 \subsection{Saddle-Point Block Matrix \texorpdfstring{$\mathbf{K}$}{K}}
 
@@ -1089,14 +1241,14 @@ For each case study, the numerical results are presented in a vertical sequence 
     \centering
     \begin{subfigure}[b]{0.85\textwidth}  
         \centering
-        \includegraphics[width=\textwidth]{Exchanger Device/Solution_Streamlines.jpeg}
+        \includegraphics[width=\textwidth]{Exchanger Device/Solution_Streamlines.png}
         \caption{Computed Velocity Streamline Vector Paths.}
         \label{fig:exchanger_streamlines}
     \end{subfigure}
     \\ \vspace{0.4cm}                     
     \begin{subfigure}[b]{0.85\textwidth} 
         \centering
-        \includegraphics[width=\textwidth]{Exchanger Device/Pressure_Tricontourf.jpeg}
+        \includegraphics[width=\textwidth]{Exchanger Device/Pressure_Tricontourf.png}
         \caption{Continuous Piecewise Linear Pressure Contour Map.}
         \label{fig:exchanger_pressure}
     \end{subfigure}
@@ -1109,8 +1261,7 @@ Furthermore, the simulation clearly shows fluid swirls (recirculation zones) ins
 \[
 -\nu \Delta \mathbf{u} + \nabla p = \mathbf{0}
 \]
-As a result, the main stream takes the path of least resistance through the primary central channels. However, as this fast-moving core flow sweeps past the stagnant fluid trapped in the side cavities, it shears against it. This boundary shear transfers momentum across the open gap, dragging the passive fluid along and creating slow, circular vortices inside the extensions. Capturing these delicate stagnation zones and sharp shear interfaces demonstrates that the mixed finite element solver handles localized flow splitting accurately without generating numerical instability.
-
+As a result, the main stream takes the path of least resistance through the primary central channels. However, as this fast-moving core flow sweeps past the stagnant fluid trapped in the side cavities, it shears against it. This boundary shear transfers momentum across the open gap, dragging the passive fluid along and creating slow, circular vortices inside the extensions. The computed velocity field exhibits well-resolved stagnation regions and sharp shear interfaces, indicating stable and physically consistent behavior of the mixed finite element discretization.
 
 \subsection{Winding Pipe}
 The \textit{Winding Pipe} models an internal distribution manifold containing geometric obstacles designed to alter flow paths. This setup presents a challenging test case for mass conservation preservation across sudden transitions.
@@ -1143,9 +1294,28 @@ As observed in Figure~\ref{fig:winding_pipe_full}, the velocity streamlines adap
 
 \subsection{Embedding Matrix}
 
-\subsection{Convergence Analysis via a Reference Solution on an Exchanger Device}
+\subsection{Convergence Analysis via a Reference Solution on a Z-Shaped Channel Device}
 
-To investigate the convergence behavior of the P1-iso-P1 discretization, a reference solution was first computed on the finest available mesh, obtained after four uniform refinements of the exchanger-device geometry. Solutions on coarser meshes were then compared against this reference solution.
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[b]{0.495\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{Z-Mesh/pressure_z_mesh.png}
+        \caption{Continuous Piecewise Linear Pressure Contour Map.}
+        \label{fig:z-mesh_pressure}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{Z-Mesh/flow_z_mesh.png}
+        \caption{Computed Velocity Streamline Vector Paths.}
+        \label{fig:z-mesh_streamlines}
+    \end{subfigure}
+    \caption{Complete Stokes flow simulation inside the \textit{Z-Shaped Channel Device} domain.}
+    \label{fig:winding_pipe_full}
+\end{figure}
+
+To investigate the convergence behavior of the P1-iso-P1 discretization, a reference solution was first computed on the finest available mesh, obtained after seven uniform refinements of the initial domain geometry. Solutions on coarser meshes were then compared against this reference solution.
 
 Since the discrete velocity and pressure spaces have different dimensions on different refinement levels, the solutions cannot be compared directly. Therefore, each coarse-grid solution was recursively transferred to the reference mesh using the finite-element embedding operator returned by \texttt{embeddingForRefined}. For a solution computed on refinement level \(i\), the embedding matrices corresponding to all subsequent refinements were applied successively,
 \[
@@ -1182,17 +1352,17 @@ and
 \mathbf{p}_{\mathrm{ref}}.
 \]
 
-Their discrete \(L^2\)-norms were evaluated using the mass matrices on the reference mesh,
+Their discrete \(L^2\)-norms were evaluated using the mass matrices corresponding to the fine and coarse spaces on the reference mesh,
 \[
 \|\mathbf{e}_u\|_{L^2(\Omega)}
 =
 \sqrt{
 \mathbf{e}_{u_x}^{T}
-\mathbf{M}_u
+\mathbf{M}_{\mathrm{fine}}
 \mathbf{e}_{u_x}
 +
 \mathbf{e}_{u_y}^{T}
-\mathbf{M}_u
+\mathbf{M}_{\mathrm{fine}}
 \mathbf{e}_{u_y}
 },
 \]
@@ -1202,7 +1372,7 @@ and
 =
 \sqrt{
 \mathbf{e}_{p}^{T}
-\mathbf{M}_p
+\mathbf{M}_{\mathrm{coarse}}
 \mathbf{e}_{p}
 }.
 \]
@@ -1217,20 +1387,23 @@ where \(E_h\) denotes the corresponding \(L^2\)-error.
 
 \begin{table}[H]
 \centering
-\caption{Stokes FEM Error Convergence Analysis on the Exchanger Device Geometric Mesh.}
+\caption{Stokes FEM Error Convergence Analysis on the Z-Shaped Channel Geometric Mesh.}
 \label{tab:stokes_convergence}
 \resizebox{\textwidth}{!}{% <-- Scales table down to fit perfectly within the text margins
 \begin{tabular}{cccccccc}
 \hline \hline
 \textbf{Level} & \textbf{Mesh Size} & \textbf{Velocity DOFs} & \textbf{Pressure DOFs} & \textbf{$L^2$ Error $\mathbf{u}$} & \textbf{Rate ($r_u$)} & \textbf{$L^2$ Error $p$} & \textbf{Rate ($r_p$)} \\ \hline
-0              & $h_0/1$            & 3,262                & 442                    & 5.0936                          & —                  & 11.4430              & —                     \\
-1              & $h_0/2$            & 12,506               & 1,631                  & 2.9176                          & 0.804              & 9.7062               & 0.238                 \\
-2              & $h_0/4$            & 48,946               & 6,253                  & 1.7175                          & 0.765              & 8.5024               & 0.191                 \\
-3              & $h_0/8$            & 193,634              & 24,473                 & 0.97247                         & 0.821              & 6.5659               & 0.373                 \\ \hline \hline
+0 & $h_0/1$  & 114     & 20    & 39.5400 & —     & 4826.3 & —     \\
+1 & $h_0/2$  & 370     & 57    & 27.2150 & 0.539 & 4804.2 & 0.007 \\
+2 & $h_0/4$  & 1314    & 185   & 11.9470 & 1.188 & 4725.1 & 0.024 \\
+3 & $h_0/8$  & 4930    & 657   & 4.9725  & 1.265 & 4571.5 & 0.048 \\
+4 & $h_0/16$ & 19074   & 2465  & 2.3325  & 1.092 & 4266.3 & 0.100 \\
+5 & $h_0/32$ & 75010   & 9537  & 1.2049  & 0.953 & 3657.0 & 0.222 \\
+6 & $h_0/64$ & 297474  & 37505 & 0.7305  & 0.722 & 2438.1 & 0.585 \\ \hline \hline
 \end{tabular}%
 }
 \end{table}
 
-Table~\ref{tab:stokes_convergence} demonstrates a consistent reduction of both the velocity and pressure errors as the mesh is refined, indicating convergence of the numerical solution toward the reference solution. The velocity error decreases from \(5.0936\) on the coarsest mesh to \(0.9725\) on the finest mesh considered, with observed convergence rates ranging between \(0.76\) and \(0.82\). The pressure error also decreases monotonically, although at a slower rate, from \(11.4430\) to \(6.5659\). This behavior is expected, as the pressure approximation is computed on the coarser mesh of the P1-iso-P1 discretization and therefore converges more slowly than the velocity field. Overall, the results confirm that mesh refinement improves the accuracy of both solution components and provide numerical evidence for the convergence of the implemented Stokes finite element method on the exchanger-device geometry.
+Table~\ref{tab:stokes_convergence} demonstrates a consistent reduction of both the velocity and pressure errors as the mesh is refined, indicating convergence of the numerical solution toward the reference solution. The velocity error decreases from $39.5400$ on the coarsest mesh to $0.7305$ on the finest mesh considered, with observed convergence rates oscillating between $0.54$ and $1.27$. The pressure error also decreases, although at a significantly slower rate, from $4826.3$ to $2438.1$. This behavior is expected, as the pressure approximation is computed on the coarser mesh of the P1-iso-P1 discretization and therefore converges more slowly than the velocity field. Additionally, the re-entrant corners inherent to this specific device geometry introduce flow singularities that naturally degrade the theoretical asymptotic convergence rates. Overall, the results confirm that mesh refinement improves the accuracy of both solution components and provide numerical evidence for the convergence of the implemented Stokes finite element method.
 
 \end{document}
