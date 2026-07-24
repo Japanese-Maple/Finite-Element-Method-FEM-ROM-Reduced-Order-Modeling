@@ -11,6 +11,8 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib.patches as patches
 from matplotlib.colors import LogNorm
 
+import cmasher as cmr
+
 from .Mesh_processing import (build_stable_mesh,
                               refine_n_times)
 
@@ -353,7 +355,6 @@ def plot_streamlines(p_fine, t_fine, ux, uy,
         cmap=cmap
     )
     
-    # plt.colorbar(cf, ax=ax, label='$\\|\\vec{u}\\|$')
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="3%", pad=0.1)
     plt.colorbar(cf, cax=cax, label='$\\|\\vec{u}\\|$')
@@ -415,4 +416,95 @@ def plot_pressure(p_coarse, t_coarse, p_sol,
 
     plots.set_title('Pressure $\\mathbf{P}$')
     plt.savefig(f'Outputs/Pressure_Tricontourf.{savetype}')
+    plt.show()
+
+#_______________________________________________________________________________________________________________________________________________________________
+
+def plot_viscosity(p, t, e, nu_T,
+                   n_levels=15,
+                   figsize=(23, 10),
+                   savetype='png'):
+    
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=figsize)
+
+    triangulation = tri.Triangulation(
+        p[:, 0],
+        p[:, 1],
+        t[:, :3]
+    )
+
+    if len(nu_T) == len(t):
+        nu_nodes = np.zeros(len(p))
+        node_counts = np.zeros(len(p))
+        for elem_idx, nodes in enumerate(t[:, :3]):
+            nu_nodes[nodes] += nu_T[elem_idx]
+            node_counts[nodes] += 1
+        nu_nodes /= np.maximum(node_counts, 1)
+    else:
+        nu_nodes = nu_T
+
+    # 1
+    cf1 = ax1.tripcolor(
+        triangulation,
+        cmap=cmr.ocean,
+        facecolors=nu_T,
+        shading='flat'
+    )
+    
+    ax1.set_aspect('equal')
+    ax1.set_xlabel('x')
+    ax1.set_ylabel('y')
+    ax1.set_title('Viscosity Field (continious)')
+
+    divider1 = make_axes_locatable(ax1)
+    cax1 = divider1.append_axes("right", size="3%", pad=0.1)
+    
+    min_val1, max_val1 = np.min(nu_T), np.max(nu_T)
+    ticks1 = np.linspace(min_val1, max_val1, 5)
+    cb1 = fig.colorbar(cf1, cax=cax1, label=r'$\nu$', ticks=ticks1)
+    cb1.ax.set_yticklabels([f'{val:.1f}' for val in ticks1])
+
+    # 2
+    levels = np.linspace(np.min(nu_nodes), np.max(nu_nodes), n_levels)
+
+    cf2 = ax2.tricontourf(
+        triangulation,
+        nu_nodes,
+        levels=levels,
+        cmap=cf1.get_cmap()
+    )
+    
+    cs2 = ax2.tricontour(
+        triangulation,
+        nu_nodes,
+        levels=levels,
+        colors='w',
+        linewidths=0.5        
+    )
+
+    ax2.clabel(cs2, inline=True, fontsize=9, fmt='%.3f')
+
+    ax2.set_aspect('equal')
+    ax2.set_xlabel('x')
+    ax2.set_ylabel('y')
+    ax2.set_title('Viscosity Field (countour plot)')
+
+    divider2 = make_axes_locatable(ax2)
+    cax2 = divider2.append_axes("right", size="3%", pad=0.1)
+    
+    min_val2, max_val2 = np.min(nu_nodes), np.max(nu_nodes)
+    ticks2 = np.linspace(min_val2, max_val2, 5)
+    cb2 = fig.colorbar(cf2, cax=cax2, label=r'$\nu$', ticks=ticks2)
+    cb2.ax.set_yticklabels([f'{val:.1f}' for val in ticks2])
+
+    flag1_mask = (e[:, -1] == 1)
+    boundary_edges = e[flag1_mask, :2].astype(int)
+    x_coords = p[boundary_edges, 0].T
+    y_coords = p[boundary_edges, 1].T
+
+    for ax in [ax1, ax2]:
+        ax.plot(x_coords, y_coords, color='b', linewidth=1.5, label='Boundary')
+
+    plt.tight_layout()
+    plt.savefig(f'Outputs/Viscosity.{savetype}', bbox_inches='tight')
     plt.show()
