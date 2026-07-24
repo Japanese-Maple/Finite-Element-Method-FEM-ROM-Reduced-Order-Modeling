@@ -40,7 +40,7 @@ p_fine, e_fine, t_fine = refine(p_coarse, e_coarse, t_coarse)
 # Viscosity Sampling via Latin Hypercube 
 #────────────────────────────────────────────────────────────────────────────────────────────────
 
-num_snapshots = 10
+num_snapshots = 100
 nu_min, nu_max = 10.0, 200.0
 alpha = 1
 

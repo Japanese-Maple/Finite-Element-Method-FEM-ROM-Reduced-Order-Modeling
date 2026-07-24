@@ -305,3 +305,58 @@ def viscosity_field(p, power: float = 2.0, eps: float = 1e-12):
 def viscosity(x, y, subdomain=None, power: float = 4.0):
     """Scalar version — for single-point evaluation."""
     return float(viscosity_field(np.array([[x, y]]), power=power)[0])
+
+
+import numpy as np
+import plotly.graph_objects as go
+
+def plot_viscosity_3d(
+    p,
+    t,
+    nu_T,
+    z_scale=1.0,
+    title="Viscosity Field"
+):
+
+    triangles = t[:, :3]
+
+    Nv = p.shape[0]
+
+    nu_nodes = np.zeros(Nv)
+    counts = np.zeros(Nv)
+
+    for k, tri_nodes in enumerate(triangles):
+        nu_nodes[tri_nodes] += nu_T[k]
+        counts[tri_nodes] += 1
+
+    nu_nodes /= np.maximum(counts, 1)
+
+    fig = go.Figure(
+        data=[
+            go.Mesh3d(
+                x=p[:,0],
+                y=p[:,1],
+                z=z_scale * nu_nodes,
+                i=triangles[:,0],
+                j=triangles[:,1],
+                k=triangles[:,2],
+                intensity=nu_nodes,
+                colorscale="Viridis",
+                showscale=True,
+                colorbar=dict(title="ν")
+            )
+        ]
+    )
+
+    fig.update_layout(
+        title=title,
+        scene=dict(
+            xaxis_title="x",
+            yaxis_title="y",
+            zaxis_title="ν"
+        ),
+        width=1200/2,
+        height=900/2
+    )
+
+    fig.show()
