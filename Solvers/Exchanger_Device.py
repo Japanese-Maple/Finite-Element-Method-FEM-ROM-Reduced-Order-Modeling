@@ -10,8 +10,9 @@ if fem_dir not in sys.path:
 from scipy.sparse.linalg import spsolve
 from Utilities.Stokes_felib import *
 from Utilities.Mesh_processing import *
+from Utilities.Plot_functions import *
 
-#==============================================================================================================================
+#_____________________________________________________________________________________________________________________________
 
 # Mesh
 
@@ -23,7 +24,7 @@ p_coarse, e_coarse, t_coarse = Plot_Initial_Refined_meshes(
 )
 p_fine, e_fine, t_fine = refine(p_coarse, e_coarse, t_coarse)
 
-#==============================================================================================================================
+#_____________________________________________________________________________________________________________________________
 
 def compute_U_P_solution(p_fine, t_fine, e_fine, p_coarse, t_coarse,
                          inlet_velocity: float = 1.0,
@@ -31,7 +32,7 @@ def compute_U_P_solution(p_fine, t_fine, e_fine, p_coarse, t_coarse,
 
     Nv = p_fine.shape[0]
     Np = p_coarse.shape[0]
-    eps = 1e-10   # 1e-17 is too tight for float arithmetic after refinement
+    eps = 1e-10   
 
     xmin = p_fine[:, 0].min()
     xmax = p_fine[:, 0].max()
@@ -43,32 +44,20 @@ def compute_U_P_solution(p_fine, t_fine, e_fine, p_coarse, t_coarse,
     v_wall_idx = np.setdiff1d(boundary_nodes, np.concatenate([inlet_idx, outlet_idx]))
     dirichlet_nodes = np.unique(np.concatenate([inlet_idx, v_wall_idx]))
 
-    # ------------------------------------------------------------------
-    # FIX 1: inlet velocity is +1 (flow goes right, i.e. in +x direction)
-    # ------------------------------------------------------------------
     lf_x = np.zeros(Nv)
     lf_y = np.zeros(Nv)
-    lf_x[inlet_idx] = inlet_velocity          # was -1.0  ← sign error
+    lf_x[inlet_idx] = inlet_velocity          
 
-    # ------------------------------------------------------------------
-    # FIX 2: build F from the lifting correction, not from calculate_F
-    #   The homogeneous problem for u0 = u - g gives:
-    #     F[:Nv]   = -A  @ lf_x
-    #     F[2Nv:]  = -Bx @ lf_x   (divergence correction)
-    # ------------------------------------------------------------------
     A  = calculate_velocity_A(p_fine, t_fine, kinematic_viscosity)
     Bx, By = calculate_pressure_B(p_fine, t_fine, p_coarse, t_coarse)
     K  = calculate_Saddle_point_K(A, Bx, By)
 
     F = np.zeros(2 * Nv + Np)
     F[:Nv]    -= A.dot(lf_x)
-    F[2*Nv:]  -= Bx.dot(lf_x)   # lf_y = 0, so By term vanishes
+    F[2*Nv:]  -= Bx.dot(lf_x)  
 
     print(f"K is of the shape {K.shape}")
 
-    # ------------------------------------------------------------------
-    # Dirichlet BCs for u0 (homogeneous: u0 = 0 at inlet + walls)
-    # ------------------------------------------------------------------
     K = K.tolil()
 
     for i in dirichlet_nodes:
@@ -81,11 +70,6 @@ def compute_U_P_solution(p_fine, t_fine, e_fine, p_coarse, t_coarse,
         K[iy, iy] = 1.0
         F[iy]    = 0.0
 
-    # ------------------------------------------------------------------
-    # FIX 3: pin pressure row only — do NOT zero the column
-    #   Zeroing K[:, p_row] breaks saddle-point symmetry and corrupts
-    #   the velocity rows that couple to that pressure DOF.
-    # ------------------------------------------------------------------
     is_outlet_p = np.abs(p_coarse[:, 0] - xmax) < eps
     p_ref_idx   = np.where(is_outlet_p)[0]
 
@@ -95,13 +79,9 @@ def compute_U_P_solution(p_fine, t_fine, e_fine, p_coarse, t_coarse,
 
     p_row = 2 * Nv + p_ref_idx[0]
     K[p_row, :] = 0.0
-    # K[:, p_row] = 0.0   ← removed: this was destroying symmetry
     K[p_row, p_row] = 1.0
-    F[p_row] = 0.0         # p = 0 at outlet reference node
+    F[p_row] = 0.0        
 
-    # ------------------------------------------------------------------
-    # Solve
-    # ------------------------------------------------------------------
     print("Solving lifted system...")
     sol = spsolve(K.tocsc(), F)
 
@@ -112,13 +92,9 @@ def compute_U_P_solution(p_fine, t_fine, e_fine, p_coarse, t_coarse,
     u0_y     = sol[Nv:2*Nv]
     pressure = sol[2*Nv:]
 
-    # Recover full velocity
     ux = u0_x + lf_x
     uy = u0_y + lf_y
 
-    # ------------------------------------------------------------------
-    # Diagnostics
-    # ------------------------------------------------------------------
     div = Bx @ ux + By @ uy
     print(f"||div u|| = {np.linalg.norm(div):.3e}")
     print(f"max |div| = {np.max(np.abs(div)):.3e}")
@@ -127,7 +103,8 @@ def compute_U_P_solution(p_fine, t_fine, e_fine, p_coarse, t_coarse,
 
     return ux, uy, pressure
 
-#==============================================================================================================================
+
+#_____________________________________________________________________________________________________________________________
 
 if __name__ == "__main__":
 

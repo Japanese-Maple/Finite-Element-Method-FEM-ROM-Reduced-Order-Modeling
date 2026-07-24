@@ -420,7 +420,7 @@ def plot_pressure(p_coarse, t_coarse, p_sol,
 
 #_______________________________________________________________________________________________________________________________________________________________
 
-def plot_viscosity(p, t, e, nu_T,
+def plot_viscosity(p, t, e, nu_T, nu_KNOTS,
                    n_levels=15,
                    figsize=(23, 10),
                    savetype='png'):
@@ -433,24 +433,33 @@ def plot_viscosity(p, t, e, nu_T,
         t[:, :3]
     )
 
-    if len(nu_T) == len(t):
-        nu_nodes = np.zeros(len(p))
-        node_counts = np.zeros(len(p))
-        for elem_idx, nodes in enumerate(t[:, :3]):
-            nu_nodes[nodes] += nu_T[elem_idx]
-            node_counts[nodes] += 1
-        nu_nodes /= np.maximum(node_counts, 1)
-    else:
-        nu_nodes = nu_T
+    nu_nodes = np.bincount(t[:, :3].ravel(), weights=np.repeat(nu_T, 3), minlength=len(p)) / \
+               np.maximum(np.bincount(t[:, :3].ravel(), minlength=len(p)), 1)
 
-    # 1
+    # 1 ────────────────────────────────────────────────────────────────────────────────────────────────
     cf1 = ax1.tripcolor(
         triangulation,
         cmap=cmr.ocean,
         facecolors=nu_T,
-        shading='flat'
+        shading='flat',
+        zorder = 0
     )
+
+    nu_pts  = nu_KNOTS['pts']
+    nu_vals = nu_KNOTS['vals']
+
+    ax1.scatter(nu_pts[:, 0], nu_pts[:, 1], s=550, c='cyan', edgecolors='r', linewidths=1,
+                zorder = 3)
     
+    for (x, y), val in zip(nu_pts, nu_vals):
+        ax1.text(
+            x, y, 
+            s=f"{val:.0f}",
+            ha='center', va='center',
+            fontsize=15,
+            zorder=5
+        )
+
     ax1.set_aspect('equal')
     ax1.set_xlabel('x')
     ax1.set_ylabel('y')
@@ -464,7 +473,7 @@ def plot_viscosity(p, t, e, nu_T,
     cb1 = fig.colorbar(cf1, cax=cax1, label=r'$\nu$', ticks=ticks1)
     cb1.ax.set_yticklabels([f'{val:.1f}' for val in ticks1])
 
-    # 2
+    # 2 ────────────────────────────────────────────────────────────────────────────────────────────────
     levels = np.linspace(np.min(nu_nodes), np.max(nu_nodes), n_levels)
 
     cf2 = ax2.tricontourf(
@@ -497,6 +506,7 @@ def plot_viscosity(p, t, e, nu_T,
     cb2 = fig.colorbar(cf2, cax=cax2, label=r'$\nu$', ticks=ticks2)
     cb2.ax.set_yticklabels([f'{val:.1f}' for val in ticks2])
 
+    # Edge ────────────────────────────────────────────────────────────────────────────────────────────────
     flag1_mask = (e[:, -1] == 1)
     boundary_edges = e[flag1_mask, :2].astype(int)
     x_coords = p[boundary_edges, 0].T
@@ -504,6 +514,9 @@ def plot_viscosity(p, t, e, nu_T,
 
     for ax in [ax1, ax2]:
         ax.plot(x_coords, y_coords, color='b', linewidth=1.5, label='Boundary')
+
+        ax.set_xlim(-2.70, 2.70)
+        ax.set_ylim(-1.15, 1.15)
 
     plt.tight_layout()
     plt.savefig(f'Outputs/Viscosity.{savetype}', bbox_inches='tight')
