@@ -456,7 +456,7 @@ def plot_viscosity(p, t, e, nu_T, nu_KNOTS,
             x, y, 
             s=f"{val:.0f}",
             ha='center', va='center',
-            fontsize=15,
+            fontsize=11,
             zorder=5
         )
 

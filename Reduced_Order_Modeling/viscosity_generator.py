@@ -3,6 +3,7 @@ import os
 
 import numpy as np
 from scipy.stats import qmc
+from tqdm import tqdm
 
 #────────────────────────────────────────────────────────────────────────────────────────────────
 
@@ -39,7 +40,7 @@ p_fine, e_fine, t_fine = refine(p_coarse, e_coarse, t_coarse)
 # Viscosity Sampling via Latin Hypercube 
 #────────────────────────────────────────────────────────────────────────────────────────────────
 
-num_snapshots = 2
+num_snapshots = 10
 nu_min, nu_max = 10.0, 200.0
 alpha = 1
 
@@ -57,11 +58,7 @@ sampler = qmc.LatinHypercube(d=5)
 sample = sampler.random(n=num_snapshots)
 nu_parameters = qmc.scale(sample, [nu_min]*5, [nu_max]*5)
 
-for i, nu_vec_ith in enumerate(nu_parameters):
-
-    _NU = nu_vec_ith
-
-    def viscosity_field(p, power: float = 2.0, eps: float = 1e-12):
+def viscosity_field(p, nu_knots, knots=_KNOTS, power: float = 2.0, eps: float = 1e-12):
         """
         Inverse-distance weighted viscosity at every node in p (N, 2).
         power=2  is the standard Shepard interpolation.
@@ -75,17 +72,22 @@ for i, nu_vec_ith in enumerate(nu_parameters):
         hit   = exact.any(axis=1)                       # (N,)   bool
 
         w  = 1.0 / np.where(d < eps, eps, d) ** power   # (N, K)
-        nu = (w * _NU[None, :]).sum(axis=1) / w.sum(axis=1)
+        nu = (w * nu_knots[None, :]).sum(axis=1) / w.sum(axis=1)
 
         if hit.any():
             knot_idx = np.argmax(exact[hit], axis=1)
-            nu[hit]  = _NU[knot_idx]
+            nu[hit]  = nu_knots[knot_idx]
 
-        return nu                                       # (N,)
+        return nu  
 
-    def viscosity(x, y, subdomain=None, power: float = 4.0):
-        """Scalar version — for single-point evaluation."""
-        return float(viscosity_field(np.array([[x, y]]), power=power)[0])
+for i, nu_vec_ith in enumerate(tqdm(nu_parameters, desc="Generating viscosity snapshots")):
+
+    def viscosity(x, y, *args, power: float = 4.0):
+        """
+        Accepts x, y, and any extra arguments (*args) passed by evalOnTrigs,
+        such as subdomain markers t[i, 6:].
+        """
+        return float(viscosity_field(np.array([[x, y]]), nu_vec_ith, power=power)[0])
 
     VT_snapshots[i, :] = evalOnTrigs(p_fine, t_fine, viscosity)
 
