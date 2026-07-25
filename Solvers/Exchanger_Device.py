@@ -25,7 +25,6 @@ p_coarse, e_coarse, t_coarse = Plot_Initial_Refined_meshes(
 p_fine, e_fine, t_fine = refine(p_coarse, e_coarse, t_coarse)
 
 #_____________________________________________________________________________________________________________________________
-
 def compute_U_P_solution(p_fine, t_fine, e_fine, p_coarse, t_coarse,
                          inlet_velocity: float = 1.0,
                          kinematic_viscosity: float = 0.01):
@@ -56,7 +55,7 @@ def compute_U_P_solution(p_fine, t_fine, e_fine, p_coarse, t_coarse,
     F[:Nv]    -= A.dot(lf_x)
     F[2*Nv:]  -= Bx.dot(lf_x)  
 
-    print(f"K is of the shape {K.shape}")
+    # print(f"K is of the shape {K.shape}")
 
     K = K.tolil()
 
@@ -75,14 +74,17 @@ def compute_U_P_solution(p_fine, t_fine, e_fine, p_coarse, t_coarse,
 
     if len(p_ref_idx) == 0:
         p_ref_idx = [np.argmin(np.abs(p_coarse[:, 0] - xmax))]
-        print("Warning: no coarse node exactly on outlet x; using nearest.")
+        # print("Warning: no coarse node exactly on outlet x; using nearest.")
 
     p_row = 2 * Nv + p_ref_idx[0]
     K[p_row, :] = 0.0
     K[p_row, p_row] = 1.0
     F[p_row] = 0.0        
 
-    print("Solving lifted system...")
+    # ------------------------------------------------------------------
+    # Solve
+    # ------------------------------------------------------------------
+    # print("Solving lifted system...")
     sol = spsolve(K.tocsc(), F)
 
     if np.any(np.isnan(sol)):
@@ -92,17 +94,20 @@ def compute_U_P_solution(p_fine, t_fine, e_fine, p_coarse, t_coarse,
     u0_y     = sol[Nv:2*Nv]
     pressure = sol[2*Nv:]
 
+    # Recover full velocity
     ux = u0_x + lf_x
     uy = u0_y + lf_y
 
-    div = Bx @ ux + By @ uy
-    print(f"||div u|| = {np.linalg.norm(div):.3e}")
-    print(f"max |div| = {np.max(np.abs(div)):.3e}")
-    print(f"pressure  min/mean/max = "
-          f"{pressure.min():.4f} / {pressure.mean():.4f} / {pressure.max():.4f}")
+    # ------------------------------------------------------------------
+    # Diagnostics
+    # ------------------------------------------------------------------
+    # div = Bx @ ux + By @ uy
+    # print(f"||div u|| = {np.linalg.norm(div):.3e}")
+    # print(f"max |div| = {np.max(np.abs(div)):.3e}")
+    # print(f"pressure  min/mean/max = "
+    #       f"{pressure.min():.4f} / {pressure.mean():.4f} / {pressure.max():.4f}")
 
     return ux, uy, pressure
-
 
 #_____________________________________________________________________________________________________________________________
 
