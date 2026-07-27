@@ -129,8 +129,6 @@ def plot_streamlines_experimental(p_fine, t_fine, ux, uy,
     X, Y = np.meshgrid(xi, yi)
 
     # ── Interpolation ────────────────────────────────────────────────────────
-    # LinearNDInterpolator: build the triangulation once, evaluate in one call.
-    # ~3-5x faster than griddata(method='cubic') on large meshes.
     interp_u = LinearNDInterpolator(list(zip(x, y)), ux)
     interp_v = LinearNDInterpolator(list(zip(x, y)), uy)
 
@@ -153,10 +151,8 @@ def plot_streamlines_experimental(p_fine, t_fine, ux, uy,
     fig, ax = plt.subplots(figsize=figsize, facecolor=bg)
     ax.set_facecolor(bg)
 
-    # Filled contours — speed field
     cf = ax.contourf(X, Y, speed, levels=levels, cmap=cmap, zorder=1)
 
-    # Thin contour strokes for depth
     ax.contour(
         X, Y, speed,
         levels=20,
@@ -167,10 +163,6 @@ def plot_streamlines_experimental(p_fine, t_fine, ux, uy,
     )
 
     # ── Streamlines colored & weighted by speed ───────────────────────────────
-    # streamplot accepts a 2-D array for 'color' and a scalar for 'linewidth';
-    # to vary both we draw two overlapping passes:
-    #   pass 1 – thick, semi-transparent white base (gives a glow effect)
-    #   pass 2 – thin lines colored by speed
     ax.streamplot(
         X, Y, U, V,
         density=density,
@@ -520,4 +512,129 @@ def plot_viscosity(p, t, e, nu_T, nu_KNOTS,
 
     plt.tight_layout()
     plt.savefig(f'Outputs/Viscosity.{savetype}', bbox_inches='tight')
+    plt.show()
+
+#_______________________________________________________________________________________________________________________________________________________________
+
+def plot_combined_solution(
+    p_fine, t_fine, ux, uy,
+    p_coarse, t_coarse, p_sol,
+    p, t, e, nu_T, nu_KNOTS,
+    levels: int = 90,
+    n_levels_visc: int = 15,
+    figsize: tuple = (24, 7),
+    savetype: str = 'jpeg'
+):
+    """
+    Plots Viscosity, Pressure, and Velocity Streamlines side-by-side in a 1x3 layout.
+    """
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=figsize)
+
+    # ────────────────────────────────────────────────────────────────────────────────────────────────
+    # COLUMN 1: VISCOSITY (Contour + Knots)
+    # ────────────────────────────────────────────────────────────────────────────────────────────────
+    triangulation_visc = tri.Triangulation(p[:, 0], p[:, 1], t[:, :3])
+    
+    nu_nodes = (np.bincount(t[:, :3].ravel(), weights=np.repeat(nu_T, 3), minlength=len(p)) / 
+                np.maximum(np.bincount(t[:, :3].ravel(), minlength=len(p)), 1))
+    
+    visc_levels = np.linspace(np.min(nu_nodes), np.max(nu_nodes), n_levels_visc)
+
+    cf1 = ax1.tricontourf(triangulation_visc, nu_nodes, levels=visc_levels, cmap=cmr.ocean)
+    cs1 = ax1.tricontour(triangulation_visc,  nu_nodes, levels=visc_levels, colors='w', linewidths=0.5)
+    ax1.clabel(cs1, inline=True, fontsize=9, fmt='%.3f')
+
+    nu_pts = nu_KNOTS['pts']
+    nu_vals = nu_KNOTS['vals']
+    ax1.scatter(nu_pts[:, 0], nu_pts[:, 1], s=550, c='cyan', edgecolors='r', linewidths=1, zorder=3)
+    
+    for (x_coord, y_coord), val in zip(nu_pts, nu_vals):
+        ax1.text(x_coord, y_coord, s=f"{val:.0f}", ha='center', va='center', fontsize=11, zorder=5)
+
+    flag1_mask = (e[:, -1] == 1)
+    boundary_edges = e[flag1_mask, :2].astype(int)
+    for edge in boundary_edges:
+        ax1.plot(p[edge, 0], p[edge, 1], color='b', linewidth=1.5)
+
+    ax1.set_aspect('equal')
+    ax1.set_xlabel('x')
+    ax1.set_ylabel('y')
+    ax1.set_title('Viscosity Field')
+    
+    ax1.set_xlim(-2.70, 2.70)
+    ax1.set_ylim(-1.15, 1.15)
+
+    div1 = make_axes_locatable(ax1)
+    cax1 = div1.append_axes("right", size="5%", pad=0.1)
+    min_val1, max_val1 = np.min(nu_nodes), np.max(nu_nodes)
+    ticks1 = np.linspace(min_val1, max_val1, 5)
+    cb1 = fig.colorbar(cf1, cax=cax1, label=r'$\nu$', ticks=ticks1)
+    cb1.ax.set_yticklabels([f'{val:.1f}' for val in ticks1])
+
+    # ────────────────────────────────────────────────────────────────────────────────────────────────
+    # COLUMN 2: PRESSURE
+    # ────────────────────────────────────────────────────────────────────────────────────────────────
+    triangulation_pres = tri.Triangulation(p_coarse[:, 0], p_coarse[:, 1], t_coarse[:, :3])
+    cf2 = ax2.tricontourf(triangulation_pres, p_sol, levels=levels)
+
+    ax2.set_xlabel("x")
+    ax2.set_ylabel("y")
+    ax2.set_aspect('equal')
+    ax2.set_title('Pressure $\\mathbf{P}$')
+
+    x_min, x_max = p_coarse[:, 0].min(), p_coarse[:, 0].max()
+    x_margin = np.abs(x_max - x_min) * 0.03
+    y_min, y_max = p_coarse[:, 1].min(), p_coarse[:, 1].max()
+    y_margin = np.abs(y_max - y_min) * 0.03
+
+    ax2.set_xlim([x_min - x_margin, x_max + x_margin])
+    ax2.set_ylim([y_min - y_margin, y_max + y_margin])
+
+    div2 = make_axes_locatable(ax2)
+    cax2 = div2.append_axes("right", size="5%", pad=0.1)
+    fig.colorbar(cf2, cax=cax2, label='$\\mathbf{P}$')
+
+    # ────────────────────────────────────────────────────────────────────────────────────────────────
+    # COLUMN 3: VELOCITY STREAMLINES
+    # ────────────────────────────────────────────────────────────────────────────────────────────────
+    x_v = p_fine[:, 0]
+    y_v = p_fine[:, 1]
+    nx, ny = 300, 300
+    xi = np.linspace(x_v.min(), x_v.max(), nx)
+    yi = np.linspace(y_v.min(), y_v.max(), ny)
+    X, Y = np.meshgrid(xi, yi)
+
+    U = griddata((x_v, y_v), ux, (X, Y), method='cubic')
+    V = griddata((x_v, y_v), uy, (X, Y), method='cubic')
+
+    triang_v = tri.Triangulation(x_v, y_v, t_fine[:, :3])
+    trifinder = triang_v.get_trifinder()
+    
+    geometry_mask = (trifinder(X, Y) == -1)
+    U = np.ma.array(U, mask=geometry_mask)
+    V = np.ma.array(V, mask=geometry_mask)
+    speed = np.ma.sqrt(U**2 + V**2)
+
+    cf3 = ax3.contourf(X, Y, speed, levels=levels, cmap='viridis')
+    ax3.streamplot(X, Y, U, V, density=2.5, linewidth=1.2, arrowsize=1.2, color='white')
+
+    ax3.set_xlabel("x")
+    ax3.set_ylabel("y")
+    ax3.set_aspect('equal')
+    ax3.set_title("Streamlines of $\\vec{u}$")
+
+    x_min_v, x_max_v = p_fine[:, 0].min(), p_fine[:, 0].max()
+    x_margin_v = np.abs(x_max_v - x_min_v) * 0.03
+    y_min_v, y_max_v = p_fine[:, 1].min(), p_fine[:, 1].max()
+    y_margin_v = np.abs(y_max_v - y_min_v) * 0.03
+
+    ax3.set_xlim([x_min_v - x_margin_v, x_max_v + x_margin_v])
+    ax3.set_ylim([y_min_v - y_margin_v, y_max_v + y_margin_v])
+
+    div3 = make_axes_locatable(ax3)
+    cax3 = div3.append_axes("right", size="5%", pad=0.1)
+    fig.colorbar(cf3, cax=cax3, label='$\\|\\vec{u}\\|$')
+
+    plt.tight_layout()
+    plt.savefig(f'Outputs/Combined_Solution.{savetype}', bbox_inches='tight')
     plt.show()
