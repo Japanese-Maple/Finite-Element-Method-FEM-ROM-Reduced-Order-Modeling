@@ -41,7 +41,6 @@ def solve_snapshot_worker(args):
 # ──────────────────────────────────────────────────────────────────────────────
 if __name__ == '__main__':
     
-    # Load and refine spatial domains
     mesh_path = os.path.join(fem_dir, 'Meshes', 'exchanger_device_altered_mesh_data.npz')
     p_coarse, e_coarse, t_coarse = Plot_Initial_Refined_meshes(
         data_path=mesh_path, 
@@ -65,7 +64,6 @@ if __name__ == '__main__':
     os.makedirs(output_dir, exist_ok=True)
     out_path = os.path.join(output_dir, 'stokes_solution_snapshots.npz')
 
-    # --- AUTO-RESUME LOGIC ---
     if os.path.exists(out_path):
         print(f"[*] Found existing snapshot file at:\n    {out_path}")
         print("[*] Loading existing data to resume progress...")
@@ -94,14 +92,13 @@ if __name__ == '__main__':
     print(f" Total DOFs per state:    {total_dof}")
     print("─" * 60)
 
-    # Package arguments only for the uncomputed tasks
     tasks = [
         (i, v_t_snapshots[i], p_fine, t_fine, e_fine, p_coarse, t_coarse)
         for i in tasks_to_run
     ]
 
     # ──────────────────────────────────────────────────────────────────────────────
-    # 4. Fire up the 10-core Process Pool with Periodic Checkpointing
+    # 4. 10-core Process Pool with Periodic Checkpointing
     # ──────────────────────────────────────────────────────────────────────────────
     if len(tasks) > 0:
         start_time = time.time()
@@ -114,14 +111,13 @@ if __name__ == '__main__':
             for future in tqdm(as_completed(futures), total=len(tasks), desc="Evaluating FOM (10 Cores)", unit="state", ncols=100):
                 i, ux, uy, p_sol = future.result()
                 
-                # Place results in the pre-allocated arrays based on original index
                 ux_snapshots[i, :] = ux
                 uy_snapshots[i, :] = uy
                 p_snapshots[i, :]  = p_sol
                 
                 completed_in_this_run += 1
                 
-                # --- CHECKPOINT: Save every 10 completed tasks ---
+                # --- Save 10 completed tasks ---
                 if completed_in_this_run % 10 == 0:
                     np.savez_compressed(
                         out_path,
@@ -135,11 +131,10 @@ if __name__ == '__main__':
                     tqdm.write(f"  [Checkpoint] Saved progress at {completed_in_this_run} completed states.")
 
         # ──────────────────────────────────────────────────────────────────────────────
-        # 5. Final Output Serialization & Diagnostics
+        # 5. Serialization & Diagnostics
         # ──────────────────────────────────────────────────────────────────────────────
         elapsed_time = time.time() - start_time
         
-        # Save one last time to catch any remainder 
         np.savez_compressed(
             out_path,
             ux_snapshots=ux_snapshots,
