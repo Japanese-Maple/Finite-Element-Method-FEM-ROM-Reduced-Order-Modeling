@@ -8,6 +8,8 @@ if fem_dir not in sys.path:
     sys.path.append(fem_dir)
 
 from scipy.sparse.linalg import spsolve
+import scipy.sparse as sp
+
 from Utilities.Stokes_felib import *
 from Utilities.Mesh_processing import *
 from Utilities.Plot_functions import *
@@ -28,7 +30,7 @@ p_fine, e_fine, t_fine = refine(p_coarse, e_coarse, t_coarse)
 def compute_U_P_solution(p_fine, t_fine, e_fine, p_coarse, t_coarse,
                          inlet_velocity: float = 1.0,
                          kinematic_viscosity: float = 0.01,
-                         return_A: bool = False):
+                         return_matrices: bool = False):
 
     Nv = p_fine.shape[0]
     Np = p_coarse.shape[0]
@@ -84,6 +86,8 @@ def compute_U_P_solution(p_fine, t_fine, e_fine, p_coarse, t_coarse,
     K[p_row, p_row] = 1.0
     F[p_row] = 0.0        
 
+    B_hT = K[:2*Nv, 2*Nv:].tocsc()
+
     # ------------------------------------------------------------------
     # Solve
     # ------------------------------------------------------------------
@@ -109,8 +113,8 @@ def compute_U_P_solution(p_fine, t_fine, e_fine, p_coarse, t_coarse,
     # print(f"max |div| = {np.max(np.abs(div)):.3e}")
     # print(f"pressure  min/mean/max = "
     #       f"{pressure.min():.4f} / {pressure.mean():.4f} / {pressure.max():.4f}")
-    if return_A:
-        return ux, uy, pressure, Xu_bc
+    if return_matrices:
+        return ux, uy, pressure, Xu_bc, B_hT
 
     return ux, uy, pressure
 
