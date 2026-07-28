@@ -27,7 +27,8 @@ p_fine, e_fine, t_fine = refine(p_coarse, e_coarse, t_coarse)
 #_____________________________________________________________________________________________________________________________
 def compute_U_P_solution(p_fine, t_fine, e_fine, p_coarse, t_coarse,
                          inlet_velocity: float = 1.0,
-                         kinematic_viscosity: float = 0.01):
+                         kinematic_viscosity: float = 0.01,
+                         return_A: bool = False):
 
     Nv = p_fine.shape[0]
     Np = p_coarse.shape[0]
@@ -69,6 +70,8 @@ def compute_U_P_solution(p_fine, t_fine, e_fine, p_coarse, t_coarse,
         K[iy, iy] = 1.0
         F[iy]    = 0.0
 
+    Xu_bc = K[:2*Nv, :2*Nv].tocsc()
+
     is_outlet_p = np.abs(p_coarse[:, 0] - xmax) < eps
     p_ref_idx   = np.where(is_outlet_p)[0]
 
@@ -106,6 +109,8 @@ def compute_U_P_solution(p_fine, t_fine, e_fine, p_coarse, t_coarse,
     # print(f"max |div| = {np.max(np.abs(div)):.3e}")
     # print(f"pressure  min/mean/max = "
     #       f"{pressure.min():.4f} / {pressure.mean():.4f} / {pressure.max():.4f}")
+    if return_A:
+        return ux, uy, pressure, Xu_bc
 
     return ux, uy, pressure
 
