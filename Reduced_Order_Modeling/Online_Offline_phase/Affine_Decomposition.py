@@ -1,8 +1,8 @@
 import sys
 import os
 
+from scipy.sparse import save_npz
 import numpy as np
-from scipy.stats import qmc
 from tqdm import tqdm
 
 #────────────────────────────────────────────────────────────────────────────────────────────────
@@ -14,7 +14,7 @@ if fem_dir not in sys.path:
     sys.path.append(fem_dir)
 
 from Utilities.Stokes_felib import (
-    evalOnTrigs, 
+    evalOnTrigs, calculate_velocity_A
 )
 
 from Utilities.Mesh_processing import (
@@ -70,13 +70,13 @@ def shepard_basis(points, power=POWER, eps=1e-12):
     return psi
 
 #────────────────────────────────────────────────────────────────────────────────────────────────
-# Evaluate basis on triangles
+# Evaluate A1, A2, ... , A5
 #────────────────────────────────────────────────────────────────────────────────────────────────
 
 num_basis = 5
 Nt = len(t_fine)
 
-psi_triangle = np.zeros((Nt, num_basis))
+psi_field = np.zeros((Nt, num_basis))
 
 for i in tqdm(range(num_basis), desc="Evaluating basis fields"):
 
@@ -85,40 +85,39 @@ for i in tqdm(range(num_basis), desc="Evaluating basis fields"):
         point = np.array([[x, y]])
         return float(shepard_basis(point)[0, i])
 
-    psi_triangle[:, i] = evalOnTrigs(
-        p_fine,
-        t_fine,
-        psi_i
-    )
+    psi_field[:, i] = evalOnTrigs(p_fine, t_fine, psi_i)
+
+
+Affine_Operators = []
+
+for i in range(5):
+    Affine_Operators.append(calculate_velocity_A(p_fine, t_fine, psi_field[:, i]))
 
 #────────────────────────────────────────────────────────────────────────────────────────────────
 # Save
 #────────────────────────────────────────────────────────────────────────────────────────────────
 
-output_dir = os.path.join(
-    fem_dir,
-    "Reduced_Order_Modeling/Online_Offline_phase",
-    "Data"
-)
-
+output_dir = os.path.join(fem_dir, "Reduced_Order_Modeling/Online_Offline_phase", "Data")
 os.makedirs(output_dir, exist_ok=True)
 
 output_path = os.path.join(
     output_dir,
-    "viscosity_basis.npz"
+    "Affine_Operators.npz"
 )
 
 np.savez_compressed(
-    output_path,
-
-    psi_triangle=psi_triangle,
-
+    os.path.join(output_dir, "basis_fields.npz"),
+    psi_field=psi_field,
     knots=_KNOTS,
-
     p_fine=p_fine,
     e_fine=e_fine,
-    t_fine=t_fine
+    t_fine=t_fine,
 )
 
+for i, A in enumerate(Affine_Operators):
+    save_npz(
+        os.path.join(output_dir, f"A{i+1}.npz"),
+        A
+    )
+
 print("Saved:", output_path)
-print("psi_triangle shape:", psi_triangle.shape)
