@@ -8,7 +8,7 @@ from tqdm import tqdm
 #────────────────────────────────────────────────────────────────────────────────────────────────
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
-fem_dir = os.path.dirname(script_dir)
+fem_dir = os.path.dirname(os.path.dirname(script_dir))
 
 if fem_dir not in sys.path:
     sys.path.append(fem_dir)

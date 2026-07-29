@@ -47,25 +47,6 @@ def calculate_velocity_A(p, t, kinematic_viscosity):
 
     # We can now construct a local matrix A for each triangle:
     
-    # A_local = np.zeros(shape=(Nt, 3, 3))
-    # for i in range(3):
-    #     for j in range(i, 3):
-
-    #         grad_i = test_function_derivatives[i]
-    #         grad_j = test_function_derivatives[j]
-
-    #         val = np.einsum(
-    #             'i, nij, j->n',
-    #             grad_j,
-    #             Q_mat,
-    #             grad_i
-    #         )
-
-    #         val *= kinematic_viscosity / (2 * det_J)
-
-    #         A_local[:, i, j] = val
-    #         A_local[:, j, i] = val
-
     A_local = np.einsum('mi,txy,nj->tmn', test_function_derivatives, Q_mat, test_function_derivatives)
     A_local *= (kinematic_viscosity / (2.0 * det_J))[:, None, None]
 
