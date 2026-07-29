@@ -92,7 +92,7 @@ print("─" * 60)
 print(f" Total runtime:           {elapsed_time / 60:.2f} minutes")
 print(f" Average iteration time:  {avg_time_per_snapshot:.3f} seconds/state")
 
-output_dir = os.path.join(fem_dir, 'Reduced_Order_Modeling', 'Data')
+output_dir = os.path.join(fem_dir, 'Reduced_Order_Modeling/No_Online_Offline_phase', 'Data')
 os.makedirs(output_dir, exist_ok=True)
 out_path = os.path.join(output_dir, 'stokes_solution_snapshots.npz')
 

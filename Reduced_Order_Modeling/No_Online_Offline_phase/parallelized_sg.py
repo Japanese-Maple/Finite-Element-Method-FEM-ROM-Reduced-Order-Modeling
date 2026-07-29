@@ -60,7 +60,7 @@ if __name__ == '__main__':
     Np = p_coarse.shape[0]
     total_dof = (2 * Nv) + Np
 
-    output_dir = os.path.join(fem_dir, 'Reduced_Order_Modeling', 'Data')
+    output_dir = os.path.join(fem_dir, 'Reduced_Order_Modeling/No_Online_Offline_phase', 'Data')
     os.makedirs(output_dir, exist_ok=True)
     out_path = os.path.join(output_dir, 'stokes_solution_snapshots.npz')
 
