@@ -253,7 +253,7 @@ def Stokes_matrix_structure(A_B_M_K_mat, mat_name:str='A/B_x/B_y/M/K',
 
 def K_matrix_structure(K_mat, dim_A, dim_B, 
                        figsize:tuple=(13,13), cmap:str='viridis',
-                       savetype:str='jpeg'):
+                       savetype:str='png'):
     """Plots the Saddle-point K matrix with labeled block boundaries"""
 
     K_coo = K_mat.tocoo()
