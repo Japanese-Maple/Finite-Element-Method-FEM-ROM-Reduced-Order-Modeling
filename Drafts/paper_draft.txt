@@ -741,9 +741,94 @@ The block layout reflects the underlying \textbf{mixed formulation}~\eqref{eq:st
 \right] - \mathbf{A}\vec{r_g}
 \]
 
+\subsubsection{Construction of the Lifting Function \texorpdfstring{$\vec r_g$}{rg}}
+
+Recall from \S2 that the strong Dirichlet condition reads $\mathbf u = \mathbf g$ on $\Gamma_D$, and from \S3
+that the weak formulation is stated for the homogeneous unknown $\mathbf u \in X$ via the decomposition
+$\mathbf u_{total} = \mathbf u + \mathbf r_g$. Discretely, $\vec r_g \in \mathbb{R}^{2N_v}$ is simply the nodal
+interpolant of $\mathbf g$: for every fine-mesh node $X_i$,
+\[
+\left(\vec r_g^{\,x}\right)_i =
+\begin{cases}
+    g_x(X_i) & X_i \in \Gamma_D^{\text{inlet}}, \\[4pt]
+    0 & \text{otherwise (walls, interior, outlet)},
+\end{cases}
+\qquad
+\left(\vec r_g^{\,y}\right)_i = 0 \ \ \forall i,
+\]
+where $\Gamma_D = \Gamma_D^{\text{inlet}} \cup \Gamma_D^{\text{wall}}$ collects every boundary node except the
+outlet (which is left as the natural, traction-free boundary $\Gamma_N$, so $h = \mathbf 0$ and
+$\mathbf F_{forces} = \mathbf 0$ throughout \S7's test cases). Walls carry the homogeneous no-slip value
+$g=\mathbf 0$ automatically, since $\vec r_g$ is zero everywhere it is not explicitly prescribed.
+
+\subsubsection{Momentum and Continuity Right-Hand Sides}
+
+With $\mathbf F_{forces}=\mathbf 0$, the momentum block reduces directly to $\mathbf F = -\mathbf A\vec r_g$
+as stated above. The continuity equation of the weak system~\eqref{eq:stokes_weak} needs the same treatment:
+testing $-\int_\Omega q(\nabla\cdot \mathbf u)\,d\Omega = \int_\Omega q(\nabla\cdot \mathbf r_g)\,d\Omega$
+against the discrete pressure basis and applying the identity of \S5.2.1 to \emph{both} sides (once for the
+homogeneous unknown $\mathbf u$, once for the known lift $\vec r_g$) gives
+\[
+-\mathbf p^T \mathbf B \mathbf u = \mathbf p^T \mathbf B \vec r_g \quad \forall \mathbf p
+\quad\Longrightarrow\quad
+\mathbf B_x \mathbf u_x + \mathbf B_y \mathbf u_y = -\left(\mathbf B_x \vec r_g^{\,x} + \mathbf B_y \vec r_g^{\,y}\right).
+\]
+Assembling all three rows, the full right-hand side of the lifted saddle-point system is
+\[
+\left[
+\begin{array}{c}
+\mathbf F_x \\ \mathbf F_y \\ \mathbf 0
+\end{array}
+\right]
+=
+\left[
+\begin{array}{c}
+-\mathbf A \vec r_g^{\,x} \\[4pt]
+-\mathbf A \vec r_g^{\,y} \\[4pt]
+-\left(\mathbf B_x \vec r_g^{\,x} + \mathbf B_y \vec r_g^{\,y}\right)
+\end{array}
+\right].
+\]
+
+\subsubsection{Enforcing the Homogeneous Dirichlet Condition}
+
+Because $\mathbf u \in X$ requires $\mathbf u = \mathbf 0$ exactly on $\Gamma_D$, every degree of freedom
+$i \in \Gamma_D$ must be pinned to zero in the linear system itself, not merely approximated. This is done by
+row substitution: for each such $i$, row $i$ of $\mathbf K$ is replaced by the $i$-th unit row and $F_i$ is set
+to zero,
+\[
+\mathbf K_{i,:} \leftarrow \mathbf e_i^T, \qquad F_i \leftarrow 0,
+\]
+which forces $u_i = 0$ directly upon solving. Crucially, only the \emph{row} is overwritten — the column
+$\mathbf K_{:,i}$ is left untouched. This is exact precisely because the imposed value is zero: for every other
+equation $j$, the term $\mathbf K_{j,i}\, u_i = \mathbf K_{j,i}\cdot 0 = 0$ automatically, so no compensating
+correction to $F_j$ is required. This is the payoff of lifting in the first place — had the original
+inhomogeneous problem been assembled directly for $\mathbf u_{total}$, enforcing $u_{total,i}=g_i\neq 0$ this
+way would require subtracting $\mathbf K_{j,i}\,g_i$ from every other row's right-hand side; working with the
+homogeneous unknown $\mathbf u$ instead reduces Dirichlet enforcement to the cheapest possible operation.
+
 \subsection{Pressure Null-Space Regulation and Singular Constraints}
 
-\subsection{Sparse Storage Layout and Linear Solver Mechanics}
+Pressure enters the momentum equation only through the coupling matrices $\mathbf B_x^T,\mathbf B_y^T$, and in
+this formulation the outlet is left as a natural, do-nothing boundary rather than one carrying an explicit
+pressure reference. As a result, nothing in the assembled system fixes an absolute pressure level: the discrete
+saddle-point matrix $\mathbf K$ is singular (or, numerically, severely ill-conditioned) in its pressure block,
+exactly as in a fully enclosed cavity flow, and a direct sparse solve of $\mathbf K\vec s = \mathbf F$ is not
+well-posed as stated.
+
+The remedy is the same row-substitution technique used for the velocity Dirichlet nodes, applied to a single
+pressure degree of freedom $p_{\text{ref}}$ chosen at (or nearest to) the outlet:
+\[
+\mathbf K_{p_{\text{ref}},:} \leftarrow \mathbf e_{p_{\text{ref}}}^T, \qquad F_{p_{\text{ref}}} \leftarrow 0,
+\]
+which fixes $p_{p_{\text{ref}}} = 0$ and removes the indeterminacy, leaving every other pressure value defined
+relative to this reference. As before, only the row is overwritten: the column $\mathbf K_{:,p_{\text{ref}}}$
+is preserved so that the (now fixed, zero) reference pressure still correctly participates in every other
+momentum equation, by the same zero-contribution argument as above. If the mesh has no coarse node lying
+exactly on the outlet boundary, the reference is instead taken as the coarse pressure node nearest to the
+outlet's midpoint, ensuring the regularization is always well-defined regardless of mesh irregularity.
+
+%----------------------------------------------------------------------------
 
 \newpage
 \section{Ladyzhenskaya–Babuška–Brezzi Condition}
@@ -1508,14 +1593,13 @@ for any new parameter instance reduces to a five-term scalar-weighted sum.
 
 %-------------------------------------------------------------------
 
-\section{Snapshot Generation and Proper Orthogonal Decomposition}
+\section{Snapshot Generation}
 \subsection{Full-Order Snapshot Collection}
-\subsection{Train/Test Partitioning of the Parameter Space}
-\subsection{Proper Orthogonal Decomposition and Energy Truncation}
-
-\section{Reduced Basis Construction}
 \subsection{Boundary Lifting and Snapshot Homogenization}
 \subsection{Supremizer Enrichment for Inf-Sup Stability}
+
+\section{Reduced Basis Construction}
+\subsection{Proper Orthogonal Decomposition and Energy Truncation}
 \subsection{Reduced Velocity and Pressure Spaces}
 
 \section{Offline--Online Decomposition}
@@ -1523,6 +1607,7 @@ for any new parameter instance reduces to a five-term scalar-weighted sum.
 \subsection{Online Phase: The Reduced Galerkin System}
 
 \section{Numerical Results}
+\subsection{Train/Test Partitioning of the Parameter Space}
 \subsection{Reconstruction Accuracy: Seen vs.\ Unseen Parameters}
 \subsection{Velocity and Pressure Field Comparison (FOM vs.\ ROM)}
 \subsection{Derived Quantities of Interest}
