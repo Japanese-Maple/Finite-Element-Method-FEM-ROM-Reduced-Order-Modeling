@@ -30,7 +30,7 @@
 \newtheorem{definition}[theorem]{Definition}
 
 % Title information
-\title{\textbf{Finite Element Method Applied to Stokes Equations}}
+\title{\textbf{Finite Element and Reduced-Order Modeling of Parameterized Stokes Flows}}
 \author{Oleksandr Samoliuk}
 \date{Summer Semester, 2026}
 
@@ -43,11 +43,11 @@
 \maketitle % Generates the title section
 
 \begin{abstract}
-Derivations for Stokes Equations
+This thesis presents a finite element framework for the numerical simulation of parameterized incompressible Stokes flows together with a reduced-order modeling approach for efficient many-query computations. A stable mixed finite element discretization is employed to accurately resolve the coupled velocity and pressure fields while satisfying the incompressibility constraint. Based on the resulting full-order model, a reduced-order model is constructed using Proper Orthogonal Decomposition, enabling efficient approximation of the solution over varying parameter values. The proposed methodology is validated through numerical experiments, demonstrating that the reduced model achieves substantial computational savings while maintaining high accuracy with respect to the full-order simulations.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.83\linewidth]{Flow.jpeg}
+    \includegraphics[width=0.91\linewidth]{K!.jpeg}
 \end{figure}
 
 \end{abstract}
@@ -58,70 +58,61 @@ Derivations for Stokes Equations
 \newpage
 \normalsize
 \section{Introduction to Stokes Equations and Finite Element Method}
-Stokes flow, also named creeping flow or creeping motion, is a type of fluid flow where advective inertial forces are negligibly small compared with viscous forces. This regime is mathematically characterized by a low Reynolds number, i.e., 
+Stokes flow, or \emph{creeping flow}, describes incompressible fluid motion in which viscous forces dominate inertial effects, characterized by a low Reynolds number,
+
 \[
-\mathrm{Re} = \frac{\rho U L}{\mu} \ll 1 \quad \nu=\frac{\mu}{\rho},
+\mathrm{Re}=\frac{\rho U L}{\mu}\ll1,\qquad \nu=\frac{\mu}{\rho},
 \]
-where $\rho$ is the fluid density, $U$ is a characteristic velocity scale, $L$ is a characteristic length scale, $\mu$ is the dynamic viscosity, and $\nu$ is the kinematic viscosity. This situation is highly typical in applications where the fluid velocities are remarkably slow, the fluid viscosities are exceptionally large, or the geometric length-scales of the flow domain are micro- or nano-sized. 
 
-Creeping flow was historically first analyzed by Sir George Gabriel Stokes to model the settling of spheres and understand hydrodynamic lubrication. In nature, this type of flow governs the swimming mechanics of microorganisms, the movement of lava, and the slow mantle convection currents deep within the Earth. In engineering and biotechnology, it occurs prominently in painting processes, micro-electromechanical systems (MEMS), microfluidic lab-on-a-chip devices, and the transport of viscous polymers during extrusion.
-
+where $\rho$ is the fluid density, $U$ a characteristic velocity, $L$ a characteristic length scale, $\mu$ the dynamic viscosity, and $\nu$ the kinematic viscosity. The regime arises whenever motion is slow, viscosity is high, or the length scale is very small, making it the governing model for microfluidics, MEMS, coating and polymer processing, biological transport, microorganism locomotion, particle settling, and slow mantle convection. First analyzed by Sir George Gabriel Stokes in his study of viscous settling, the equations remain today a foundational model in fluid mechanics and the basis for a wide range of numerical and reduced-order methods.
+ 
 \subsection{Mathematical Characterization and Challenges}
-From a mathematical perspective, the Stokes equations are obtained by simplifying the non-linear incompressible Navier-Stokes equations: 
-
+The Stokes equations follow from linearizing the incompressible Navier--Stokes equations,
 \[
 \begin{cases}
 \dfrac{\partial \mathbf{u}}{\partial t} + (\mathbf{u} \cdot \nabla)\mathbf{u} = -\dfrac{1}{\rho} \nabla p + \nu \nabla^2 \mathbf{u} + \mathbf{f}\\[0.8em]
 \nabla \cdot \mathbf{u} = 0 
 \end{cases}
 \]
-
-Where:
+where $\mathbf{u}$ is the velocity field, $t$ time, $p$ the pressure field, $\rho$ the constant density, $\nu$
+the kinematic viscosity, and $\mathbf{f}$ external body forces. Dropping the convective term
+$(\mathbf{u}\cdot\nabla)\mathbf{u}$ linearizes the momentum equation, leaving $\mathbf{u}$ and $p$ coupled
+purely through viscous dissipation and incompressibility.
+ 
+This simplification nonetheless introduces two structural challenges for the Finite Element Method:
 \begin{itemize}
-    \item $\mathbf{u}$ is the flow velocity vector field.
-    \item $t$ represents time.
-    \item $p$ is the scalar static pressure field.
-    \item $\rho$ is the constant fluid density.
-    \item $\nu$ is the kinematic viscosity.
-    \item $\mathbf{f}$ represents external body force accelerations (such as gravity).
+    \item \textbf{Saddle-Point Structure:} The constraint $\nabla \cdot \mathbf{u} = 0$ gives the weak
+    formulation a \textit{saddle-point} (constrained-optimization) algebraic structure.
+    \item \textbf{The Inf-Sup (LBB) Condition:} Velocity and pressure spaces $X_h, Q_h$ cannot be paired
+    arbitrarily as in standard elliptic problems; unstable pairings produce spurious ``checkerboard''
+    pressure oscillations. Stability requires the \textit{Ladyzhenskaya-Babu\v{s}ka-Brezzi (LBB)} condition,
+    satisfied by pairings such as Taylor-Hood ($P_k/P_{k-1}$) or stabilized formulations.
 \end{itemize}
-
-By dropping the convective inertial acceleration term $(\mathbf{u} \cdot \nabla)\mathbf{u}$, the momentum equation can be linearized, transforming into a system where the velocity field $\mathbf{u}$ and the pressure field $p$ are coupled strictly through viscous dissipation and incompressibility constraints.
-
-The absence of a time-derivative or non-linear term simplifies some analytical aspects but introduces profound structural numerical challenges for the Finite Element Method:
-\begin{itemize}
-    \item \textbf{Saddle-Point Structure:} The incompressibility constraint $\nabla \cdot \mathbf{u} = 0$ acts as a structural constraint on the velocity space, giving the weak formulation a classic \textit{saddle-point} (or constrained optimization) algebraic structure.
-    \item \textbf{The Inf-Sup (LBB) Condition:} Unlike standard elliptic systems (such as the Poisson equation), one cannot arbitrarily pair discrete finite element approximation spaces for velocity ($X_h$) and pressure ($Q_h$). Unstable combinations lead to spurious numerical pressure oscillations (``checkerboard'' pressure fields). To guarantee stability and convergence, the discrete spaces must satisfy the strict \textit{Ladyzhenskaya-Babu\v{s}ka-Brezzi (LBB)} or \textit{inf-sup} condition, requiring deliberate pairings such as the Taylor-Hood element ($P_k / P_{k-1}$) or stabilized formulations.
-\end{itemize}
-
+ 
 \subsection{Stable Macro-Element Discretizations: The \texorpdfstring{$P_1\text{-iso-}P_1$}{P1-iso-P1} Element}
-To circumvent the structural instabilities imposed by the inf-sup condition without resorting to complex higher-order polynomial expansions or non-conforming spaces, mixed finite element frameworks can leverage hierarchical macro-element structures. A prominent and computationally efficient choice within this class is the $P_1\text{-iso-}P_1$ element pair, historically introduced by Bercovier and Pironneau.
-
-Instead of varying the polynomial degree between variables on a single mesh, the $P_1\text{-iso-}P_1$ method varies the underlying triangulation density while keeping both velocity and pressure spaces continuously piecewise linear ($P_1$). The discretization relies on a coarse macro-mesh $\mathcal{T}_H$ and a fine mesh $\mathcal{T}_h$. The fine mesh is constructed via a uniform refinement protocol where each parent macro-triangle $K \in \mathcal{T}_H$ is subdivided into four congruent child triangles by connecting the midpoints of its three topological edges, effectively halving the characteristic mesh size such that $h = H/2$.
-
-The discrete spaces for the fluid variables are then defined as:
+The $P_1\text{-iso-}P_1$ element, introduced by Bercovier and Pironneau, satisfies the LBB condition without
+resorting to higher-order or non-conforming spaces. Rather than varying polynomial degree, it varies mesh
+density: both velocity and pressure remain piecewise-linear ($P_1$), but velocity lives on a fine mesh
+$\mathcal{T}_h$ obtained by uniformly refining a coarse macro-mesh $\mathcal{T}_H$ -- each macro-triangle
+$K\in\mathcal T_H$ split into four congruent children by connecting edge midpoints, halving the mesh size to
+$h=H/2$.
+ 
+The discrete spaces are
 \begin{align*}
 X_h &= \{ \mathbf{v}_h \in C^0(\overline{\Omega})^2 : \mathbf{v}_h|_K \in P_1(K)^2, \forall K \in \mathcal{T}_h \} \\
 Q_h &= \{ q_h \in C^0(\overline{\Omega}) : q_h|_M \in P_1(M), \forall M \in \mathcal{T}_H \}
 \end{align*}
-By defining the velocity field $\mathbf{u}_h$ on the refined grid $\mathcal{T}_h$ and the pressure field $p_h$ on the coarse macro-grid $\mathcal{T}_H$, the velocity space is enriched with a substantial number of internal degrees of freedom. This spatial scale separation provides a stable velocity-to-pressure ratio that satisfies the discrete Ladyzhenskaya-Babu\v{s}ka-Brezzi (LBB) condition:
-
+Placing $\mathbf u_h$ on the fine grid and $p_h$ on the coarse grid enriches velocity with far more internal
+degrees of freedom than pressure, yielding a stable ratio that satisfies the discrete LBB condition,
 \[
 \exists \beta>0: \quad
 \inf_{q \in Q_{\setminus\{0\}}} \space \sup_{v \in V_{\setminus\{0\}}} \left(\frac{\int_{\Omega}q(\nabla \cdot v)d\Omega}{\|v\|_{V}\cdot\|q\|_{Q}}\right) \ge \beta 
 \]
+with $\beta$ bounded away from zero independently of refinement. The result is a highly symmetric
+macro-element that keeps the low cost of linear shape functions while retaining robust convergence.
 
-where the stability constant $\beta > 0$ remains strictly bounded away from zero independently of the mesh refinement level. This macro-element architecture yields a highly symmetric structural layout, allowing the numerical engine to enjoy the low computational overhead of linear shape functions while retaining robust convergence properties.
-
-\begin{figure}[H]
-    \centering
-    \includesvg[width=0.7\linewidth]{P1-iso-P1.svg}
-\end{figure}
-
-\newpage
 \section{Strong Formulation}
-
-The steady-state behavior of an incompressible, highly viscous fluid where inertial forces are negligible relative to viscous friction is governed by the classical Stokes equations. This system of partial differential equations forms a fundamental linear model in fluid mechanics. Given a bounded domain $\Omega \subset \mathbb{R}^2$ enclosed by a boundary $\partial\Omega = \Gamma_D \cup \Gamma_N$ (where $\Gamma_D \cap \Gamma_N = \emptyset$), the strong formulation of the problem seeks the velocity field $\mathbf{u}(x,y)$ and the scalar pressure field $p(x,y)$ satisfying:
+The steady-state motion of an incompressible viscous fluid in the low-Reynolds-number regime is governed by the classical \textit{Stokes equations}. These equations constitute a fundamental linear model in fluid mechanics and describe the balance between viscous stresses, pressure forces, and the incompressibility constraint. Given a bounded domain $\Omega \subset \mathbb{R}^2$ enclosed by a boundary $\partial\Omega = \Gamma_D \cup \Gamma_N$ (where $\Gamma_D \cap \Gamma_N = \emptyset$), the strong formulation of the problem seeks the velocity field $\mathbf{u}(x,y)$ and the scalar pressure field $p(x,y)$ satisfying:
 
 \[
 \begin{cases}
@@ -147,7 +138,6 @@ The mathematical and physical roles of these individual components are summarize
     \item \textbf{Neumann Boundary Condition ($-p\mathbf{n} + \nu (\nabla \mathbf{u})\mathbf{n} = \mathbf{h}$):} Enforced on the boundary segment $\Gamma_N$ with outward unit normal vector $\mathbf{n}$, this specifies the weak normal stress or traction force vector $\mathbf{h}$ acting on the fluid, typically representing free-pressure outlets or open boundaries.
 \end{itemize}
 
-\newpage
 \section{Weak Formulation}
 
 To solve the Stokes system using the Finite Element Method, we transform the original strong partial differential equations into their weak (or variational) integral form. This is achieved by multiplying the momentum and continuity equations by smooth test functions, $\mathbf{v}$ and $q$, and integrating the terms over the entire physical domain $\Omega$. Applying integration by parts (Green's identity) to the second-order viscous diffusion term reduces the continuity requirements on our velocity fields from second-order derivatives down to first-order derivatives. 
@@ -465,90 +455,6 @@ Please note that the matrices $\mathbf{Q}$ and $\mathbf{A}^{loc}$ are symmetric.
 
 %----------------------------------------------------------------------------
 
-% \subsection{Pressure Matrices \texorpdfstring{$\mathbf{B}_x$ and $\mathbf{B}_y$}{Bx and By}}
-
-% To enforce the incompressibility constraint and couple the pressure field to the momentum equations, we discretize the divergence of the velocity field field mixed with the pressure test space. This interaction is governed by the bilinear form:
-
-% \begin{tcolorbox}[
-%     colframe=ForestGreen, 
-%     colback=ForestGreen!7!white, 
-%     sharp corners
-% ]
-% \begin{center}
-%    $\displaystyle -\int_{\Omega} p \, (\nabla \cdot v)\, d\Omega$ 
-% \end{center}
-% \end{tcolorbox}
-
-% By splitting the velocity test function into its component channels $\mathbf{v} = [v_x, v_y]^T$ and expanding the fields using the mixed finite element bases ($\phi_i$ for velocity and $\psi_j$ for pressure), this integral yields two distinct rectangular coupling matrices. The matrix $\mathbf{B}_x$ maps the $x$-velocity components to the pressure nodes, while $\mathbf{B}_y$ handles the $y$-velocity components, forming the weak gradient and divergence operations in our discrete system.
-
-% \[
-% \begin{aligned}
-% \displaystyle
-% -\int_{\Omega} p \, (\nabla \cdot v)\, d\Omega 
-% &= \left| 
-% \begin{array}{c}
-%      p(x,y) \approx \sum_{j=1}^{N_p}p_j \psi_j \\[15pt]
-%      \mathbf{v}(x,y) =\begin{bmatrix}
-%        v_x(x,y) \\
-%        v_y(x,y) 
-%    \end{bmatrix}
-% \end{array}\right|
-% = - \int_\Omega \sum_{j=1}^{N_p}p_j \psi_j
-% \begin{bmatrix}
-%     \frac{\partial}{\partial x}\\[1pt]
-%     \frac{\partial}{\partial y}
-% \end{bmatrix}
-% \cdot 
-% \begin{bmatrix}
-%     v_x\\[7pt]
-%     v_y
-% \end{bmatrix} \, d\Omega = \\[10pt]
-% &= \left[\sum_{j=1}^{N_p}p_j \cdot \left(-\int_\Omega \psi_j \frac{\partial v_x}{\partial x} \, d_\Omega\right)\right] + \left[ \sum_{j=1}^{N_p}p_j \cdot \left(-\int_\Omega \psi_j \frac{\partial v_y}{\partial y} \, d_\Omega\right)\right]
-% = \left|\begin{array}{c}
-%     v_x(x,y) = \phi_i(x,y)\\
-%     v_y(x,y) = \phi_i(x,y)
-% \end{array}\right| =\\[10pt]
-% &= \sum_{j=1}^{N_p}p_j \cdot \left(-\int_\Omega \psi_j \frac{\partial \phi_i}{\partial x} \, d_\Omega\right) + \sum_{j=1}^{N_p}p_j \cdot \left(-\int_\Omega \psi_j \frac{\partial \phi_i}{\partial y} \, d_\Omega\right)
-% = \sum_{j=1}^{N_p}p_j \left(B_x\right)_{ij} + \sum_{j=1}^{N_p}p_j \left(B_y\right)_{ij}=\\[10pt]
-% &= \mathbf{B}_x^T\mathbf{p} + \mathbf{B}_y^T\mathbf{p}
-% =\left[
-% \begin{array}{cc}
-%     \mathbf{B}_x^T & \mathbf{B}_y^T
-% \end{array}
-% \right] 
-% \begin{bmatrix}
-%     \mathbf{p}\\
-%     \mathbf{p}
-% \end{bmatrix}
-% \end{aligned}
-% \]
-
-% We are now moving on to computing the local $\mathbf{B}^{loc}_x$ and $\mathbf{B}^{loc}_y$ using the help of our earlier derived gradient of $\phi_i(x,y)$ (~\ref{eq:grad_for_Bx_By}):
-
-% \[
-% \begin{aligned}
-%     \left(\mathbf{B}^{loc}_x\right)_{ij} 
-%     &= -\int_\Omega \psi_j \frac{\partial \phi_i}{\partial x} \, d_\Omega\\[10pt]
-%     \left(\mathbf{B}^{loc}_x\right)_{ij} 
-%     &= - \int_{\hat{T}} \hat{\psi}_j\frac{1}{\left|\mathbf{J}_T\right|}\left((y_3 - y_1)\frac{\partial \hat{\phi} _i}{\partial \xi _1} - (y_2 - y_1)\frac{\partial \hat{\phi} _i}{\partial \xi _2}\right)\left|\mathbf{J}_T\right| \, d\xi_1 d\xi_2 = \\[10pt]
-%     &= \left((y_2 - y_1)\frac{\partial \hat{\phi} _i}{\partial \xi _2} - (y_3 - y_1)\frac{\partial \hat{\phi} _i}{\partial \xi _1}\right) \int_{\hat{T}} \hat{\psi}_j \, d\xi_1 d\xi_2 = \frac{1}{6}\left((y_2 - y_1)\frac{\partial \hat{\phi} _i}{\partial \xi _2} - (y_3 - y_1)\frac{\partial \hat{\phi} _i}{\partial \xi _1}\right)
-%     \\[10pt]
-%     \left(\mathbf{B}^{loc}_y\right)_{ij} 
-%     &= -\int_\Omega \psi_j \frac{\partial \phi_i}{\partial x} \, d_\Omega\\[10pt]
-%     \left(\mathbf{B}^{loc}_y\right)_{ij} 
-%     &= - \int_{\hat{T}} \hat{\psi}_j\frac{1}{\left|\mathbf{J}_T\right|}\left(-(x_3 - x_1)\frac{\partial \hat{\phi} _i}{\partial \xi _1} + (x_2 - x_1)\frac{\partial \hat{\phi} _i}{\partial \xi _2}\right)\left|\mathbf{J}_T\right| \, d\xi_1 d\xi_2 = \\[10pt]
-%     &= \left((x_3 - x_1)\frac{\partial \hat{\phi} _i}{\partial \xi _1} - (x_2 - x_1)\frac{\partial \hat{\phi} _i}{\partial \xi _2}\right) \int_{\hat{T}} \hat{\psi}_j \, d\xi_1 d\xi_2 = \frac{1}{6}\left((x_3 - x_1)\frac{\partial \hat{\phi} _i}{\partial \xi _1} - (x_2 - x_1)\frac{\partial \hat{\phi} _i}{\partial \xi _2}\right)\\[10pt]
-% \end{aligned}
-% \]
-
-
-
-
-
-
-
-%----------------------------------------------------------------------------
-
 \subsection{Pressure Matrices \texorpdfstring{$\mathbf{B}_x$ and $\mathbf{B}_y$}{Bx and By} on the \texorpdfstring{$P_1$-iso-$P_1$}{P1-iso-P1} Macro-Element}
 
 Unlike a conforming equal-order pairing, the pressure basis function $\psi_j$ lives on the \emph{macro} triangle
@@ -557,6 +463,11 @@ $T_1,T_2,T_3,T_4 \in \mathcal{T}_h$ obtained by connecting the edge midpoints of
 integral must be split into a sum over the four children, and the pressure hat function must be re-expressed
 in each child's own local reference coordinates. This restriction is the main idea of the
 $P_1$-iso-$P_1$ assembly.
+
+\begin{figure}[H]
+    \centering
+    \includesvg[width=0.7\linewidth]{P1-iso-P1.svg}
+\end{figure}
 
 \subsubsection{Macro Geometry and Node Labeling}
 
