@@ -57,7 +57,8 @@ Derivations for Stokes Equations
 
 \newpage
 \normalsize
-\section{General Information}Stokes flow, also named creeping flow or creeping motion, is a type of fluid flow where advective inertial forces are negligibly small compared with viscous forces. This regime is mathematically characterized by a low Reynolds number, i.e., 
+\section{Introduction to Stokes Equations and Finite Element Method}
+Stokes flow, also named creeping flow or creeping motion, is a type of fluid flow where advective inertial forces are negligibly small compared with viscous forces. This regime is mathematically characterized by a low Reynolds number, i.e., 
 \[
 \mathrm{Re} = \frac{\rho U L}{\mu} \ll 1 \quad \nu=\frac{\mu}{\rho},
 \]
@@ -335,7 +336,7 @@ It is also necessary to take a look at the original shape functions' derivatives
     \includesvg[width=0.7\linewidth]{Jacobian_tri_transform.svg}
 \end{figure}
 
-\subsection{Stiffness Matrix \texorpdfstring{$\mathbf{A}$}{A}}
+\subsection{Stiffness Matrix \texorpdfstring{$\mathbf{A}$}{A}}\label{sec:stiffness_matrix}
 
 To determine the discrete operator for the viscous term, we begin with the bilinear form involving the velocity test and trial functions:
 
@@ -554,7 +555,7 @@ Unlike a conforming equal-order pairing, the pressure basis function $\psi_j$ li
 $K \in \mathcal{T}_H$, while the velocity basis functions $\phi_i$ live on the four \emph{child} triangles
 $T_1,T_2,T_3,T_4 \in \mathcal{T}_h$ obtained by connecting the edge midpoints of $K$. Consequently the coupling
 integral must be split into a sum over the four children, and the pressure hat function must be re-expressed
-in each child's own local reference coordinates. Getting this restriction right is the entire content of the
+in each child's own local reference coordinates. This restriction is the main idea of the
 $P_1$-iso-$P_1$ assembly.
 
 \subsubsection{Macro Geometry and Node Labeling}
@@ -1405,5 +1406,126 @@ where \(E_h\) denotes the corresponding \(L^2\)-error.
 \end{table}
 
 Table~\ref{tab:stokes_convergence} demonstrates a consistent reduction of both the velocity and pressure errors as the mesh is refined, indicating convergence of the numerical solution toward the reference solution. The velocity error decreases from $39.5400$ on the coarsest mesh to $0.7305$ on the finest mesh considered, with observed convergence rates oscillating between $0.54$ and $1.27$. The pressure error also decreases, although at a significantly slower rate, from $4826.3$ to $2438.1$. This behavior is expected, as the pressure approximation is computed on the coarser mesh of the P1-iso-P1 discretization and therefore converges more slowly than the velocity field. Additionally, the re-entrant corners inherent to this specific device geometry introduce flow singularities that naturally degrade the theoretical asymptotic convergence rates. Overall, the results confirm that mesh refinement improves the accuracy of both solution components and provide numerical evidence for the convergence of the implemented Stokes finite element method.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{convergence_plot.png} 
+    \caption{Log-log plot of the $L^2$ error norms for velocity and pressure against the velocity degrees of freedom.}
+    \label{fig:convergence_plot}
+\end{figure}
+
+Figure~\ref{fig:convergence_plot} visualizes the convergence behavior detailed in Table~\ref{tab:stokes_convergence} by plotting the $L^2$ error norms against the velocity degrees of freedom on a logarithmic scale. The solid blue line demonstrates a steady, near-linear decrease in the velocity error, ultimately achieving a final convergence rate of $r_u = 0.722$. In contrast, the dashed orange line representing the pressure error starts at a significantly higher magnitude and exhibits a much flatter trajectory, finalizing at a rate of $r_p = 0.585$. This visual disparity emphasizes the slower convergence of the pressure field inherent to the P1-iso-P1 element pair, particularly when subjected to the geometric singularities of the Z-shaped domain.
+
+%-------------------------------------------------------------------
+
+\newpage
+\section{Introduction to Reduced-Order Modeling}\label{sec:rom_intro}
+The finite element discretization developed in the preceding sections yields a numerically reliable, but computationally expensive, \emph{full-order model} (FOM): even at moderate refinement levels the $P_1$-iso-$P_1$ discretization produces velocity systems with $\mathcal{O}(10^5)$ degrees of freedom (Table~\ref{tab:stokes_convergence}), and every change in the physical configuration requires reassembling and resolving the full saddle-point system. This cost becomes prohibitive in \emph{many-query} settings --- parameter studies, optimization loops, or real-time control --- where the Stokes system must be solved repeatedly for many instances of a parameter vector $\boldsymbol\mu \in \mathcal{P} \subset \mathbb{R}^p$.
+In the present study, $\boldsymbol\mu$ parametrizes a spatially varying kinematic viscosity field, and solving the FOM anew for every parameter instance is computationally wasteful: nearby parameters produce similar flow fields, so the resulting solution manifold, 
+$$
+\mathcal{M} = \left\{ (\mathbf{u}_h(\boldsymbol\mu), p_h(\boldsymbol\mu)) : \boldsymbol\mu \in \mathcal{P} \right\},
+$$
+possesses low intrinsic dimension despite living in a high-dimensional discrete space, and can be well approximated by a low-dimensional linear subspace. This observation is the central premise of \textit{reduced-order modeling} (ROM): rather than repeatedly solving the full-order system, one projects the problem onto a much smaller subspace and solves a reduced Galerkin system instead.
+
+The construction of this reduced system naturally splits into two stages. In an \emph{offline} stage, performed once, a set of representative FOM solutions is precomputed and compressed into a low-dimensional reduced basis; any parameter-independent quantities needed to assemble the reduced operators are also built at this stage, regardless of computational cost, since it is paid only once. In the subsequent \emph{online} stage, a new parameter instance $\boldsymbol\mu$ is handled by assembling and solving only the small reduced system, at a cost independent of the underlying mesh resolution $N$. This offline--online decomposition is what ultimately makes ROM attractive for many-query settings: the expensive part of the computation is amortized once, while each additional query becomes essentially free by comparison.
+
+%-------------------------------------------------------------------
+
+\section{Parametrized Problem Formulation}
+The \textit{exchanger device} consists of a pipe-like geometry in which the temperature, and consequently the
+viscosity, varies along the flow direction. Rather than resolving this dependence by solving the coupled
+advection--diffusion equation for the temperature field, the viscosity distribution is approximated directly
+from values prescribed at \textit{five} representative locations inside the domain and reconstructed
+throughout $\Omega$ by \textit{inverse-distance (Shepard) interpolation}. This parameterization is what makes
+the problem amenable to reduced-order modeling.
+
+\subsection{The Viscosity Parameter Vector \texorpdfstring{$\boldsymbol{\mu}$}{mu}}
+
+To enable an efficient reduced-order formulation, the spatially varying kinematic viscosity is parameterized by a finite set of basis functions. Five normalized Shepard basis functions\(\{\psi_k(\mathbf{x})\}_{k=1}^{5}\) are constructed from prescribed locations distributed over the computational domain. The viscosity field is then represented as 
+
+\[
+\nu(\mathbf{x};\boldsymbol{\mu}) = \sum_{k=1}^{p}\mu_k\,\psi_{k}(\mathbf{x}) \ ,
+\qquad
+\psi_k(\mathbf{x}) = \frac{w_{k}(\mathbf{x})}{\displaystyle \sum_{j=1}^p w_{j}(\mathbf{x})} \ ,
+\qquad
+w_{k}(\mathbf{x}) = \frac{1}{\max(d_{k}, \epsilon)^\gamma} \ ,
+\qquad
+d_{k} = \|\mathbf{x} - \mathbf{x}_k\|_2 \ ,
+\] 
+
+where 
+\begin{itemize}    
+    \item $\boldsymbol{\mu} =     
+        \begin{bmatrix}        
+            \mu_1 & \mu_2 & \mu_3 & \mu_4 & \mu_5    
+        \end{bmatrix}^{T} \in \mathcal{P}\subset\mathbb{R}^{5}$ 
+    is the vector of viscosity values assigned at the control points,     
+    
+    \item $p = 5$ is the number of control points distributed across the domain,     
+    
+    \item $\mathbf{x}_k \in \Omega$ is the fixed spatial position of the $k$-th control point,     
+    
+    \item $\gamma > 0$ is a power parameter controlling the decay of influence with distance.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{reduced-order_model/Viscosity_plot.png}
+    \caption{The viscosity field $\nu\left(\mathbf{x};\boldsymbol{\mu} = \begin{bmatrix}
+        101.014 & 70.127 & 153.464 & 13.205 & 104.624
+    \end{bmatrix}^T\right)$ across the \textit{exchanger device's} domain.
+    \newline\textbf{Left:}  Continuous viscosity field with labeled evaluation points.
+    \newline\textbf{Right:} Corresponding contour plot showing lines of constant viscosity.}
+    \label{fig:viscosity_plot}
+\end{figure}
+
+\subsection{Affine Decomposition of the Viscous Operator}
+
+Since the viscosity field enters the weak form linearly, the corresponding viscous operator inherits an affine parameter dependence. Under this affine structure, the bilinear form decomposes into parameter-independent spatial terms scaled by the parameter coefficients $\mu_k$. Consequently, these spatial operators can be precomputed once and reused for every $\boldsymbol\mu \in \mathcal{P}$, forming the foundation of the reduced-order formulation.
+Since the assembly treats the viscosity as piecewise constant on each element --- evaluated once at the
+element's centroid $\mathbf{x}_T$, exactly as in the numerical assembly routine --- the affine structure of
+$\nu(\mathbf{x};\boldsymbol\mu)$ propagates directly to the global stiffness matrix:
+
+\[
+\begin{aligned}
+    \mathbf{A}(\boldsymbol\mu)
+    &= \sum_{T \in \mathcal{T}_h} \nu(\mathbf{x}_T;\boldsymbol\mu)\, \mathbf{A}^{loc}_T
+    = \sum_{T \in \mathcal{T}_h} \left( \sum_{k=1}^{5}\mu_k\,\psi_{k}(\mathbf{x}_T) \right) \mathbf{A}^{loc}_T 
+    = \sum_{k=1}^{5}\mu_k \sum_{T \in \mathcal{T}_h} \psi_{k}(\mathbf{x}_T)\,\mathbf{A}^{loc}_T \\[8pt]
+    &= \sum_{k=1}^{5}\mu_k\, \mathbf{A}_k,
+\end{aligned}
+\]
+
+where $\mathbf{A}^{loc}_T$ denotes the element stiffness matrix scattered into the global index set (the same
+local matrix as in Section~\ref{sec:stiffness_matrix}, but with the viscosity factor left out), and
+\[
+\mathbf{A}_k := \sum_{T \in \mathcal{T}_h} \psi_{k}(\mathbf{x}_T)\,\mathbf{A}^{loc}_T
+\]
+is entirely independent of $\boldsymbol\mu$. Each $\mathbf{A}_k$ is obtained by running the ordinary assembly
+routine once with $\psi_k$ itself substituted in place of the viscosity field, so five parameter-independent
+matrices $\mathbf{A}_1,\dots,\mathbf{A}_5$ are assembled and stored once, offline; online, $\mathbf{A}(\boldsymbol\mu)$
+for any new parameter instance reduces to a five-term scalar-weighted sum.
+
+%-------------------------------------------------------------------
+
+\section{Snapshot Generation and Proper Orthogonal Decomposition}
+\subsection{Full-Order Snapshot Collection}
+\subsection{Train/Test Partitioning of the Parameter Space}
+\subsection{Proper Orthogonal Decomposition and Energy Truncation}
+
+\section{Reduced Basis Construction}
+\subsection{Boundary Lifting and Snapshot Homogenization}
+\subsection{Supremizer Enrichment for Inf-Sup Stability}
+\subsection{Reduced Velocity and Pressure Spaces}
+
+\section{Offline--Online Decomposition}
+\subsection{Offline Phase: Reduced Operator Assembly}
+\subsection{Online Phase: The Reduced Galerkin System}
+
+\section{Numerical Results}
+\subsection{Reconstruction Accuracy: Seen vs.\ Unseen Parameters}
+\subsection{Velocity and Pressure Field Comparison (FOM vs.\ ROM)}
+\subsection{Derived Quantities of Interest}
+\subsection{Computational Speedup}
 
 \end{document}
