@@ -1467,11 +1467,14 @@ where
 \begin{figure}[H]
     \centering
     \includegraphics[width=1\textwidth]{reduced-order_model/Viscosity_plot.png}
-    \caption{The viscosity field $\nu\left(\mathbf{x};\boldsymbol{\mu} = \begin{bmatrix}
+    \caption{
+    \small
+    The viscosity field $\nu\left(\mathbf{x};\boldsymbol{\mu} = \begin{bmatrix}
         101.014 & 70.127 & 153.464 & 13.205 & 104.624
     \end{bmatrix}^T\right)$ across the \textit{exchanger device's} domain.
     \newline\textbf{Left:}  Continuous viscosity field with labeled evaluation points.
-    \newline\textbf{Right:} Corresponding contour plot showing lines of constant viscosity.}
+    \newline\textbf{Right:} Corresponding contour plot showing lines of constant viscosity.
+    \normalsize}
     \label{fig:viscosity_plot}
 \end{figure}
 
@@ -1502,9 +1505,18 @@ routine once with $\psi_k$ itself substituted in place of the viscosity field, s
 matrices $\mathbf{A}_1,\dots,\mathbf{A}_5$ are assembled and stored once, offline; online, $\mathbf{A}(\boldsymbol\mu)$
 for any new parameter instance reduces to a five-term scalar-weighted sum.
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.91\textwidth]{reduced-order_model/Viscosity_Basis_Functions.png}
+    \caption{\small The viscosity basis functions $\{\psi_i\}_{i=1}^5$ across the \textit{exchanger device's} domain. \normalsize}
+    \label{fig:viscosity_basis_functions_plot}
+\end{figure}
+
 %-------------------------------------------------------------------
 
 \section{Snapshot Generation}
+This section outlines the essential offline phase of generating and mathematically preparing snapshot data. Details regarding the collection of full-order solutions, the consistent treatment of boundary conditions, and the application of stabilization techniques to ensure a robust and rigorous reduced model are presented.
+
 \subsection{Full-Order Snapshot Collection}
 \subsection{Boundary Lifting and Snapshot Homogenization}
 \subsection{Supremizer Enrichment for Inf-Sup Stability}
