@@ -111,7 +111,8 @@ degrees of freedom than pressure, yielding a stable ratio that satisfies the dis
 with $\beta$ bounded away from zero independently of refinement. The result is a highly symmetric
 macro-element that keeps the low cost of linear shape functions while retaining robust convergence.
 
-\section{Strong Formulation}
+\section{Continuous and Variational Formulations}
+\subsection*{Strong Formulation}
 The steady-state motion of an incompressible viscous fluid in the low-Reynolds-number regime is governed by the classical \textit{Stokes equations}. These equations constitute a fundamental linear model in fluid mechanics and describe the balance between viscous stresses, pressure forces, and the incompressibility constraint. Given a bounded domain $\Omega \subset \mathbb{R}^2$ enclosed by a boundary $\partial\Omega = \Gamma_D \cup \Gamma_N$ (where $\Gamma_D \cap \Gamma_N = \emptyset$), the strong formulation of the problem seeks the velocity field $\mathbf{u}(x,y)$ and the scalar pressure field $p(x,y)$ satisfying:
 
 \[
@@ -138,11 +139,11 @@ The mathematical and physical roles of these individual components are summarize
     \item \textbf{Neumann Boundary Condition ($-p\mathbf{n} + \nu (\nabla \mathbf{u})\mathbf{n} = \mathbf{h}$):} Enforced on the boundary segment $\Gamma_N$ with outward unit normal vector $\mathbf{n}$, this specifies the weak normal stress or traction force vector $\mathbf{h}$ acting on the fluid, typically representing free-pressure outlets or open boundaries.
 \end{itemize}
 
-\section{Weak Formulation}
+\subsection*{Weak Formulation}
 
 To solve the Stokes system using the Finite Element Method, we transform the original strong partial differential equations into their weak (or variational) integral form. This is achieved by multiplying the momentum and continuity equations by smooth test functions, $\mathbf{v}$ and $q$, and integrating the terms over the entire physical domain $\Omega$. Applying integration by parts (Green's identity) to the second-order viscous diffusion term reduces the continuity requirements on our velocity fields from second-order derivatives down to first-order derivatives. 
 
-During this mathematical transition, the natural boundary conditions—such as the traction force $h$ on the Neumann boundary $\Gamma_N$—automatically emerge within the boundary integrals. To accommodate non-zero (inhomogeneous) Dirichlet velocity profiles on the walls while strictly maintaining a homogeneous test function space $X$ where $\mathbf{v}=\mathbf{0}$ on $\Gamma_D$, we apply a boundary lifting technique. We decompose the true velocity field into $\mathbf{u}_{total} = \mathbf{u} + \mathbf{r}_g$, where $\mathbf{r}_g$ is a known extension function matching the boundary data, and $\mathbf{u} \in X$ is the remaining homogeneous unknown field. This systematic process yields the coupled weak formulation system:
+During this mathematical transition, the natural boundary conditions—such as the traction force $h$ on the Neumann boundary $\Gamma_N$—automatically emerge within the boundary integrals. To accommodate non-zero (inhomogeneous) Dirichlet velocity profiles on the walls while strictly maintaining a homogeneous test function space $X$ where $\mathbf{v}=\mathbf{0}$ on $\Gamma_D$, we apply a boundary lifting technique. We decompose the true velocity field into $\mathbf{u} = \mathbf{u}_h + \mathbf{r}_g$, where $\mathbf{r}_g$ is a known extension function matching the boundary data, and $\mathbf{u}_h \in X$ is the remaining homogeneous unknown field. This systematic process yields the coupled weak formulation system:
 
 \begin{equation}
 \label{eq:stokes_weak}
@@ -454,13 +455,12 @@ After calculating the vector-matrix-vector products explicitly using the constan
 Please note that the matrices $\mathbf{Q}$ and $\mathbf{A}^{loc}$ are symmetric. This structural property is highly advantageous for optimizing numerical calculations.
 
 %----------------------------------------------------------------------------
-
 \subsection{Pressure Matrices \texorpdfstring{$\mathbf{B}_x$ and $\mathbf{B}_y$}{Bx and By} on the \texorpdfstring{$P_1$-iso-$P_1$}{P1-iso-P1} Macro-Element}
 
 Unlike a conforming equal-order pairing, the pressure basis function $\psi_j$ lives on the \emph{macro} triangle
 $K \in \mathcal{T}_H$, while the velocity basis functions $\phi_i$ live on the four \emph{child} triangles
 $T_1,T_2,T_3,T_4 \in \mathcal{T}_h$ obtained by connecting the edge midpoints of $K$. Consequently the coupling
-integral must be split into a sum over the four children, and the pressure hat function must be re-expressed
+integral must be split into a sum over the four children, and the pressure basis function must be re-expressed
 in each child's own local reference coordinates. This restriction is the main idea of the
 $P_1$-iso-$P_1$ assembly.
 
@@ -469,20 +469,44 @@ $P_1$-iso-$P_1$ assembly.
     \includesvg[width=0.7\linewidth]{P1-iso-P1.svg}
 \end{figure}
 
+
+\begin{color}{blue}
+    
 \subsubsection{Macro Geometry and Node Labeling}
 
-Let the macro triangle $K$ have vertices $X_1,X_2,X_3$ with global barycentric (pressure) basis
-$\psi_1=\lambda_1,\ \psi_2=\lambda_2,\ \psi_3=\lambda_3$. The uniform refinement introduces the three edge
-midpoints
+Let the macro triangle $K$ have vertices $X_1,X_2,X_3$, carrying the pressure basis functions $\psi_1,\psi_2,
+\psi_3$ ($\psi_j$ equal to $1$ at $X_j$ and $0$ at the other two macro vertices, extended linearly across all
+of $K$ -- the same construction as $\hat\phi_1,\hat\phi_2,\hat\phi_3$ on the reference triangle in \S4.1, just
+on the macro triangle instead). Uniform refinement introduces the three edge midpoints
 \[
 X_4 = \tfrac{1}{2}(X_1+X_2), \qquad X_5 = \tfrac{1}{2}(X_2+X_3), \qquad X_6 = \tfrac{1}{2}(X_1+X_3),
 \]
 giving the four congruent children
 \[
-T_1=(X_1,X_4,X_6), \quad T_2=(X_4,X_2,X_5), \quad T_3=(X_6,X_5,X_3), \quad T_4=(X_4,X_5,X_6),
+T_1=(X_1,X_4,X_6), \quad T_2=(X_4,X_2,X_5), \quad T_3=(X_6,X_5,X_3), \quad T_4=(X_4,X_5,X_6).
 \]
-matching the $\ell_1,\ell_2,\ell_3,\ell_4$ labeling of your Figure 1. Velocity has one degree of freedom at
-each of the six points $X_1,\dots,X_6$; pressure has one degree of freedom at each of $X_1,X_2,X_3$ only.
+Velocity has one degree of freedom at each of the six points $X_1,\dots,X_6$; pressure has one degree of
+freedom at each of $X_1,X_2,X_3$ only.
+
+Because each $\psi_j$ is linear across all of $K$, its value at a midpoint is simply the average of its values
+at the two corners that midpoint sits between. Together with $\psi_j(X_j)=1$ and $\psi_j=0$ at the other two
+corners, this fixes every value needed later:
+
+\begin{table}[H]
+\centering
+\caption{Nodal values of the macro pressure basis functions $\psi_1,\psi_2,\psi_3$.}
+\begin{tabular}{c|ccc}
+\hline\hline
+ & $\psi_1$ & $\psi_2$ & $\psi_3$ \\ \hline
+$X_1$ & $1$   & $0$   & $0$   \\
+$X_2$ & $0$   & $1$   & $0$   \\
+$X_3$ & $0$   & $0$   & $1$   \\
+$X_4$ & $1/2$ & $1/2$ & $0$   \\
+$X_5$ & $0$   & $1/2$ & $1/2$ \\
+$X_6$ & $1/2$ & $0$   & $1/2$ \\
+\hline\hline
+\end{tabular}
+\end{table}
 
 \subsubsection{The Bilinear Form, Split Over Children}
 
@@ -503,53 +527,71 @@ each of the six points $X_1,\dots,X_6$; pressure has one degree of freedom at ea
 \end{array}
 \right| \\[10pt]
 &= -\sum_{m=1}^{4} \left(\frac{\partial \phi_i}{\partial x}\right)_{T_m} \int_{T_m} \psi_j \, d\Omega
-= -\sum_{m=1}^{4} \left(\frac{\partial \phi_i}{\partial x}\right)_{T_m} \left|\mathbf{J}_{T_m}\right| \int_{\hat{T}} \hat\psi_j^{(m)}(\xi_1,\xi_2) \, d\xi_1 d\xi_2
+= -\sum_{m=1}^{4} \left(\frac{\partial \phi_i}{\partial x}\right)_{T_m} \left|\mathbf{J}_{T_m}\right| \int_{\hat{T}} \psi_j\big|_{T_m}(\xi_1,\xi_2) \, d\xi_1 d\xi_2
 \end{aligned}
 \]
 
-Everything now hinges on evaluating $\hat\psi_j^{(m)}$: the pressure hat function $\psi_j$, pulled back onto
-child $T_m$'s \emph{own} reference triangle.
+Everything now hinges on evaluating $\psi_j\big|_{T_m}$: the pressure basis function $\psi_j$, restricted to
+child $T_m$ and re-expressed in $T_m$'s own reference coordinates $(\xi_1,\xi_2)$.
 
 \subsubsection{Restricting the Macro Pressure Basis to a Child}
 
-Because $\lambda_j$ is affine on all of $K$, its restriction to the affine sub-triangle $T_m$ is again affine,
-and an affine function on $\hat{T}$ is \emph{uniquely} determined by its three nodal values — which is exactly
-what $\hat\phi_1,\hat\phi_2,\hat\phi_3$ interpolate. Hence:
+$\psi_j$ is linear on all of $K$, so it is also linear on the smaller triangle $T_m\subset K$ -- and a linear
+function on a triangle is completely determined by its values at that triangle's three corners, which is
+exactly what $\hat\phi_1,\hat\phi_2,\hat\phi_3$ interpolate on the reference triangle (\S4.1). Concretely: if
+$T_m$'s corners, in the order they were listed above, are called its first, second, and third corner, then
+$\hat\phi_1$ multiplies $\psi_j$'s value at $T_m$'s first corner, $\hat\phi_2$ at the second, and $\hat\phi_3$
+at the third. Writing this out for each of the four children in turn, using the values already tabulated
+above:
 
 \begin{tcolorbox}[colframe=heaven, colback=heaven!7!white, sharp corners]
 \[
-\hat\psi_j^{(m)}(\xi_1,\xi_2) \;=\; \lambda_j\!\left(V_1^{(m)}\right)\hat\phi_1(\xi_1,\xi_2)
-+ \lambda_j\!\left(V_2^{(m)}\right)\hat\phi_2(\xi_1,\xi_2)
-+ \lambda_j\!\left(V_3^{(m)}\right)\hat\phi_3(\xi_1,\xi_2)
+\begin{aligned}
+T_1=(X_1,X_4,X_6): &\qquad \psi_j\big|_{T_1} = \psi_j(X_1)\,\hat\phi_1 + \psi_j(X_4)\,\hat\phi_2 + \psi_j(X_6)\,\hat\phi_3, \\[6pt]
+T_2=(X_4,X_2,X_5): &\qquad \psi_j\big|_{T_2} = \psi_j(X_4)\,\hat\phi_1 + \psi_j(X_2)\,\hat\phi_2 + \psi_j(X_5)\,\hat\phi_3, \\[6pt]
+T_3=(X_6,X_5,X_3): &\qquad \psi_j\big|_{T_3} = \psi_j(X_6)\,\hat\phi_1 + \psi_j(X_5)\,\hat\phi_2 + \psi_j(X_3)\,\hat\phi_3, \\[6pt]
+T_4=(X_4,X_5,X_6): &\qquad \psi_j\big|_{T_4} = \psi_j(X_4)\,\hat\phi_1 + \psi_j(X_5)\,\hat\phi_2 + \psi_j(X_6)\,\hat\phi_3.
+\end{aligned}
 \]
 \end{tcolorbox}
 
-where $V_1^{(m)},V_2^{(m)},V_3^{(m)}$ are the three vertices of child $T_m$ (each one of $X_1,\dots,X_6$), and
-$\lambda_j(\cdot)$ is evaluated using the known barycentric values
-\[
-\lambda_1: (X_1,\dots,X_6) \mapsto \left(1,0,0,\tfrac12,0,\tfrac12\right), \qquad
-\lambda_2 \mapsto \left(0,1,0,\tfrac12,\tfrac12,0\right), \qquad
-\lambda_3 \mapsto \left(0,0,1,0,\tfrac12,\tfrac12\right).
-\]
+Each right-hand side is an ordinary combination of $\hat\phi_1,\hat\phi_2,\hat\phi_3$ with numerical
+coefficients read directly from the nodal-value table -- no new function has to be defined, only the already
+familiar reference shape functions re-weighted per child.
 
 \subsubsection{Exact Integration of the Restricted Pressure Basis}
 
-Since $\int_{\hat T}\hat\phi_k \, d\xi_1 d\xi_2 = \tfrac16$ for $k=1,2,3$ (same identity used for $\mathbf{M}_p^{loc}$
-in \S 5.6), linearity of the integral gives the closed form:
-
+Since $\int_{\hat T}\hat\phi_k \, d\xi_1 d\xi_2 = \tfrac16$ for $k=1,2,3$, integrating each of the four expressions above term by term gives
 \[
-w_j^{(m)} \;:=\; \int_{\hat T} \hat\psi_j^{(m)}(\xi_1,\xi_2)\, d\xi_1 d\xi_2
-= \frac{1}{6}\Big[\lambda_j\!\left(V_1^{(m)}\right) + \lambda_j\!\left(V_2^{(m)}\right) + \lambda_j\!\left(V_3^{(m)}\right)\Big]
+\int_{\hat T} \psi_j\big|_{T_m}\,d\xi_1 d\xi_2 = \tfrac16\Big[\ \text{(coefficient of }\hat\phi_1\text{)} + \text{(coefficient of }\hat\phi_2\text{)} + \text{(coefficient of }\hat\phi_3\text{)}\ \Big],
+\]
+i.e.\ one sixth of the sum of $\psi_j$'s values at $T_m$'s three corners. Working this out for all four
+children and all three pressure basis functions:
+\[
+\begin{aligned}
+T_1: \quad &\int_{\hat T}\psi_1\big|_{T_1} = \tfrac16(1+\tfrac12+\tfrac12)=\tfrac13, &&
+\int_{\hat T}\psi_2\big|_{T_1} = \tfrac16(0+\tfrac12+0)=\tfrac1{12}, &&
+\int_{\hat T}\psi_3\big|_{T_1} = \tfrac16(0+0+\tfrac12)=\tfrac1{12}, \\[6pt]
+T_2: \quad &\int_{\hat T}\psi_1\big|_{T_2} = \tfrac16(\tfrac12+0+0)=\tfrac1{12}, &&
+\int_{\hat T}\psi_2\big|_{T_2} = \tfrac16(\tfrac12+1+\tfrac12)=\tfrac13, &&
+\int_{\hat T}\psi_3\big|_{T_2} = \tfrac16(0+0+\tfrac12)=\tfrac1{12}, \\[6pt]
+T_3: \quad &\int_{\hat T}\psi_1\big|_{T_3} = \tfrac16(\tfrac12+0+0)=\tfrac1{12}, &&
+\int_{\hat T}\psi_2\big|_{T_3} = \tfrac16(0+\tfrac12+0)=\tfrac1{12}, &&
+\int_{\hat T}\psi_3\big|_{T_3} = \tfrac16(\tfrac12+\tfrac12+1)=\tfrac13, \\[6pt]
+T_4: \quad &\int_{\hat T}\psi_1\big|_{T_4} = \tfrac16(\tfrac12+0+\tfrac12)=\tfrac16, &&
+\int_{\hat T}\psi_2\big|_{T_4} = \tfrac16(\tfrac12+\tfrac12+0)=\tfrac16, &&
+\int_{\hat T}\psi_3\big|_{T_4} = \tfrac16(0+\tfrac12+\tfrac12)=\tfrac16.
+\end{aligned}
 \]
 
-Evaluating this for all four children and all three pressure nodes yields:
+Collected into a table, writing $w_j^{(m)}$ for the value of $\int_{\hat T}\psi_j\big|_{T_m}$ computed above:
 
 \begin{table}[H]
 \centering
 \caption{Pressure-basis integration weights $w_j^{(m)}$ per child sub-triangle.}
 \begin{tabular}{lccc}
 \hline\hline
-\textbf{Child $T_m$} & $w_1^{(m)}$ (for $\psi_1$) & $w_2^{(m)}$ (for $\psi_2$) & $w_3^{(m)}$ (for $\psi_3$) \\
+\textbf{Child} & $w_1^{(m)}$ (for $\psi_1$) & $w_2^{(m)}$ (for $\psi_2$) & $w_3^{(m)}$ (for $\psi_3$) \\
 \hline
 $T_1 = (X_1,X_4,X_6)$ & $1/3$  & $1/12$ & $1/12$ \\
 $T_2 = (X_4,X_2,X_5)$ & $1/12$ & $1/3$  & $1/12$ \\
@@ -559,16 +601,15 @@ $T_4 = (X_4,X_5,X_6)$ & $1/6$  & $1/6$  & $1/6$  \\
 \end{tabular}
 \end{table}
 
-Note that only the central child $T_4$ reproduces a uniform $\tfrac16$ across all three pressure nodes — this
-is the case that (incorrectly) generalizes to the whole macro-element in a naive equal-order assembly. The
-corner children $T_1,T_2,T_3$ are systematically weighted \emph{unevenly}: each favors its own corner pressure
-node by a factor of $4$ relative to the other two.
+Only $T_4$ reproduces a uniform $\tfrac16$ across all three pressure basis functions -- the case that would
+(incorrectly) be assumed for the whole macro-element under a naive equal-order assembly. The corner children
+$T_1,T_2,T_3$ each favor their own corner's pressure basis function by a factor of $4$ over the other two,
+exactly as the worked-out sums above show.
 
 \subsubsection{Local Child Matrices \texorpdfstring{$\mathbf{B}_x^{(m)}, \mathbf{B}_y^{(m)}$}{Bx(m), By(m)}}
 
 Reusing the gradient identity of eq.~\eqref{eq:grad_for_Bx_By}, but built from child $T_m$'s own vertex
 coordinates $(x_1^{(m)},y_1^{(m)}),(x_2^{(m)},y_2^{(m)}),(x_3^{(m)},y_3^{(m)})$ and Jacobian $\mathbf{J}_{T_m}$:
-
 \[
 \begin{aligned}
 \left(\mathbf{B}_x^{(m)}\right)_{ij}
@@ -579,29 +620,29 @@ coordinates $(x_1^{(m)},y_1^{(m)}),(x_2^{(m)},y_2^{(m)}),(x_3^{(m)},y_3^{(m)})$ 
 = \Big[(x_3^{(m)}-x_1^{(m)})\tfrac{\partial \hat\phi_i}{\partial \xi_1} - (x_2^{(m)}-x_1^{(m)})\tfrac{\partial \hat\phi_i}{\partial \xi_2}\Big] w_j^{(m)},
 \end{aligned}
 \]
-
-for $i \in \{1,2,3\}$ indexing $T_m$'s three \emph{local} velocity nodes, and $j\in\{1,2,3\}$ indexing $K$'s three
-macro pressure nodes. Notice the $\left|\mathbf{J}_{T_m}\right|$ cancels exactly against the $\tfrac{1}{|\mathbf{J}_{T_m}|}$
-buried inside the gradient — the Jacobian determinant never actually survives into the final formula, exactly
-as in your original (correct) derivation of $\mathbf{B}^{loc}$ for a single conforming triangle. What changes
-is \emph{only} $w_j^{(m)}$, replacing your uniform constant $\tfrac16$.
+for $i \in \{1,2,3\}$ indexing $T_m$'s three local velocity nodes, and $j\in\{1,2,3\}$ indexing $K$'s three
+macro pressure nodes, with $w_j^{(m)}$ read off the table above. The factor $|\mathbf{J}_{T_m}|$ cancels
+exactly against the $1/|\mathbf{J}_{T_m}|$ already inside the gradient (eq.~\eqref{eq:grad_for_Bx_By}) --
+the Jacobian determinant never actually survives into the final formula, exactly as in the single-conforming-triangle
+derivation of $\mathbf{B}^{loc}$ earlier. The only thing that changes per child is $w_j^{(m)}$, replacing a
+single uniform constant $\tfrac16$ with the four different rows of the table above.
 
 \subsubsection{Assembly Into the Macro-Local Block}
 
-Each child contributes a $3\times 3$ block coupling its own 3 local velocity nodes to the 3 macro pressure
-nodes. These are scatter-added into a single $6\times 3$ macro-local matrix indexed by the six fine velocity
-nodes $(X_1,\dots,X_6)$:
-
-\[
-\mathbf{B}_x^{K} \in \mathbb{R}^{6\times 3}, \qquad
-\left(\mathbf{B}_x^{K}\right)_{I(m,i),\,j} \mathrel{+}= \left(\mathbf{B}_x^{(m)}\right)_{ij}, \qquad m=1,\dots,4,
-\]
-
-where $I(m,i)$ maps $T_m$'s local node $i$ to its global fine-mesh index in $\{1,\dots,6\}$ (with the three
-midpoint nodes $X_4,X_5,X_6$ each shared by exactly two children and therefore receiving two additive
-contributions). $\mathbf{B}_y^K$ is assembled identically. These macro-local blocks are then assembled over
-all $K\in\mathcal{T}_H$ into the global $\mathbf{B}_x,\mathbf{B}_y \in \mathbb{R}^{N_p\times N_v}$ exactly as
-in \S 5.1.
+Each child contributes a $3\times 3$ block coupling its own 3 local velocity nodes to $K$'s 3 pressure nodes.
+These four blocks are added into a single $6\times3$ macro-local matrix, one row per fine velocity node
+$X_1,\dots,X_6$:
+\begin{itemize}
+    \item $T_1$'s block adds into the rows for $X_1, X_4, X_6$;
+    \item $T_2$'s block adds into the rows for $X_4, X_2, X_5$;
+    \item $T_3$'s block adds into the rows for $X_6, X_5, X_3$;
+    \item $T_4$'s block adds into the rows for $X_4, X_5, X_6$.
+\end{itemize}
+Every corner node ($X_1,X_2,X_3$) appears in exactly one child and receives a single contribution; every
+midpoint node ($X_4,X_5,X_6$) appears in exactly two children and so receives two contributions, added
+together. The result is the $6\times3$ macro-local matrix $\mathbf{B}_x^K$ (and identically
+$\mathbf{B}_y^K$), which is then assembled over all $K\in\mathcal{T}_H$ into the global
+$\mathbf{B}_x,\mathbf{B}_y \in \mathbb{R}^{N_p\times N_v}$.
 
 %----------------------------------------------------------------------------
 
@@ -658,15 +699,18 @@ Recall from \S2 that the strong Dirichlet condition reads $\mathbf u = \mathbf g
 that the weak formulation is stated for the homogeneous unknown $\mathbf u \in X$ via the decomposition
 $\mathbf u_{total} = \mathbf u + \mathbf r_g$. Discretely, $\vec r_g \in \mathbb{R}^{2N_v}$ is simply the nodal
 interpolant of $\mathbf g$: for every fine-mesh node $X_i$,
-\[
+
+\begin{equation}
+\label{eq:lifting_function}
 \left(\vec r_g^{\,x}\right)_i =
 \begin{cases}
     g_x(X_i) & X_i \in \Gamma_D^{\text{inlet}}, \\[4pt]
-    0 & \text{otherwise (walls, interior, outlet)},
+    0 & \text{otherwise},
 \end{cases}
 \qquad
 \left(\vec r_g^{\,y}\right)_i = 0 \ \ \forall i,
-\]
+\end{equation}
+
 where $\Gamma_D = \Gamma_D^{\text{inlet}} \cup \Gamma_D^{\text{wall}}$ collects every boundary node except the
 outlet (which is left as the natural, traction-free boundary $\Gamma_N$, so $h = \mathbf 0$ and
 $\mathbf F_{forces} = \mathbf 0$ throughout \S7's test cases). Walls carry the homogeneous no-slip value
@@ -738,6 +782,8 @@ is preserved so that the (now fixed, zero) reference pressure still correctly pa
 momentum equation, by the same zero-contribution argument as above. If the mesh has no coarse node lying
 exactly on the outlet boundary, the reference is instead taken as the coarse pressure node nearest to the
 outlet's midpoint, ensuring the regularization is always well-defined regardless of mesh irregularity.
+
+\end{color}
 
 %----------------------------------------------------------------------------
 
@@ -1043,15 +1089,15 @@ Substituting these block matrices into our eigenvalue problem yields the fully e
     &\ge \beta \\[10pt]      
 \end{align*}
 
-The minimum eigenvalue $\lambda_{\min}$ serves as a direct numerical test for the stability of our chosen velocity and pressure finite element grids. To verify if a grid combination is safe to use, we look at how $\lambda_{\min}$ behaves as the mesh is refined:
+The minimum eigenvalue $\lambda_{\min}$ serves as a direct numerical test for the stability of our chosen velocity and pressure finite element grids. To verify if a grid combination satisfies the discrete inf-sup condition, we look at how $\lambda_{\min}$ behaves as the mesh is refined:
 
 \begin{itemize}
-    \item \textbf{Stable Elements:} If the chosen grid pair is stable, $\lambda_{\min}$ will level off and remain strictly greater than a positive constant ($\lambda_{\min} \ge \beta^2 > 0$) even on very fine meshes. This guarantees a clean, reliable solution.
-    \item \textbf{Unstable Elements:} If the grid pair is unstable, $\lambda_{\min}$ will continuously drop toward zero as the mesh size decreases. This acts as a clear warning that the simulation will suffer from fake pressure spikes and oscillations (often called checkerboard patterns).
+    \item \textbf{Stable Elements:} If the chosen grid pair is stable, $\lambda_{\min}$ will level off and remain strictly greater than a positive constant ($\lambda_{\min} \ge \beta^2 > 0$) even on very fine meshes, ensuring stability of the mixed finite element discretization.
+    \item \textbf{Unstable Elements:} If the grid pair is unstable, $\lambda_{\min}$ will continuously drop toward zero as the mesh size decreases. This acts as a clear warning that the simulation will suffer from spurious pressure oscillations.
 \end{itemize}
 
 
-\subsection{Mass Matrix \texorpdfstring{$\mathbf{M}_p$}{Mp}}
+\subsection*{Mass Matrix \texorpdfstring{$\mathbf{M}_p$}{Mp}}
 To check our results numerically we will have to construct the pressure mass matrix as well:
 
 \begin{align*}
@@ -1110,140 +1156,66 @@ We can now turn to the local mass matrix:
     \end{bmatrix}
 \end{align*}
 
-%-------------------------------------------------------------------
+\subsection*{Numerical Verification of the Discrete Inf-Sup Condition}
 
-\newpage
-\section{Reverse Techniques: Einsum}
-
-\subsection{First Einsum}
-\label{sub:first_example}
-
-\begin{lstlisting}[
-    language=Python, 
-    frame=single,                  
-    backgroundcolor=\color{white}, 
-    basicstyle=\ttfamily\scriptsize, 
-    breaklines=true                 
-    Overfull \hbox
-]
-A_local = np.zeros(shape=(Nt, 3, 3))
-for i in range(3):
-    for j in range(i, 3):
-
-        grad_i = test_function_derivatives[i]
-        grad_j = test_function_derivatives[j]
-
-        val = np.einsum('i,nij,j->n', 
-                        grad_j, Q_mat, grad_i)
-
-        val *= kinematic_viscosity / (2 * det_J)
-
-        A_local[:, i, j] = val
-        A_local[:, j, i] = val
-\end{lstlisting}
-
+We have already established that the $P_1$-iso-$P_1$ pairing is stable if and
+only if the minimum eigenvalue $\lambda_{\min}$ of
 \[
-\begin{array}{ccc}
-    \left[\psi_1, \psi_2\right]  
-    & 
-    \left[
-    \begin{array}{cc}
-        q^n_{11} & q^n_{12} \\
-        q^n_{21} & q^n_{22}
-    \end{array}
-    \right]
-    & \left[\psi_1, \psi_2\right] \\
-    \psi_i & q^n_{ij} & \psi_j
-\end{array}
+\hat{\mathbf{K}} = \mathbf{M}_p^{-1}\left(\mathbf{B}_x \mathbf{A}^{-1} \mathbf{B}_x^T + \mathbf{B}_y \mathbf{A}^{-1} \mathbf{B}_y^T\right)
 \]
+remains bounded away from zero as the mesh is refined. We verify this directly by solving the equivalent
+generalized eigenvalue problem $\mathbf{K}\mathbf{p} = \lambda \mathbf{M}_p \mathbf{p}$, with $\mathbf{K} =
+\mathbf{B}_x \mathbf{A}^{-1} \mathbf{B}_x^T + \mathbf{B}_y \mathbf{A}^{-1} \mathbf{B}_y^T$, over six uniform
+refinement levels of a test domain. Since $\mathbf{A}$ is never needed in inverted form --- only
+$\mathbf{A}^{-1}\mathbf{B}_x^T$ and $\mathbf{A}^{-1}\mathbf{B}_y^T$, i.e.\ $N_p$ right-hand sides with
+$N_p \ll N_v$ --- $\mathbf{A}$ is factorized once via sparse LU and solved against these $N_p$ columns rather
+than inverted densely.
 
-\[
-\sum_{i=2}^2\sum_{j=2}^2\psi_i q^n_{ij} \psi_j = A^n \in \mathbb{R}^n
-\]
+\begin{table}[H]
+\centering
+\caption{Discrete inf-sup eigenvalue $\lambda_{\min}$ and stability constant $\beta=\sqrt{\lambda_{\min}}$ across mesh refinement.}
+\label{tab:lbb_verification}
+\begin{tabular}{ccccccc}
+\hline\hline
+\textbf{Level}  & \textbf{Mesh Size} & \textbf{$N_v$} & \textbf{$N_p$} & \textbf{$\lambda_{\min}$} & \textbf{$\beta$} & \textbf{$\Delta\lambda_{\min}$} \\ \hline
+0 & $h_0/1$ & 57    & 20   & 0.23319 & 0.4829 & --      \\
+1 & $h_0/2$ & 185   & 57   & 0.13443 & 0.3666 & 0.0988  \\
+2 & $h_0/4$ & 657   & 185  & 0.09448 & 0.3074 & 0.0399  \\
+3 & $h_0/8$ & 2465  & 657  & 0.08640 & 0.2939 & 0.0081  \\
+4 & $h_0/16$& 9537  & 2465 & 0.08223 & 0.2868 & 0.0042  \\
+5 & $h_0/32$& 37505 & 9537 & 0.08095 & 0.2845 & 0.0013  \\
+\hline\hline
+\end{tabular}
+\end{table}
 
-\subsection{Second Einsum}
-\label{sub:Second_example}
-
-\begin{lstlisting}[
-    language=Python, 
-    frame=single,                  % Draws the box around the code
-    backgroundcolor=\color{white}, % Background color inside the box
-    basicstyle=\ttfamily\scriptsize, % Makes the font very small
-    breaklines=true                 % Automatically wraps long lines to fix Overfull \hbox
-]
-A_local = np.einsum('mi,txy,nj->tmn', 
-                    test_function_derivatives, Q_mat, test_function_derivatives)
-A_local *= (kinematic_viscosity / (2.0 * det_J))[:, None, None]
-\end{lstlisting}
-
-\[
-\begin{array}{ccccc}
-    
-    \left[
-    \begin{array}{c}
-         \left[\psi_1^1,\psi_2^1\right]\\[3pt]
-         \left[\psi_1^2,\psi_2^2\right]\\[3pt]
-         \left[\psi_1^3,\psi_2^3\right]     
-    \end{array}
-    \right]
-    &
-    \left[
-    \begin{array}{cc}
-        q^t_{11} & q^t_{12} \\
-        q^t_{21} & q^t_{22}
-    \end{array}
-    \right]
-    &
-    \left[
-    \begin{array}{c}
-         \left[\psi_1^1,\psi_2^1\right]\\[3pt]
-         \left[\psi_1^2,\psi_2^2\right]\\[3pt]
-         \left[\psi_1^3,\psi_2^3\right]     
-    \end{array}
-    \right]
-    &
-    \longrightarrow
-    &
-    \left[
-    \begin{array}{ccc}
-        A^t_{11} & A^t_{12} & A^t_{13}\\
-        A^t_{21} & A^t_{22} & A^t_{23}\\
-        A^t_{31} & A^t_{32} & A^t_{33}
-    \end{array}
-    \right]\\[2em]
-    \psi^m_i & q^t_{xy} & \psi^n_j &  & A^t_{mn}
-\end{array}
-\]
-So by using indexation and sums we notice that the structure has not really changed since the first example~\ref{sub:first_example}:
-
-\[
-\sum_{i=1}^2\sum_{j=1}^2\psi^m_iq^t_{ij}\psi^n_j = A^t_{mn}\in\mathbb{R}^{t \times m\times n}
-\]
-
-%-------------------------------------------------------------------
-
-\newpage
-\section{Numerical Experiments and Applications}
-In this section, we validate our $P_1\text{-iso-}P_1$ finite element solver using two distinct fluid engineering case studies: an \textit{Exchanger Device} and a \textit{Winding Pipe}. Both configurations operate under a creeping flow regime ($\mathrm{Re} \ll 1$), where viscous forces dominate. 
-
-For each case study, the numerical results are presented in a vertical sequence showing:
-\begin{enumerate}
-    \item \textbf{Pressure Field Contour Maps:} Tri-contour plots displaying the continuous linear scalar pressure fields ($\mathbf{P}$) and revealing the pressure drop across the domains.
-    \item \textbf{Velocity Field Streamplots:} Streamline trajectories displaying the path lines, vector flow patterns, and boundary layer behaviors of the velocity field ($\mathbf{u}$).
-\end{enumerate}
-
-\subsection{Exchanger Device}
+Table~\ref{tab:lbb_verification} and Figure~\ref{fig:lbb_verification} show that as we make the grid significantly finer, the minimum eigenvalue $\lambda_{\min}$ drops from 0.2332 to 0.0809. The successive differences ($\Delta\lambda_{\min}$) decrease rapidly, indicating that the eigenvalue approaches a positive limiting value rather than converging to zero. This behavior provides clear, practical proof that our $P_1$-iso-$P_1$ setup is numerically stable and successfully satisfies the LBB condition.
 
 \begin{figure}[H]
     \centering
-    \begin{subfigure}[b]{0.85\textwidth}  
+    \includegraphics[width=1\textwidth]{LBB_stability_P1isoP1.png}
+    \caption{Discrete inf-sup eigenvalue $\lambda_{\min}$ (left) and stability constant $\beta$ (right) as a
+    function of velocity degrees of freedom $N_v$, over six uniform refinement levels.}
+    \label{fig:lbb_verification}
+\end{figure}
+
+%-------------------------------------------------------------------
+
+\section{Numerical Experiments and Applications}
+In this section, we validate our $P_1\text{-iso-}P_1$ finite element solver using two distinct fluid engineering case studies: an \textit{Exchanger Device} and a \textit{Winding Pipe}. Both configurations operate under a creeping flow regime ($\mathrm{Re} \ll 1$), where viscous forces dominate. 
+
+\subsection*{Exchanger Device}
+
+\begin{figure}[H]
+    \centering
+    \captionsetup{font=small}
+    \begin{subfigure}[b]{0.48\textwidth}  
         \centering
         \includegraphics[width=\textwidth]{Exchanger Device/Solution_Streamlines.png}
         \caption{Computed Velocity Streamline Vector Paths.}
         \label{fig:exchanger_streamlines}
     \end{subfigure}
-    \\ \vspace{0.4cm}                     
-    \begin{subfigure}[b]{0.85\textwidth} 
+    \hfill
+    \begin{subfigure}[b]{0.48\textwidth} 
         \centering
         \includegraphics[width=\textwidth]{Exchanger Device/Pressure_Tricontourf.png}
         \caption{Continuous Piecewise Linear Pressure Contour Map.}
@@ -1252,6 +1224,7 @@ For each case study, the numerical results are presented in a vertical sequence 
     \caption{Complete Stokes flow simulation inside the \textit{Exchanger Device} domain.}
     \label{fig:exchanger_full}
 \end{figure}
+    
 The numerical results inside the \textit{Exchanger Device} reveal distinct kinematic adjustments driven by the variable cross-sectional area of the channel network. As observed in the velocity streamline distributions (Figure~\ref{fig:exchanger_streamlines}), the fluid velocity increases significantly at the turns, where the geometry narrows relative to the wider vertical passages. To preserve mass conservation under the incompressibility constraint $\nabla \cdot \mathbf{u} = 0$, the velocity field must accelerate through these local contractions, creating higher localized velocity gradients along the curved inner walls.
 
 Furthermore, the simulation clearly shows fluid swirls (recirculation zones) inside the dead-end, cut-off extensions. Because Stokes flow has no inertia, the fluid balance simplifies to a strict equilibrium between pressure gradients and viscous friction:
@@ -1260,12 +1233,13 @@ Furthermore, the simulation clearly shows fluid swirls (recirculation zones) ins
 \]
 As a result, the main stream takes the path of least resistance through the primary central channels. However, as this fast-moving core flow sweeps past the stagnant fluid trapped in the side cavities, it shears against it. This boundary shear transfers momentum across the open gap, dragging the passive fluid along and creating slow, circular vortices inside the extensions. The computed velocity field exhibits well-resolved stagnation regions and sharp shear interfaces, indicating stable and physically consistent behavior of the mixed finite element discretization.
 
-\subsection{Winding Pipe}
+\subsection*{Winding Pipe}
 The \textit{Winding Pipe} models an internal distribution manifold containing geometric obstacles designed to alter flow paths. This setup presents a challenging test case for mass conservation preservation across sudden transitions.
 
 \begin{figure}[H]
     \centering
-    \begin{subfigure}[b]{0.48\textwidth}
+    \captionsetup{font=small}
+    \begin{subfigure}[b]{0.513\textwidth}
         \centering
         \includegraphics[width=\textwidth]{Winding Pipe/Pressure_Tricontourf.jpeg}
         \caption{Continuous Piecewise Linear Pressure Contour Map.}
@@ -1289,12 +1263,11 @@ As observed in Figure~\ref{fig:winding_pipe_full}, the velocity streamlines adap
 \newpage
 \section{Convergence of Numerical Solutions}
 
-\subsection{Embedding Matrix}
-
-\subsection{Convergence Analysis via a Reference Solution on a Z-Shaped Channel Device}
+\subsection*{Convergence Analysis via a Reference Solution on a Z-Shaped Channel Device}
 
 \begin{figure}[H]
     \centering
+    \captionsetup{font=small}
     \begin{subfigure}[b]{0.495\textwidth}
         \centering
         \includegraphics[width=\textwidth]{Z-Mesh/pressure_z_mesh.png}
@@ -1314,7 +1287,7 @@ As observed in Figure~\ref{fig:winding_pipe_full}, the velocity streamlines adap
 
 To investigate the convergence behavior of the P1-iso-P1 discretization, a reference solution was first computed on the finest available mesh, obtained after seven uniform refinements of the initial domain geometry. Solutions on coarser meshes were then compared against this reference solution.
 
-Since the discrete velocity and pressure spaces have different dimensions on different refinement levels, the solutions cannot be compared directly. Therefore, each coarse-grid solution was recursively transferred to the reference mesh using the finite-element embedding operator returned by \texttt{embeddingForRefined}. For a solution computed on refinement level \(i\), the embedding matrices corresponding to all subsequent refinements were applied successively,
+Since the discrete velocity and pressure spaces have different dimensions on different refinement levels, the solutions cannot be compared directly. Therefore, each coarse-grid solution was recursively transferred to the reference mesh using the finite-element embedding operator. For a solution computed on refinement level \(i\), the embedding matrices corresponding to all subsequent refinements were applied successively,
 \[
 \mathbf{u}^{(i)}_{\mathrm{emb}}
 =
@@ -1405,6 +1378,7 @@ Table~\ref{tab:stokes_convergence} demonstrates a consistent reduction of both t
 
 \begin{figure}[H]
     \centering
+    \captionsetup{font=small}
     \includegraphics[width=0.8\textwidth]{convergence_plot.png} 
     \caption{Log-log plot of the $L^2$ error norms for velocity and pressure against the velocity degrees of freedom.}
     \label{fig:convergence_plot}
@@ -1466,15 +1440,14 @@ where
 
 \begin{figure}[H]
     \centering
+    \captionsetup{font=small}
     \includegraphics[width=1\textwidth]{reduced-order_model/Viscosity_plot.png}
     \caption{
-    \small
     The viscosity field $\nu\left(\mathbf{x};\boldsymbol{\mu} = \begin{bmatrix}
         101.014 & 70.127 & 153.464 & 13.205 & 104.624
     \end{bmatrix}^T\right)$ across the \textit{exchanger device's} domain.
     \newline\textbf{Left:}  Continuous viscosity field with labeled evaluation points.
-    \newline\textbf{Right:} Corresponding contour plot showing lines of constant viscosity.
-    \normalsize}
+    \newline\textbf{Right:} Corresponding contour plot showing lines of constant viscosity.}
     \label{fig:viscosity_plot}
 \end{figure}
 
@@ -1507,23 +1480,238 @@ for any new parameter instance reduces to a five-term scalar-weighted sum.
 
 \begin{figure}[H]
     \centering
+    \captionsetup{font=small}
     \includegraphics[width=0.91\textwidth]{reduced-order_model/Viscosity_Basis_Functions.png}
-    \caption{\small The viscosity basis functions $\{\psi_i\}_{i=1}^5$ across the \textit{exchanger device's} domain. \normalsize}
+    \caption{The viscosity basis functions $\{\psi_i\}_{i=1}^5$ across the \textit{exchanger device's} domain.}
     \label{fig:viscosity_basis_functions_plot}
 \end{figure}
 
 %-------------------------------------------------------------------
-
-\section{Snapshot Generation}
-This section outlines the essential offline phase of generating and mathematically preparing snapshot data. Details regarding the collection of full-order solutions, the consistent treatment of boundary conditions, and the application of stabilization techniques to ensure a robust and rigorous reduced model are presented.
+\section{Data Generation}
+In this section, we detail the data generation pipeline required to construct the reduced-order model and address the computational and mathematical caveats inherent to the process. 
 
 \subsection{Full-Order Snapshot Collection}
-\subsection{Boundary Lifting and Snapshot Homogenization}
+To generate the training dataset of $n_s=100$ snapshots, we evaluate the high-fidelity model over a discrete parameter set $\Xi = \{\boldsymbol{\mu}^{(1)}, \dots, \boldsymbol{\mu}^{(n_s)}\} \subset \mathcal{P}$. To ensure a robust, space-filling exploration of the five-dimensional parameter domain, these instances were generated using \textit{Latin Hypercube Sampling} (LHS) over the uniform bounds $\mathcal{P} = [10, 200]^5$. By exploiting the affine decomposition of the viscous operator,
+
+\[
+A(\boldsymbol{\mu}) = \sum_{k=1}^5 \mu_k A_k,
+\]
+
+we eliminate the computationally prohibitive requirement of generating and storing $n_s$ dense spatial viscosity fields, and instead assemble the global stiffness matrix for any configuration via a scalar combination of the five precomputed operators $A_k$.
+
+The full-order saddle-point system was then solved for each $\boldsymbol{\mu}^{(i)} \in \Xi$ utilizing a \textit{parallelized computational framework} distributed across 10 CPU cores to obtain 
+$\{ (\mathbf{u}_h(\boldsymbol{\mu}^{(1)}), p_h(\boldsymbol{\mu}^{(1)})), \dots, (\mathbf{u}_h(\boldsymbol{\mu}^{(n_s)}), p_h(\boldsymbol{\mu}^{(n_s)})) \}$. Aggregating these discrete solutions produces the global snapshot matrices $\mathbf{S}_{u_x}, \mathbf{S}_{u_y} \in \mathbb{R}^{N_v \times n_s}$ and $\mathbf{S}_p \in \mathbb{R}^{N_p \times n_s}$. To be more specific:
+
+\[
+\begin{aligned}
+    \mathbf{S}_{u_x} &= \left[ \mathbf{u}_x^{(1)} \Big\vert \dots \Big\vert \mathbf{u}_x^{(100)} \right] \in \mathbb{R}^{96\,817 \times 100} \\
+    \mathbf{S}_{u_y} &= \left[ \mathbf{u}_y^{(1)} \Big\vert \dots \Big\vert \mathbf{u}_y^{(100)} \right] \in \mathbb{R}^{96\,817 \times 100} \\
+    \mathbf{S}_{p} \ &= \left[ \mathbf{p}^{(1)} \Big\vert \dots \Big\vert \mathbf{p}^{(100)} \right] \in \mathbb{R}^{24\,473 \times 100}
+\end{aligned}
+\]
+
+The total velocity snapshot matrix $\mathbf{S}_u$ is also introduced to make the computations easier later:
+
+\[
+\mathbf{S}_u = \begin{bmatrix}
+    \mathbf{S}_{u_x} \\[7pt]
+    \mathbf{S}_{u_y}
+\end{bmatrix} \in \mathbb{R}^{2N_v \times n_s}, \quad 
+\mathbf{S}_u = \left[ \mathbf{u}^{(1)} \Big\vert \dots \Big\vert \mathbf{u}^{(100)} \right] \in \mathbb{R}^{193\,634 \times 100}
+\]
+
 \subsection{Supremizer Enrichment for Inf-Sup Stability}
 
+Although the full-order $P_1$-iso-$P_1$ discretization satisfies the discrete inf-sup condition, this property is not automatically inherited by independently constructed reduced velocity and pressure spaces. A reduced basis obtained solely by applying \textit{proper orthogonal decomposition} (POD) separately to the velocity and pressure snapshots may violate the discrete LBB condition at the reduced level, producing an \textit{unstable reduced-order model} even though the full-order spaces it was built from are themselves stable.
+
+Stability is recovered by enriching the reduced velocity space with \textit{supremizer modes}, which are derived as follows.
+
+For a given pressure field $q \in Q$, the velocity supremizer $t \in V$ maximizes the discrete velocity-pressure divergence coupling $\int_\Omega q \, (\nabla \cdot v) \, d\Omega$. By the Riesz representation theorem, $t$ uniquely satisfies the variational problem:
+
+\begin{tcolorbox}[
+    colframe=ForestGreen, 
+    colback=ForestGreen!7!white, 
+    sharp corners
+]
+\begin{center}
+    $\displaystyle\int_{\Omega} \nabla t : \nabla v \, d\Omega = \int_\Omega q \, (\nabla \cdot v) \, d\Omega \qquad \forall v \in V$
+\end{center}
+\end{tcolorbox}
+
+$t$, test functions $v$, and pressure $q$ can be expanded in terms of their finite element basis functions and later substituted back into the variational problem: 
+\[
+t = \sum_{j=1}^{2N_v} \mathbf{t}_j \boldsymbol{\phi}_j, \qquad 
+v = \sum_{i=1}^{2N_v} \mathbf{v}_i \boldsymbol{\phi}_i, \qquad 
+q = \sum_{k=1}^{N_p} \mathbf{p}_k \boldsymbol{\psi}_k, \qquad
+\]
+
+\[
+\begin{aligned}    
+\sum_{i=1}^{2N_v} \sum_{j=1}^{2N_v} \mathbf{v}_i \left( \int_\Omega \nabla \boldsymbol{\phi}_i : \nabla \boldsymbol{\phi}_j \, d\Omega \right) \mathbf{t}_j 
+&= \sum_{i=1}^{2N_v} \sum_{k=1}^{N_p} \mathbf{v}_i \left( \int_\Omega \boldsymbol{\psi}_k (\nabla \cdot \boldsymbol{\phi}_i) \, d\Omega \right) \mathbf{p}_k \\[15pt]
+\mathbf{v}^T \mathbf{X}_u \mathbf{t} 
+&= \mathbf{v}^T \mathbf{B}_h^T \mathbf{p}
+\end{aligned}
+\]
+
+Since this relation holds for arbitrary $\mathbf{v}$, we obtain the discrete system
+\[
+\mathbf{X}_u \mathbf{t} = \mathbf{B}_h^T \mathbf{p} \implies \mathbf{t} = \mathbf{X}_u^{-1} \mathbf{B}_h^T \mathbf{p}.
+\]
+
+Now, for every pressure snapshot $\mathbf{p}_h(\boldsymbol\mu^{(k)})$, $k=1,\dots,n_s$, the corresponding algebraic supremizer
+solution $\mathbf{t}^{(k)}$ is obtained by solving the auxiliary linear system
+
+\[
+\mathbf{X}_u\, \mathbf{t}^{(k)} = \mathbf{B}_h^T\, \mathbf{p}_h(\boldsymbol\mu^{(k)}), \, \text{where:} \quad
+\mathbf{B}_h^T = 
+\begin{bmatrix}
+    \mathbf{B}_{xD}^T \\[7pt]
+    \mathbf{B}_{yD}^T
+\end{bmatrix}, \quad
+\mathbf{X}_u = \begin{bmatrix}
+    \mathbf{A}_{D} & \mathbf{0} \\[7pt]
+    \mathbf{0}     & \mathbf{A}_{D}
+\end{bmatrix}.
+\]
+
+By first constructing the global saddle-point matrix $\mathbf{K}$ with unit viscosity ($\nu = 1$) and enforcing homogeneous Dirichlet boundary conditions, the required operators are extracted directly via matrix slicing. Slicing rows $[0, 2N_v)$ from $\mathbf{K}$ yields a rectangular matrix with the corresponding needed operators: 
+\begin{itemize}
+    \item the velocity block operator $\mathbf{X}_u = \mathbf{K}[0:2N_v, \, 0:2N_v] \in \mathbb{R}^{2N_v\times 2N_v}$,
+    \item the discrete gradient block $\mathbf{B}_h^T = \mathbf{K}[0:2N_v, \, 2N_v:2N_v+N_p] \in \mathbb{R}^{2N_v\times N_p}$.
+\end{itemize}
+Because both matrices are extracted from the exact same Dirichlet-corrected rows of $\mathbf{K}$, they naturally inherit identical boundary treatments. This approach directly reuses the existing Stokes assembly pipeline while keeping the underlying computations explicit and transparent.
+
+Critically, $\mathbf{X}_u$ is assembled only once at $\nu = 1$, rather than at the viscosity described by parameter vector $\boldsymbol\mu^{(k)}$ of each snapshot. Since the discrete gradient matrix $\mathbf{B}_h^T$ depends solely on geometry and carries no viscosity dependence, computing the supremizer solutions $\mathbf{t} = \mathbf{X}_u^{-1}\mathbf{B}_h^T\mathbf{p}$ involves a single, parameter-independent matrix inverse $\mathbf{X}_u^{-1}$, applicable unchanged to every pressure snapshot regardless of which $\boldsymbol\mu^{(k)}$ produced it.
+
+Collecting these linear solves over the full snapshot set yields the multi-column global system:
+
+\[
+\mathbf{X}_u \mathbf{S}_t = \mathbf{B}_h^{T}\mathbf{S}_p.
+\]
+
+In practice, rather than computing an explicit inverse, $\mathbf{X}_u$ is converted to CSC format and its sparse LU factorization is computed once. The complete multi-column right-hand side matrix $\mathbf{B}_h^{T}\mathbf{S}_p \in \mathbb{R}^{2N_v\times n_s}$ is then assembled in a single step, allowing the entire matrix of supremizer snapshots $\mathbf{S}_t$ to be resolved via back-substitution in one pass:
+
+\[
+\mathbf{S}_t = \mathbf{X}_u^{-1} \left(\mathbf{B}_h^{T}\mathbf{S}_p\right) \in \mathbb{R}^{2N_v\times n_s},
+\qquad
+\mathbf{S}_t = \left[\,\mathbf{t}^{(1)} \,\middle|\, \cdots \,\middle|\, \mathbf{t}^{(n_s)}\,\right] \in \mathbb{R}^{193\,634 \times 100}
+\]
+
+Reusing the pre-factored LU operator across all $n_s$ snapshot columns simultaneously drastically reduces the computational cost compared to solving snapshot vectors sequentially or refactorizing per snapshot.
+
+\subsection{Velocity Snapshot Homogenization via Boundary Lifting}
+To ensure that the reduced velocity basis functions belong to the homogeneous space $X$ with $\mathbf{u}|_{\Gamma_D} = \mathbf{0}$, the inhomogeneous boundary data must be removed from the raw full-order velocity snapshots prior to POD.
+
+Following the weak formulation decomposition introduced above (\ref{eq:stokes_weak}), every total physical velocity field snapshot $\mathbf{u}(\mathbf{x}; \boldsymbol{\mu}^{(k)})$ is represented as:
+\[
+\mathbf{u}(\mathbf{x}; \boldsymbol{\mu}^{(k)}) = \mathbf{u}_h(\mathbf{x}; \boldsymbol{\mu}^{(k)}) + \mathbf{r}_g(\mathbf{x}),
+\]
+where $\mathbf{r}_g \in \mathbb{R}^{2N_v}$ is the discrete parameter-independent lifting vector defined earlier (\ref{eq:lifting_function}):
+
+Given the raw velocity snapshot matrix $\mathbf{S}_{u}$, the homogenized snapshot matrix $\mathbf{S}_{u_h} \in \mathbb{R}^{2N_v \times n_v}$ is obtained by subtracting the lifting vector column-wise across all $n_s$ snapshots:
+
+\begin{equation}
+\mathbf{S}_{u_h} = \mathbf{S}_{u} - \mathbf{r}_g \boldsymbol{1}_{n_s}^T \in \mathbb{R}^{2N_v \times n_s},
+\label{eq:velocity_homogenization}
+\end{equation}
+
+where $\boldsymbol{1}_{n_s} \in \mathbb{R}^{n_s}$ is a vector of ones. Every column vector $\mathbf{u}_h^{(k)}$ in $\mathbf{S}_{u_h}$ strictly satisfies homogeneous Dirichlet boundary conditions ($\mathbf{u}_h^{(k)} \in X$), ensuring that all POD basis modes extracted from $\mathbf{S}_u$ naturally inherit homogeneous boundary values by construction.
+
+
+%-------------------------------------------------------------------
+
 \section{Reduced Basis Construction}
+This section details the methodology for extracting a reduced basis from high-fidelity snapshots, capturing the system's core dynamics at a fraction of the full computational cost.
+
+\begin{color}{blue}
 \subsection{Proper Orthogonal Decomposition and Energy Truncation}
+
+Applying the POD-with-energy-truncation procedure of \S11.3 independently to each of the three
+training-restricted snapshot matrices -- the homogeneous velocity snapshots, the supremizer snapshots of
+\S11.3, and the pressure snapshots, each restricted to the $n_s-1=99$ training instances of \S14.1 -- at the
+energy threshold $\tau=0.9999$ reveals a rapid decay of the singular value spectrum in every case. As
+Figure~\ref{fig:energy_spectra} shows, the cumulative energy spectra rise almost vertically over the first
+handful of singular values before flattening out: retaining just $m_u=5$ velocity modes already captures
+$99.9937\%$ of the homogeneous-velocity snapshot energy, $m_t=6$ supremizer modes capture $99.9933\%$, and
+$m_p=5$ pressure modes capture $99.9999\%$ -- fewer than six modes per field, out of $99$ available training
+snapshots in every case. This roughly $95\%$ reduction in dimensionality, achieved before the fine-mesh
+resolution is even considered ($2N_v=193{,}634$ stacked velocity degrees of freedom and $N_p=24{,}473$
+pressure degrees of freedom at this refinement level, cf. Table~\ref{tab:stokes_convergence}), is the direct
+empirical confirmation of the low-intrinsic-dimension argument made in \S9: the solution manifold $\mathcal M$
+genuinely does admit a compact linear approximation.
+
+\begin{figure}[htbp]
+  \centering
+  \captionsetup{font=small}
+  \begin{subfigure}[b]{0.325\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{reduced-order_model/Energy_plots/POD_Energy_Spectrum_velocity (homogeneous).png}
+    \label{fig:energy_vel}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.325\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{reduced-order_model/Energy_plots/POD_Energy_Spectrum_supremizer.png}
+    \label{fig:energy_sup}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.325\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{reduced-order_model/Energy_plots/POD_Energy_Spectrum_pressure.png}
+    \label{fig:energy_pres}
+  \end{subfigure}
+  \caption{Cumulative POD energy spectra and mode selection thresholds for the velocity, supremizer, and pressure snapshot spaces.}
+  \label{fig:energy_spectra}
+\end{figure}
+
 \subsection{Reduced Velocity and Pressure Spaces}
+
+The three POD bases obtained above are the columns of three matrices,
+\[
+\tilde{\mathbf V}_u \in \mathbb{R}^{2N_v\times m_u}, \qquad
+\mathbf V_s \in \mathbb{R}^{2N_v \times m_t}, \qquad
+\mathbf V_p \in \mathbb{R}^{N_p \times m_p},
+\]
+with $m_u=5$, $m_t=6$, $m_p=5$ as found above. The reduced velocity space is defined by concatenating the
+homogeneous-velocity and supremizer bases,
+\[
+\mathbf V_u = \big[\, \tilde{\mathbf V}_u \ \big|\ \mathbf V_s \,\big] \in \mathbb{R}^{2N_v \times (m_u+m_t)},
+\qquad m_u+m_t = 11,
+\]
+so that $\mathbf V_u$ spans $X_N = \mathrm{span}\{\tilde{\mathbf u}_h(\boldsymbol\mu^{(k)}),\, \mathbf t^{(k)} :
+k\in\text{train\_idx}\}$ in the notation of \S9 -- every column of $\mathbf V_u$ is either a compressed
+direction of variation across the training velocity snapshots, or a supremizer direction placed there
+specifically to satisfy the reduced inf-sup condition (\S11.3). The reduced pressure space is simply
+$\mathbf V_p$ itself,
+\[
+Q_N = \mathrm{span}\{\mathbf p_h(\boldsymbol\mu^{(k)}) : k \in \text{train\_idx}\}, \qquad \dim Q_N = m_p = 5.
+\]
+
+Note that unlike the idealized construction of \S9 -- where velocity and pressure ranks are typically taken
+equal, $\dim X_N = 2\dim Q_N$, so that each pressure mode contributes exactly one paired supremizer direction
+-- the implementation here truncates each of the three snapshot sets independently at the same energy
+threshold $\tau$, so $m_u, m_t, m_p$ need not, and here do not, coincide. This is a deliberate deviation from
+the standard construction: energy truncation is applied uniformly, and each field keeps however many modes its
+own spectrum actually needs, rather than forcing a shared rank $N$ that would either under-resolve the field
+with the slowest-decaying spectrum or waste modes on the fastest-decaying one.
+
+Any solution reconstructed from the reduced spaces takes the form
+\[
+\mathbf{u}_N(\boldsymbol\mu) = \vec r_g + \mathbf V_u\, \hat{\mathbf u}_N(\boldsymbol\mu), \qquad
+\mathbf{p}_N(\boldsymbol\mu) = \mathbf V_p\, \hat{\mathbf p}_N(\boldsymbol\mu),
+\]
+where $\vec r_g$ is the same lifting function of \S4.5 -- identical across all $\boldsymbol\mu$, since the
+inlet profile does not depend on viscosity -- and $\hat{\mathbf u}_N(\boldsymbol\mu)\in\mathbb R^{m_u+m_t}$,
+$\hat{\mathbf p}_N(\boldsymbol\mu)\in\mathbb R^{m_p}$ are the reduced coefficient vectors actually solved for
+online, in place of the $2N_v+N_p \approx 218{,}000$ degrees of freedom of the original saddle-point system.
+Assembling and solving for these coefficients, using the reduced operators $\mathbf V_u^T\mathbf A_k\mathbf
+V_u$ and $\mathbf V_p^T \mathbf B_h \mathbf V_u$ built once offline from $\mathbf V_u,\mathbf V_p$, is the
+subject of \S13.
+
+\end{color}
+
+%-------------------------------------------------------------------
 
 \section{Offline--Online Decomposition}
 \subsection{Offline Phase: Reduced Operator Assembly}
@@ -1535,5 +1723,119 @@ This section outlines the essential offline phase of generating and mathematical
 \subsection{Velocity and Pressure Field Comparison (FOM vs.\ ROM)}
 \subsection{Derived Quantities of Interest}
 \subsection{Computational Speedup}
+
+
+%-------------------------------------------------------------------
+
+
+\newpage
+\section{Appendix}
+
+\subsection{Reverse Techniques: Einsum}
+
+\subsubsection*{First Einsum}
+\label{sub:first_example}
+
+\begin{lstlisting}[
+    language=Python, 
+    frame=single,                  
+    backgroundcolor=\color{white}, 
+    basicstyle=\ttfamily\scriptsize, 
+    breaklines=true                 
+    Overfull \hbox
+]
+A_local = np.zeros(shape=(Nt, 3, 3))
+for i in range(3):
+    for j in range(i, 3):
+
+        grad_i = test_function_derivatives[i]
+        grad_j = test_function_derivatives[j]
+
+        val = np.einsum('i,nij,j->n', 
+                        grad_j, Q_mat, grad_i)
+
+        val *= kinematic_viscosity / (2 * det_J)
+
+        A_local[:, i, j] = val
+        A_local[:, j, i] = val
+\end{lstlisting}
+
+\[
+\begin{array}{ccc}
+    \left[\psi_1, \psi_2\right]  
+    & 
+    \left[
+    \begin{array}{cc}
+        q^n_{11} & q^n_{12} \\
+        q^n_{21} & q^n_{22}
+    \end{array}
+    \right]
+    & \left[\psi_1, \psi_2\right] \\
+    \psi_i & q^n_{ij} & \psi_j
+\end{array}
+\]
+
+\[
+\sum_{i=2}^2\sum_{j=2}^2\psi_i q^n_{ij} \psi_j = A^n \in \mathbb{R}^n
+\]
+
+\subsubsection*{Second Einsum}
+\label{sub:Second_example}
+
+\begin{lstlisting}[
+    language=Python, 
+    frame=single,                  % Draws the box around the code
+    backgroundcolor=\color{white}, % Background color inside the box
+    basicstyle=\ttfamily\scriptsize, % Makes the font very small
+    breaklines=true                 % Automatically wraps long lines to fix Overfull \hbox
+]
+A_local = np.einsum('mi,txy,nj->tmn', 
+                    test_function_derivatives, Q_mat, test_function_derivatives)
+A_local *= (kinematic_viscosity / (2.0 * det_J))[:, None, None]
+\end{lstlisting}
+
+\[
+\begin{array}{ccccc}
+    
+    \left[
+    \begin{array}{c}
+         \left[\psi_1^1,\psi_2^1\right]\\[3pt]
+         \left[\psi_1^2,\psi_2^2\right]\\[3pt]
+         \left[\psi_1^3,\psi_2^3\right]     
+    \end{array}
+    \right]
+    &
+    \left[
+    \begin{array}{cc}
+        q^t_{11} & q^t_{12} \\
+        q^t_{21} & q^t_{22}
+    \end{array}
+    \right]
+    &
+    \left[
+    \begin{array}{c}
+         \left[\psi_1^1,\psi_2^1\right]\\[3pt]
+         \left[\psi_1^2,\psi_2^2\right]\\[3pt]
+         \left[\psi_1^3,\psi_2^3\right]     
+    \end{array}
+    \right]
+    &
+    \longrightarrow
+    &
+    \left[
+    \begin{array}{ccc}
+        A^t_{11} & A^t_{12} & A^t_{13}\\
+        A^t_{21} & A^t_{22} & A^t_{23}\\
+        A^t_{31} & A^t_{32} & A^t_{33}
+    \end{array}
+    \right]\\[2em]
+    \psi^m_i & q^t_{xy} & \psi^n_j &  & A^t_{mn}
+\end{array}
+\]
+So by using indexation and sums we notice that the structure has not really changed since the first example~\ref{sub:first_example}:
+
+\[
+\sum_{i=1}^2\sum_{j=1}^2\psi^m_iq^t_{ij}\psi^n_j = A^t_{mn}\in\mathbb{R}^{t \times m\times n}
+\]
 
 \end{document}
