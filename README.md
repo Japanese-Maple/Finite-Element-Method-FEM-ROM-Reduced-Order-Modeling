@@ -179,62 +179,6 @@ A strictly positive value of $\beta$ confirms stability of the chosen velocity-p
 
 ## Repository Structure
 
-```text
-.
-├── Demonstrations
-│   ├── Flow_examples.ipynb
-│   ├── Stokes_Convergence.ipynb
-│   ├── Stokes_Stability.ipynb
-│   ├── Visuals.ipynb
-│   └── stokes_equations.ipynb
-├── Drafts
-│   ├── Notes.txt
-│   ├── Stokes_draft.py
-│   └── paper_draft.txt
-├── Meshes
-│   ├── Backstep_mesh_data.npz
-│   ├── Comb_mesh_data.npz
-│   ├── Hexagonal_pipe_system_mesh_data.npz
-│   ├── LBB_test_mesh_data.npz
-│   ├── Winding_pipe_fixed_mesh_data.npz
-│   ├── Winding_pipe_mesh_data.npz
-│   ├── exchanger_device_altered_mesh_data.npz
-│   ├── exchanger_device_mesh_data.npz
-│   └── honeycomb_wide_data.npz
-├── Outputs
-│   ├── Flow.jpeg
-│   ├── InitialvsRefined_mesh.jpeg
-│   ├── Jacobian_tri_transform.svg
-│   ├── Mesh_Refinement.jpeg
-│   ├── P1-iso-P1.svg
-│   ├── Pressure_Tricontourf.jpeg
-│   ├── Solution_Streamlines.jpeg
-│   ├── Stokes_A_matrix.jpeg
-│   ├── Stokes_B_x_matrix.jpeg
-│   ├── Stokes_K_matrix_labeled.jpeg
-│   ├── Stokes_Mass Matrix (Pressure)_matrix.jpeg
-│   └── Stokes_Mass Matrix (Velocity)_matrix.jpeg
-├── README.md
-├── Solutions
-│   ├── Backstep.npz
-│   ├── Comb.npz
-│   ├── Convergence_Step_0.npz
-│   ├── Convergence_Step_1.npz
-│   ├── Convergence_Step_2.npz
-│   ├── Convergence_Step_3.npz
-│   ├── Exchanger_device.npz
-│   ├── Reference_Solution.npz
-│   ├── Winding_pipe.npz
-│   └── Winding_pipe_solution.npz
-├── Solvers
-│   └── Exchanger_Device.py
-│   
-└── Utilities
-    ├── Mesh_processing.py
-    └── Stokes_felib.py
-```
-
-
 ```mermaid
 flowchart TB
 
@@ -314,6 +258,100 @@ class node_stokes_felib,node_exchanger_solver toneAmber
 class node_solution_archives,node_plot_functions,node_flow_examples,node_convergence_notebook,node_stability_notebook toneMint
 class node_viscosity_generator,node_snapshot_generator,node_parallel_snapshot_generation,node_snapshot_archives,node_affine_decomposition,node_offline_rom_data,node_rom_notebook toneRose
 ```
+
+```text
+.
+├── Demonstrations
+│   ├── Flow_examples.ipynb
+│   ├── ROM_OfflineIOnline.ipynb
+│   ├── Reduced_Order_Model.ipynb
+│   ├── Stokes_Convergence.ipynb
+│   ├── Stokes_Stability.ipynb
+│   ├── Visuals.ipynb
+│   └── stokes_equations.ipynb
+├── Drafts
+│   ├── Notes.txt
+│   ├── ROM_&_FEM_PAPER.pdf
+│   ├── Stokes_draft.py
+│   └── paper_draft.txt
+├── LICENSE
+├── Meshes
+│   ├── Backstep_mesh_data.npz
+│   ├── Comb_mesh_data.npz
+│   ├── Hexagonal_pipe_system_mesh_data.npz
+│   ├── LBB_test_mesh_data.npz
+│   ├── Winding_pipe_fixed_mesh_data.npz
+│   ├── Winding_pipe_mesh_data.npz
+│   ├── exchanger_device_altered_mesh_data.npz
+│   ├── exchanger_device_mesh_data.npz
+│   └── honeycomb_wide_data.npz
+├── NOTICE
+├── Outputs
+│   ├── Combined_Solution.png
+│   ├── Flow.jpeg
+│   ├── InitialvsRefined_mesh.jpeg
+│   ├── Jacobian_tri_transform.svg
+│   ├── LBB_stability_P1isoP1.png
+│   ├── LHS_downprojected.png
+│   ├── Mesh_Refinement.jpeg
+│   ├── P1-iso-P1.svg
+│   ├── POD_Energy_Spectrum_pressure.png
+│   ├── POD_Energy_Spectrum_supremizer.png
+│   ├── POD_Energy_Spectrum_velocity (homogeneous).png
+│   ├── Pressure_Tricontourf.jpeg
+│   ├── Solution_Streamlines.jpeg
+│   ├── Solution_Streamlines.png
+│   ├── Stokes_A_matrix.jpeg
+│   ├── Stokes_B_x_matrix.jpeg
+│   ├── Stokes_K_matrix_labeled.jpeg
+│   ├── Stokes_K_matrix_labeled_POD.png
+│   ├── Stokes_Mass Matrix (Pressure)_matrix.jpeg
+│   ├── Stokes_Mass Matrix (Velocity)_matrix.jpeg
+│   ├── Viscosity.png
+│   ├── Viscosity_Basis_Functions.png
+│   └── convergence_plot.png
+├── README.md
+├── Reduced_Order_Modeling
+│   ├── No_Online_Offline_phase
+│   │   ├── Data
+│   │   │   ├── stokes_solution_snapshots.npz
+│   │   │   └── viscosity_snapshots.npz
+│   │   ├── parallelized_sg.py
+│   │   ├── snapshot_generator.py
+│   │   └── viscosity_generator.py
+│   └── Online_Offline_phase
+│       ├── Affine_Decomposition.py
+│       └── Data
+│           ├── A1.npz
+│           ├── A2.npz
+│           ├── A3.npz
+│           ├── A4.npz
+│           ├── A5.npz
+│           └── basis_fields.npz
+├── Solutions
+│   ├── Backstep.npz
+│   ├── Comb.npz
+│   ├── Convergence_Step_0.npz
+│   ├── Convergence_Step_1.npz
+│   ├── Convergence_Step_2.npz
+│   ├── Convergence_Step_3.npz
+│   ├── Convergence_Step_4.npz
+│   ├── Convergence_Step_5.npz
+│   ├── Convergence_Step_6.npz
+│   ├── Exchanger_device.npz
+│   ├── Exchanger_device_with_varying_viscosity.npz
+│   ├── Reference_Solution.npz
+│   ├── Winding_pipe.npz
+│   └── Winding_pipe_solution.npz
+├── Solvers
+│   └── Exchanger_Device.py
+│   
+└── Utilities
+    ├── Mesh_processing.py
+    ├── Plot_functions.py
+    └── Stokes_felib.py
+```
+
 ---
 
 ## Author
