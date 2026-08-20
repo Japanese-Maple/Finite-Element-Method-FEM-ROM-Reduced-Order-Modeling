@@ -64,8 +64,8 @@ def calculate_mass_M(p, t,):
     Nt = t.shape[0]
 
     jacobian = np.zeros(shape=(Nt, 2, 2))
-    jacobian[:, 0, :] = p[t[:, 1]] - p[t[:, 0]] 
-    jacobian[:, 1, :] = p[t[:, 2]] - p[t[:, 0]] 
+    jacobian[:, 0, :] = p[t[:, 1]] - p[t[:, 0]]
+    jacobian[:, 1, :] = p[t[:, 2]] - p[t[:, 0]]
 
     det_J = jacobian[:, 0, 0] * jacobian[:, 1, 1] - jacobian[:, 0, 1] * jacobian[:, 1, 0]
 
@@ -149,46 +149,38 @@ def calculate_pressure_B(p_fine, t_fine, p_coarse, t_coarse):
     tc = t_coarse[fine_to_coarse, :3]
 
     pf = p_fine[tf]
-    pc = p_coarse[tc]
 
     # Calculating Jacobians
-    jacobian = np.stack([pf[:, 1] - pf[:, 0],
+    Jf = np.stack([pf[:, 1] - pf[:, 0],
                    pf[:, 2] - pf[:, 0]], axis=2)
   
-    det_J = jacobian[:, 0, 0] * jacobian[:, 1, 1] - jacobian[:, 0, 1] * jacobian[:, 1, 0]
-    area  = 0.5 * np.abs(det_J)
+    det_Jf = Jf[:, 0, 0] * Jf[:, 1, 1] - Jf[:, 0, 1] * Jf[:, 1, 0]
+    area  = 0.5 * np.abs(det_Jf)
 
     # Gradients via closed-form 2×2 inverse
-    inv_det_J = 1.0 / det_J                                            
+    inv_det_Jf = 1.0 / det_Jf                                            
 
-    inv_jacobian_T = np.empty((Nt_fine, 2, 2))
-    inv_jacobian_T[:, 0, 0] =  jacobian[:, 1, 1] * inv_det_J
-    inv_jacobian_T[:, 0, 1] = -jacobian[:, 1, 0] * inv_det_J
-    inv_jacobian_T[:, 1, 0] = -jacobian[:, 0, 1] * inv_det_J
-    inv_jacobian_T[:, 1, 1] =  jacobian[:, 0, 0] * inv_det_J
+    inv_Jf_T = np.empty((Nt_fine, 2, 2))
+    inv_Jf_T[:, 0, 0] =  Jf[:, 1, 1] * inv_det_Jf
+    inv_Jf_T[:, 0, 1] = -Jf[:, 1, 0] * inv_det_Jf
+    inv_Jf_T[:, 1, 0] = -Jf[:, 0, 1] * inv_det_Jf
+    inv_Jf_T[:, 1, 1] =  Jf[:, 0, 0] * inv_det_Jf
 
     test_function_derivatives = np.array([[-1, -1],
                                           [ 1,  0],
                                           [ 0,  1]])
 
-    grads = np.einsum('ndk,ik->nid', inv_jacobian_T, test_function_derivatives)
+    grads = np.einsum('ndk,ik->nid', inv_Jf_T, test_function_derivatives)
 
-    # Coarse Jacobian & centroid barycentric solve
-    q = pf.mean(axis=1)
+    # Precomputed constant values of psi at the 4 child centroids
+    psi_children = np.array([
+        [2/3, 1/6, 1/6],  # T1
+        [1/6, 2/3, 1/6],  # T2
+        [1/6, 1/6, 2/3],  # T3
+        [1/3, 1/3, 1/3]   # T4
+    ])
 
-    Jc = np.stack([pc[:, 1] - pc[:, 0],
-                   pc[:, 2] - pc[:, 0]], axis=2)
-
-    det_c = Jc[:, 0, 0] * Jc[:, 1, 1] - Jc[:, 0, 1] * Jc[:, 1, 0]
-    inv_det_c = 1.0 / det_c
-
-    # Closed-form 2×2 solve:  x = inv(Jc) @ (q - pc0)
-    rhs = q - pc[:, 0]
-    lam1 = inv_det_c * ( Jc[:, 1, 1] * rhs[:, 0] - Jc[:, 0, 1] * rhs[:, 1])
-    lam2 = inv_det_c * (-Jc[:, 1, 0] * rhs[:, 0] + Jc[:, 0, 0] * rhs[:, 1])
-    lam0 = 1.0 - lam1 - lam2
-
-    psi = np.stack([lam0, lam1, lam2], axis=1)
+    psi = np.tile(psi_children, (Nt_coarse, 1))[:Nt_fine] 
 
     # Local B blocks
     Bx_loc = -area[:, None, None] * np.einsum('ni,nj->nij', psi, grads[:, :, 0])

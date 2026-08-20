@@ -109,3 +109,23 @@ for i in [0, 1]:
 plt.tight_layout()
 plt.savefig("Outputs/Jacobian_tri_transform.svg")
 plt.show();
+
+#----------------------------------------------------------------------------------
+
+
+    # Coarse Jacobian & centroid barycentric solve
+    # q = pf.mean(axis=1)
+
+    # Jc = np.stack([pc[:, 1] - pc[:, 0],
+    #                pc[:, 2] - pc[:, 0]], axis=2)
+
+    # det_Jc = Jc[:, 0, 0] * Jc[:, 1, 1] - Jc[:, 0, 1] * Jc[:, 1, 0]
+    # inv_det_Jc = 1.0 / det_Jc
+
+    # # Closed-form 2×2 solve:  x = inv(Jc) @ (q - pc0)
+    # rhs = q - pc[:, 0]
+    # lam1 = inv_det_Jc * ( Jc[:, 1, 1] * rhs[:, 0] - Jc[:, 0, 1] * rhs[:, 1])
+    # lam2 = inv_det_Jc * (-Jc[:, 1, 0] * rhs[:, 0] + Jc[:, 0, 0] * rhs[:, 1])
+    # lam0 = 1.0 - lam1 - lam2
+
+    # psi = np.stack([lam0, lam1, lam2], axis=1)
