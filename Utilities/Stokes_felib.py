@@ -135,98 +135,68 @@ def calculate_mass_M(p, t,):
 
 
 def calculate_pressure_B(p_fine, t_fine, p_coarse, t_coarse):
-    """
-    Assemble Bx, By for P1-iso-P1 — fully vectorized over all fine triangles.
-
-    Key ideas vs. the loop version:
-      - 2×2 Jacobian inverse via the closed-form cofactor formula (no linalg.inv)
-      - Centroid barycentric solve via the same closed-form trick (no linalg.solve)
-      - Local 3×3 blocks via einsum instead of np.outer
-      - COO index arrays built with np.repeat / np.tile — no Python lists
-    """
 
     Nt_fine   = t_fine.shape[0]
-    Nt_coarse = t_coarse.shape[0]
     Np_fine   = p_fine.shape[0]
+
+    Nt_coarse = t_coarse.shape[0]
     Np_coarse = p_coarse.shape[0]
 
     fine_to_coarse = np.repeat(np.arange(Nt_coarse), 4)[:Nt_fine]
 
-    # ── 1. Fine-triangle nodes & coarse-triangle nodes ────────────────────────
-    tf = t_fine[:, :3]                          # (Nt, 3)
-    tc = t_coarse[fine_to_coarse, :3]           # (Nt, 3)
+    # Calculating fine-triangle & coarse-triangle nodes
+    tf = t_fine[:, :3]
+    tc = t_coarse[fine_to_coarse, :3]
 
-    pf = p_fine[tf]                             # (Nt, 3, 2)
-    pc = p_coarse[tc]                           # (Nt, 3, 2)
+    pf = p_fine[tf]
+    pc = p_coarse[tc]
 
-    # ── 2. Fine Jacobian: J[:,0,:] = e1, J[:,1,:] = e2 ────────────────────────
-    # Note: stored as (Nt, 2, 2) where axis-0 of the inner 2×2 indexes the
-    # *column* of the physical-space edge vector, matching the loop's layout.
-    Jf = np.stack([pf[:, 1] - pf[:, 0],        # column 0  (Nt, 2)
-                   pf[:, 2] - pf[:, 0]], axis=2)  # column 1  → (Nt, 2, 2)
-    #   Jf[n] = [[e1x, e2x],
-    #             [e1y, e2y]]
+    # Calculating Jacobians
+    jacobian = np.stack([pf[:, 1] - pf[:, 0],
+                   pf[:, 2] - pf[:, 0]], axis=2)
+  
+    det_J = jacobian[:, 0, 0] * jacobian[:, 1, 1] - jacobian[:, 0, 1] * jacobian[:, 1, 0]
+    area  = 0.5 * np.abs(det_J)
 
-    # ── 3. det and area ────────────────────────────────────────────────────────
-    det_f = Jf[:, 0, 0] * Jf[:, 1, 1] - Jf[:, 0, 1] * Jf[:, 1, 0]   # (Nt,)
-    area  = 0.5 * np.abs(det_f)                                         # (Nt,)
+    # Gradients via closed-form 2×2 inverse
+    inv_det_J = 1.0 / det_J                                            
 
-    # ── 4. Physical gradients via closed-form 2×2 inverse ─────────────────────
-    # inv(J)^T = (1/det) * [[J11, -J01], [-J10, J00]]
-    # (cofactors of J, already transposed)
-    #
-    # grad_hat = [[-1,-1],[1,0],[0,1]]  shape (3,2)
-    # grads[n,i,d] = (invJf_T[n] @ grad_hat[i])_d
-    #
-    # invJf_T rows:  row0 = (1/det)*[ J11, -J10]
-    #                row1 = (1/det)*[-J01,  J00]
-    inv_det = 1.0 / det_f                                               # (Nt,)
+    inv_jacobian_T = np.empty((Nt_fine, 2, 2))
+    inv_jacobian_T[:, 0, 0] =  jacobian[:, 1, 1] * inv_det_J
+    inv_jacobian_T[:, 0, 1] = -jacobian[:, 1, 0] * inv_det_J
+    inv_jacobian_T[:, 1, 0] = -jacobian[:, 0, 1] * inv_det_J
+    inv_jacobian_T[:, 1, 1] =  jacobian[:, 0, 0] * inv_det_J
 
-    # Build invJf_T as (Nt, 2, 2)
-    invJf_T = np.empty((Nt_fine, 2, 2))
-    invJf_T[:, 0, 0] =  Jf[:, 1, 1] * inv_det
-    invJf_T[:, 0, 1] = -Jf[:, 1, 0] * inv_det
-    invJf_T[:, 1, 0] = -Jf[:, 0, 1] * inv_det
-    invJf_T[:, 1, 1] =  Jf[:, 0, 0] * inv_det
+    test_function_derivatives = np.array([[-1, -1],
+                                          [ 1,  0],
+                                          [ 0,  1]])
 
-    grad_hat = np.array([[-1., -1.],
-                         [ 1.,  0.],
-                         [ 0.,  1.]])            # (3, 2)
+    grads = np.einsum('ndk,ik->nid', inv_jacobian_T, test_function_derivatives)
 
-    # grads[n, i, d] = sum_k invJf_T[n, d, k] * grad_hat[i, k]
-    grads = np.einsum('ndk,ik->nid', invJf_T, grad_hat)  # (Nt, 3, 2)
+    # Coarse Jacobian & centroid barycentric solve
+    q = pf.mean(axis=1)
 
-    # ── 5. Coarse Jacobian + centroid barycentric solve ────────────────────────
-    # Centroid of fine triangle in physical space
-    q = pf.mean(axis=1)                          # (Nt, 2)
-
-    # Coarse-triangle edge matrix  Jc[:,0,:] = e1c, Jc[:,1,:] = e2c
     Jc = np.stack([pc[:, 1] - pc[:, 0],
-                   pc[:, 2] - pc[:, 0]], axis=2) # (Nt, 2, 2)
+                   pc[:, 2] - pc[:, 0]], axis=2)
 
-    det_c = Jc[:, 0, 0] * Jc[:, 1, 1] - Jc[:, 0, 1] * Jc[:, 1, 0]  # (Nt,)
+    det_c = Jc[:, 0, 0] * Jc[:, 1, 1] - Jc[:, 0, 1] * Jc[:, 1, 0]
     inv_det_c = 1.0 / det_c
 
     # Closed-form 2×2 solve:  x = inv(Jc) @ (q - pc0)
-    rhs = q - pc[:, 0]                           # (Nt, 2)
+    rhs = q - pc[:, 0]
     lam1 = inv_det_c * ( Jc[:, 1, 1] * rhs[:, 0] - Jc[:, 0, 1] * rhs[:, 1])
     lam2 = inv_det_c * (-Jc[:, 1, 0] * rhs[:, 0] + Jc[:, 0, 0] * rhs[:, 1])
     lam0 = 1.0 - lam1 - lam2
 
-    psi = np.stack([lam0, lam1, lam2], axis=1)   # (Nt, 3)
+    psi = np.stack([lam0, lam1, lam2], axis=1)
 
-    # ── 6. Local B blocks ──────────────────────────────────────────────────────
-    # Bx_loc[n, i, j] = -area[n] * psi[n,i] * grads[n,j,0]
-    # By_loc[n, i, j] = -area[n] * psi[n,i] * grads[n,j,1]
-    Bx_loc = -area[:, None, None] * np.einsum('ni,nj->nij', psi, grads[:, :, 0])  # (Nt,3,3)
-    By_loc = -area[:, None, None] * np.einsum('ni,nj->nij', psi, grads[:, :, 1])  # (Nt,3,3)
+    # Local B blocks
+    Bx_loc = -area[:, None, None] * np.einsum('ni,nj->nij', psi, grads[:, :, 0])
+    By_loc = -area[:, None, None] * np.einsum('ni,nj->nij', psi, grads[:, :, 1])
 
-    # ── 7. COO index arrays ────────────────────────────────────────────────────
-    # rows ↔ coarse pressure nodes (tc), cols ↔ fine velocity nodes (tf)
-    # Each (i, j) local pair: row = tc[n,i], col = tf[n,j]
-    # Outer axis = pressure (i in 0..2), inner axis = velocity (j in 0..2)
-    rowidx = np.repeat(tc, 3, axis=1).ravel()    # (Nt*9,)  tc[:,i] repeated 3×
-    colidx = np.tile(tf, (1, 3)).ravel()          # (Nt*9,)  tf[:,j] tiled 3×
+    # Index arrays & sparse Bx, By
+    rowidx = np.repeat(tc, 3, axis=1).ravel()
+    colidx = np.tile(tf, (1, 3)).ravel()
 
     B_x = sparse.csc_matrix(
         (Bx_loc.ravel(), (rowidx, colidx)),
