@@ -6,9 +6,7 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 import numpy as np
 from tqdm import tqdm
 
-# ──────────────────────────────────────────────────────────────────────────────
-# 1. Environment & Imports
-# ──────────────────────────────────────────────────────────────────────────────
+#_______________________________________________________________________________________________________________________________________________________________
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 fem_dir = os.path.dirname(os.path.dirname(script_dir))
@@ -20,9 +18,8 @@ from Solvers.Exchanger_Device import compute_U_P_solution
 from Utilities.Mesh_processing import refine
 from Utilities.Plot_functions import Plot_Initial_Refined_meshes
 
-# ──────────────────────────────────────────────────────────────────────────────
-# 2. Define the Parallel Worker Function
-# ──────────────────────────────────────────────────────────────────────────────
+#_______________________________________________________________________________________________________________________________________________________________
+
 def solve_snapshot_worker(args):
     """Worker function to solve a single snapshot."""
     i, v_t, p_f, t_f, e_f, p_c, t_c = args
@@ -36,9 +33,8 @@ def solve_snapshot_worker(args):
     
     return i, ux, uy, p_sol
 
-# ──────────────────────────────────────────────────────────────────────────────
-# 3. Main Execution Block & Auto-Resume Setup
-# ──────────────────────────────────────────────────────────────────────────────
+#_______________________________________________________________________________________________________________________________________________________________
+
 if __name__ == '__main__':
     
     mesh_path = os.path.join(fem_dir, 'Meshes', 'exchanger_device_altered_mesh_data.npz')
@@ -72,12 +68,10 @@ if __name__ == '__main__':
             uy_snapshots = old_data['uy_snapshots'].copy()
             p_snapshots  = old_data['p_snapshots'].copy()
         
-        # Check which snapshots have non-zero data to identify completed tasks
         computed_mask = np.max(np.abs(ux_snapshots), axis=1) > 0
         tasks_to_run = [i for i in range(num_snapshots) if not computed_mask[i]]
         print(f"[*] Recovered {num_snapshots - len(tasks_to_run)} completed snapshots.")
     else:
-        # Pre-allocate fresh matrices if no save file exists
         ux_snapshots = np.zeros((num_snapshots, Nv))
         uy_snapshots = np.zeros((num_snapshots, Nv))
         p_snapshots  = np.zeros((num_snapshots, Np))
@@ -97,9 +91,8 @@ if __name__ == '__main__':
         for i in tasks_to_run
     ]
 
-    # ──────────────────────────────────────────────────────────────────────────────
-    # 4. 10-core Process Pool with Periodic Checkpointing
-    # ──────────────────────────────────────────────────────────────────────────────
+#_______________________________________________________________________________________________________________________________________________________________
+
     if len(tasks) > 0:
         start_time = time.time()
         completed_in_this_run = 0
@@ -130,9 +123,8 @@ if __name__ == '__main__':
                     )
                     tqdm.write(f"  [Checkpoint] Saved progress at {completed_in_this_run} completed states.")
 
-        # ──────────────────────────────────────────────────────────────────────────────
-        # 5. Serialization & Diagnostics
-        # ──────────────────────────────────────────────────────────────────────────────
+#_______________________________________________________________________________________________________________________________________________________________
+
         elapsed_time = time.time() - start_time
         
         np.savez_compressed(
@@ -152,5 +144,5 @@ if __name__ == '__main__':
         print(f" Snapshot dataset safely archived to:\n > {out_path}")
         print("=" * 60)
     else:
-        print("\nAll snapshots are already computed. Nothing to do!")
+        print("\nAll snapshots are already computed.")
         print("=" * 60)
