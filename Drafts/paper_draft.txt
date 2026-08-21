@@ -9,8 +9,10 @@
 \usepackage{enumitem}   % For better control over lists
 \usepackage{float}
 \usepackage{multicol}
+\usepackage{wrapfig}    % For wrapfigure environment
 \usepackage{tcolorbox}  % For colored and boxed environments
 \usepackage[dvipsnames]{xcolor}
+\usepackage{caption}    % For \captionof and advanced caption options
 \usepackage{subcaption} % For subfigure environment
 \usepackage{listings}   % For code listings
 
@@ -457,194 +459,30 @@ Please note that the matrices $\mathbf{Q}$ and $\mathbf{A}^{loc}$ are symmetric.
 %----------------------------------------------------------------------------
 \subsection{Pressure Matrices \texorpdfstring{$\mathbf{B}_x$ and $\mathbf{B}_y$}{Bx and By} on the \texorpdfstring{$P_1$-iso-$P_1$}{P1-iso-P1} Macro-Element}
 
-Unlike a conforming equal-order pairing, the pressure basis function $\psi_j$ lives on the \emph{macro} triangle
-$K \in \mathcal{T}_H$, while the velocity basis functions $\phi_i$ live on the four \emph{child} triangles
-$T_1,T_2,T_3,T_4 \in \mathcal{T}_h$ obtained by connecting the edge midpoints of $K$. Consequently the coupling
-integral must be split into a sum over the four children, and the pressure basis function must be re-expressed
-in each child's own local reference coordinates. This restriction is the main idea of the
-$P_1$-iso-$P_1$ assembly.
-
-\begin{figure}[H]
+\begin{wrapfigure}[7]{l}{0.23\textwidth}
     \centering
-    \includesvg[width=0.7\linewidth]{P1-iso-P1.svg}
-\end{figure}
+    \includesvg[width=\linewidth]{P1-iso-P1.svg}
+    \captionsetup{font=small}
+    \caption{Macro element and its corresponding subdivision into 4 congruent elements.}
+    \label{fig:p1-iso-p1-general-visual}
+\end{wrapfigure}
 
-
-\begin{color}{blue}
-    
-\subsubsection{Macro Geometry and Node Labeling}
-
-Let the macro triangle $K$ have vertices $X_1,X_2,X_3$, carrying the pressure basis functions $\psi_1,\psi_2,
-\psi_3$ ($\psi_j$ equal to $1$ at $X_j$ and $0$ at the other two macro vertices, extended linearly across all
-of $K$ -- the same construction as $\hat\phi_1,\hat\phi_2,\hat\phi_3$ on the reference triangle in \S4.1, just
-on the macro triangle instead). Uniform refinement introduces the three edge midpoints
-\[
-X_4 = \tfrac{1}{2}(X_1+X_2), \qquad X_5 = \tfrac{1}{2}(X_2+X_3), \qquad X_6 = \tfrac{1}{2}(X_1+X_3),
-\]
-giving the four congruent children
-\[
-T_1=(X_1,X_4,X_6), \quad T_2=(X_4,X_2,X_5), \quad T_3=(X_6,X_5,X_3), \quad T_4=(X_4,X_5,X_6).
-\]
-Velocity has one degree of freedom at each of the six points $X_1,\dots,X_6$; pressure has one degree of
-freedom at each of $X_1,X_2,X_3$ only.
-
-Because each $\psi_j$ is linear across all of $K$, its value at a midpoint is simply the average of its values
-at the two corners that midpoint sits between. Together with $\psi_j(X_j)=1$ and $\psi_j=0$ at the other two
-corners, this fixes every value needed later:
-
-\begin{table}[H]
-\centering
-\caption{Nodal values of the macro pressure basis functions $\psi_1,\psi_2,\psi_3$.}
-\begin{tabular}{c|ccc}
-\hline\hline
- & $\psi_1$ & $\psi_2$ & $\psi_3$ \\ \hline
-$X_1$ & $1$   & $0$   & $0$   \\
-$X_2$ & $0$   & $1$   & $0$   \\
-$X_3$ & $0$   & $0$   & $1$   \\
-$X_4$ & $1/2$ & $1/2$ & $0$   \\
-$X_5$ & $0$   & $1/2$ & $1/2$ \\
-$X_6$ & $1/2$ & $0$   & $1/2$ \\
-\hline\hline
-\end{tabular}
-\end{table}
-
-\subsubsection{The Bilinear Form, Split Over Children}
-
-\begin{tcolorbox}[colframe=ForestGreen, colback=ForestGreen!7!white, sharp corners]
-\begin{center}
-   $\displaystyle -\int_{K} p \, (\nabla \cdot v)\, d\Omega$
-\end{center}
-\end{tcolorbox}
-
-\[
-\begin{aligned}
--\int_{K} \psi_j \frac{\partial \phi_i}{\partial x} \, d\Omega
-&= -\sum_{m=1}^{4} \int_{T_m} \psi_j \frac{\partial \phi_i}{\partial x} \, d\Omega
-= \left|
-\begin{array}{c}
-    \phi_i \big|_{T_m} \text{ is affine } \Rightarrow \nabla \phi_i \text{ is \emph{constant} on } T_m \\[3pt]
-    \text{(zero unless } i \text{ is one of } T_m\text{'s three local nodes)}
-\end{array}
-\right| \\[10pt]
-&= -\sum_{m=1}^{4} \left(\frac{\partial \phi_i}{\partial x}\right)_{T_m} \int_{T_m} \psi_j \, d\Omega
-= -\sum_{m=1}^{4} \left(\frac{\partial \phi_i}{\partial x}\right)_{T_m} \left|\mathbf{J}_{T_m}\right| \int_{\hat{T}} \psi_j\big|_{T_m}(\xi_1,\xi_2) \, d\xi_1 d\xi_2
-\end{aligned}
-\]
-
-Everything now hinges on evaluating $\psi_j\big|_{T_m}$: the pressure basis function $\psi_j$, restricted to
-child $T_m$ and re-expressed in $T_m$'s own reference coordinates $(\xi_1,\xi_2)$.
-
-\subsubsection{Restricting the Macro Pressure Basis to a Child}
-
-$\psi_j$ is linear on all of $K$, so it is also linear on the smaller triangle $T_m\subset K$ -- and a linear
-function on a triangle is completely determined by its values at that triangle's three corners, which is
-exactly what $\hat\phi_1,\hat\phi_2,\hat\phi_3$ interpolate on the reference triangle (\S4.1). Concretely: if
-$T_m$'s corners, in the order they were listed above, are called its first, second, and third corner, then
-$\hat\phi_1$ multiplies $\psi_j$'s value at $T_m$'s first corner, $\hat\phi_2$ at the second, and $\hat\phi_3$
-at the third. Writing this out for each of the four children in turn, using the values already tabulated
-above:
-
-\begin{tcolorbox}[colframe=heaven, colback=heaven!7!white, sharp corners]
-\[
-\begin{aligned}
-T_1=(X_1,X_4,X_6): &\qquad \psi_j\big|_{T_1} = \psi_j(X_1)\,\hat\phi_1 + \psi_j(X_4)\,\hat\phi_2 + \psi_j(X_6)\,\hat\phi_3, \\[6pt]
-T_2=(X_4,X_2,X_5): &\qquad \psi_j\big|_{T_2} = \psi_j(X_4)\,\hat\phi_1 + \psi_j(X_2)\,\hat\phi_2 + \psi_j(X_5)\,\hat\phi_3, \\[6pt]
-T_3=(X_6,X_5,X_3): &\qquad \psi_j\big|_{T_3} = \psi_j(X_6)\,\hat\phi_1 + \psi_j(X_5)\,\hat\phi_2 + \psi_j(X_3)\,\hat\phi_3, \\[6pt]
-T_4=(X_4,X_5,X_6): &\qquad \psi_j\big|_{T_4} = \psi_j(X_4)\,\hat\phi_1 + \psi_j(X_5)\,\hat\phi_2 + \psi_j(X_6)\,\hat\phi_3.
-\end{aligned}
-\]
-\end{tcolorbox}
-
-Each right-hand side is an ordinary combination of $\hat\phi_1,\hat\phi_2,\hat\phi_3$ with numerical
-coefficients read directly from the nodal-value table -- no new function has to be defined, only the already
-familiar reference shape functions re-weighted per child.
-
-\subsubsection{Exact Integration of the Restricted Pressure Basis}
-
-Since $\int_{\hat T}\hat\phi_k \, d\xi_1 d\xi_2 = \tfrac16$ for $k=1,2,3$, integrating each of the four expressions above term by term gives
-\[
-\int_{\hat T} \psi_j\big|_{T_m}\,d\xi_1 d\xi_2 = \tfrac16\Big[\ \text{(coefficient of }\hat\phi_1\text{)} + \text{(coefficient of }\hat\phi_2\text{)} + \text{(coefficient of }\hat\phi_3\text{)}\ \Big],
-\]
-i.e.\ one sixth of the sum of $\psi_j$'s values at $T_m$'s three corners. Working this out for all four
-children and all three pressure basis functions:
-\[
-\begin{aligned}
-T_1: \quad &\int_{\hat T}\psi_1\big|_{T_1} = \tfrac16(1+\tfrac12+\tfrac12)=\tfrac13, &&
-\int_{\hat T}\psi_2\big|_{T_1} = \tfrac16(0+\tfrac12+0)=\tfrac1{12}, &&
-\int_{\hat T}\psi_3\big|_{T_1} = \tfrac16(0+0+\tfrac12)=\tfrac1{12}, \\[6pt]
-T_2: \quad &\int_{\hat T}\psi_1\big|_{T_2} = \tfrac16(\tfrac12+0+0)=\tfrac1{12}, &&
-\int_{\hat T}\psi_2\big|_{T_2} = \tfrac16(\tfrac12+1+\tfrac12)=\tfrac13, &&
-\int_{\hat T}\psi_3\big|_{T_2} = \tfrac16(0+0+\tfrac12)=\tfrac1{12}, \\[6pt]
-T_3: \quad &\int_{\hat T}\psi_1\big|_{T_3} = \tfrac16(\tfrac12+0+0)=\tfrac1{12}, &&
-\int_{\hat T}\psi_2\big|_{T_3} = \tfrac16(0+\tfrac12+0)=\tfrac1{12}, &&
-\int_{\hat T}\psi_3\big|_{T_3} = \tfrac16(\tfrac12+\tfrac12+1)=\tfrac13, \\[6pt]
-T_4: \quad &\int_{\hat T}\psi_1\big|_{T_4} = \tfrac16(\tfrac12+0+\tfrac12)=\tfrac16, &&
-\int_{\hat T}\psi_2\big|_{T_4} = \tfrac16(\tfrac12+\tfrac12+0)=\tfrac16, &&
-\int_{\hat T}\psi_3\big|_{T_4} = \tfrac16(0+\tfrac12+\tfrac12)=\tfrac16.
-\end{aligned}
-\]
-
-Collected into a table, writing $w_j^{(m)}$ for the value of $\int_{\hat T}\psi_j\big|_{T_m}$ computed above:
-
-\begin{table}[H]
-\centering
-\caption{Pressure-basis integration weights $w_j^{(m)}$ per child sub-triangle.}
-\begin{tabular}{lccc}
-\hline\hline
-\textbf{Child} & $w_1^{(m)}$ (for $\psi_1$) & $w_2^{(m)}$ (for $\psi_2$) & $w_3^{(m)}$ (for $\psi_3$) \\
-\hline
-$T_1 = (X_1,X_4,X_6)$ & $1/3$  & $1/12$ & $1/12$ \\
-$T_2 = (X_4,X_2,X_5)$ & $1/12$ & $1/3$  & $1/12$ \\
-$T_3 = (X_6,X_5,X_3)$ & $1/12$ & $1/12$ & $1/3$  \\
-$T_4 = (X_4,X_5,X_6)$ & $1/6$  & $1/6$  & $1/6$  \\
-\hline\hline
-\end{tabular}
-\end{table}
-
-Only $T_4$ reproduces a uniform $\tfrac16$ across all three pressure basis functions -- the case that would
-(incorrectly) be assumed for the whole macro-element under a naive equal-order assembly. The corner children
-$T_1,T_2,T_3$ each favor their own corner's pressure basis function by a factor of $4$ over the other two,
-exactly as the worked-out sums above show.
-
-\subsubsection{Local Child Matrices \texorpdfstring{$\mathbf{B}_x^{(m)}, \mathbf{B}_y^{(m)}$}{Bx(m), By(m)}}
-
-Reusing the gradient identity of eq.~\eqref{eq:grad_for_Bx_By}, but built from child $T_m$'s own vertex
-coordinates $(x_1^{(m)},y_1^{(m)}),(x_2^{(m)},y_2^{(m)}),(x_3^{(m)},y_3^{(m)})$ and Jacobian $\mathbf{J}_{T_m}$:
-\[
-\begin{aligned}
-\left(\mathbf{B}_x^{(m)}\right)_{ij}
-&= -\left(\frac{\partial \phi_i}{\partial x}\right)_{T_m} \left|\mathbf{J}_{T_m}\right| \, w_j^{(m)}
-= -\Big[(y_2^{(m)}-y_1^{(m)})\tfrac{\partial \hat\phi_i}{\partial \xi_2} - (y_3^{(m)}-y_1^{(m)})\tfrac{\partial \hat\phi_i}{\partial \xi_1}\Big] w_j^{(m)}, \\[10pt]
-\left(\mathbf{B}_y^{(m)}\right)_{ij}
-&= -\left(\frac{\partial \phi_i}{\partial y}\right)_{T_m} \left|\mathbf{J}_{T_m}\right| \, w_j^{(m)}
-= \Big[(x_3^{(m)}-x_1^{(m)})\tfrac{\partial \hat\phi_i}{\partial \xi_1} - (x_2^{(m)}-x_1^{(m)})\tfrac{\partial \hat\phi_i}{\partial \xi_2}\Big] w_j^{(m)},
-\end{aligned}
-\]
-for $i \in \{1,2,3\}$ indexing $T_m$'s three local velocity nodes, and $j\in\{1,2,3\}$ indexing $K$'s three
-macro pressure nodes, with $w_j^{(m)}$ read off the table above. The factor $|\mathbf{J}_{T_m}|$ cancels
-exactly against the $1/|\mathbf{J}_{T_m}|$ already inside the gradient (eq.~\eqref{eq:grad_for_Bx_By}) --
-the Jacobian determinant never actually survives into the final formula, exactly as in the single-conforming-triangle
-derivation of $\mathbf{B}^{loc}$ earlier. The only thing that changes per child is $w_j^{(m)}$, replacing a
-single uniform constant $\tfrac16$ with the four different rows of the table above.
-
-\subsubsection{Assembly Into the Macro-Local Block}
-
-Each child contributes a $3\times 3$ block coupling its own 3 local velocity nodes to $K$'s 3 pressure nodes.
-These four blocks are added into a single $6\times3$ macro-local matrix, one row per fine velocity node
-$X_1,\dots,X_6$:
-\begin{itemize}
-    \item $T_1$'s block adds into the rows for $X_1, X_4, X_6$;
-    \item $T_2$'s block adds into the rows for $X_4, X_2, X_5$;
-    \item $T_3$'s block adds into the rows for $X_6, X_5, X_3$;
-    \item $T_4$'s block adds into the rows for $X_4, X_5, X_6$.
-\end{itemize}
-Every corner node ($X_1,X_2,X_3$) appears in exactly one child and receives a single contribution; every
-midpoint node ($X_4,X_5,X_6$) appears in exactly two children and so receives two contributions, added
-together. The result is the $6\times3$ macro-local matrix $\mathbf{B}_x^K$ (and identically
-$\mathbf{B}_y^K$), which is then assembled over all $K\in\mathcal{T}_H$ into the global
-$\mathbf{B}_x,\mathbf{B}_y \in \mathbb{R}^{N_p\times N_v}$.
+Unlike a conforming equal-order pairing, the pressure basis function $\psi_j$ is supported on the \textit{macro} triangle $T^c \in \mathcal{T}_H$, while the velocity basis functions $\phi_i$ are supported on the four \textit{child} triangles $T^f_1,T^f_2,T^f_3,T^f_4 \in \mathcal{T}_h$ obtained by connecting the edge midpoints of $T^c$. Consequently the coupling integral must be split into a sum over the four children, and the pressure basis function must be re-expressed in each child's own local reference coordinates. This restriction is the main idea of the $P_1$-iso-$P_1$ assembly.
 
 %----------------------------------------------------------------------------
+
+\newpage
+\subsubsection*{Weak formulation}
+
+\begin{tcolorbox}[
+    colframe=ForestGreen, 
+    colback=ForestGreen!7!white, 
+    sharp corners
+]
+\begin{center}
+   $\displaystyle -\int_{\Omega} p(\nabla \cdot v) \, d\Omega$ 
+\end{center}
+\end{tcolorbox}
 
 \subsection{Saddle-Point Block Matrix \texorpdfstring{$\mathbf{K}$}{K}}
 
@@ -676,8 +514,8 @@ By organizing the viscous diffusion blocks and the divergence constraint blocks 
 The block layout reflects the underlying \textbf{mixed formulation}~\eqref{eq:stokes_weak}, where the diagonal velocity stiffness blocks $\mathbf{A}$ remain symmetric positive definite, while the zero block on the lower diagonal highlights the lack of an explicit pressure time-dependence or compressibility stabilizer. The dimensional layout of these individual blocks scales according to the total degrees of freedom allocated to each field variable:
 
 \[
-\mathbf{A} \in \mathbb{R}^{N_u \times N_u} \quad
-\mathbf{B}_x \in \mathbb{R}^{N_p \times N_u} \quad
+\mathbf{A} \in \mathbb{R}^{N_u \times N_u} \qquad
+\mathbf{B}_x \in \mathbb{R}^{N_p \times N_u} \qquad
 \mathbf{B}_x^T \in \mathbb{R}^{N_u \times N_p}
 \]
 
@@ -693,30 +531,26 @@ The block layout reflects the underlying \textbf{mixed formulation}~\eqref{eq:st
 \right] - \mathbf{A}\vec{r_g}
 \]
 
-\subsubsection{Construction of the Lifting Function \texorpdfstring{$\vec r_g$}{rg}}
+\subsubsection*{Construction of the Lifting Function \texorpdfstring{$\mathbf{r}_g$}{rg}}
 
-Recall from \S2 that the strong Dirichlet condition reads $\mathbf u = \mathbf g$ on $\Gamma_D$, and from \S3
-that the weak formulation is stated for the homogeneous unknown $\mathbf u \in X$ via the decomposition
-$\mathbf u_{total} = \mathbf u + \mathbf r_g$. Discretely, $\vec r_g \in \mathbb{R}^{2N_v}$ is simply the nodal
-interpolant of $\mathbf g$: for every fine-mesh node $X_i$,
+The strong Dirichlet condition reads $\mathbf u = \mathbf g$ on $\Gamma_D$, and the weak formulation is stated for the homogeneous unknown $\mathbf u \in X$ via the decomposition
+$\mathbf{u} = \mathbf{u}_h + \mathbf{r}_g$. Discretely, $\mathbf{r}_g \in \mathbb{R}^{2N_v}$ is simply the nodal interpolant of $\mathbf g$. For every fine-mesh node $X_i$,
 
 \begin{equation}
 \label{eq:lifting_function}
-\left(\vec r_g^{\,x}\right)_i =
+\left(\mathbf{r}_g^{\,x}\right)_i =
 \begin{cases}
     g_x(X_i) & X_i \in \Gamma_D^{\text{inlet}}, \\[4pt]
     0 & \text{otherwise},
 \end{cases}
 \qquad
-\left(\vec r_g^{\,y}\right)_i = 0 \ \ \forall i,
+\left(\mathbf{r}_g^{\,y}\right)_i = 0 \ \ \forall i,
 \end{equation}
 
-where $\Gamma_D = \Gamma_D^{\text{inlet}} \cup \Gamma_D^{\text{wall}}$ collects every boundary node except the
-outlet (which is left as the natural, traction-free boundary $\Gamma_N$, so $h = \mathbf 0$ and
-$\mathbf F_{forces} = \mathbf 0$ throughout \S7's test cases). Walls carry the homogeneous no-slip value
-$g=\mathbf 0$ automatically, since $\vec r_g$ is zero everywhere it is not explicitly prescribed.
+where $\Gamma_D = \Gamma_D^{\text{inlet}} \cup \Gamma_D^{\text{wall}}$ collects every boundary node except the outlet which is left as the natural, traction-free boundary $\Gamma_N$, so $h = \mathbf 0$ and $\mathbf F_{forces} = \mathbf 0$ in the later experiments. Walls carry the homogeneous no-slip value $g=\mathbf 0$ automatically, since $\mathbf{r}_g$ is zero everywhere it is not explicitly prescribed.
 
-\subsubsection{Momentum and Continuity Right-Hand Sides}
+\begin{color}{blue}
+\subsubsection*{Momentum and Continuity Right-Hand Sides}
 
 With $\mathbf F_{forces}=\mathbf 0$, the momentum block reduces directly to $\mathbf F = -\mathbf A\vec r_g$
 as stated above. The continuity equation of the weak system~\eqref{eq:stokes_weak} needs the same treatment:
@@ -745,7 +579,7 @@ Assembling all three rows, the full right-hand side of the lifted saddle-point s
 \right].
 \]
 
-\subsubsection{Enforcing the Homogeneous Dirichlet Condition}
+\subsubsection*{Enforcing the Homogeneous Dirichlet Condition}
 
 Because $\mathbf u \in X$ requires $\mathbf u = \mathbf 0$ exactly on $\Gamma_D$, every degree of freedom
 $i \in \Gamma_D$ must be pinned to zero in the linear system itself, not merely approximated. This is done by
@@ -1491,7 +1325,20 @@ for any new parameter instance reduces to a five-term scalar-weighted sum.
 In this section, we detail the data generation pipeline required to construct the reduced-order model and address the computational and mathematical caveats inherent to the process. 
 
 \subsection{Full-Order Snapshot Collection}
-To generate the training dataset of $n_s=100$ snapshots, we evaluate the high-fidelity model over a discrete parameter set $\Xi = \{\boldsymbol{\mu}^{(1)}, \dots, \boldsymbol{\mu}^{(n_s)}\} \subset \mathcal{P}$. To ensure a robust, space-filling exploration of the five-dimensional parameter domain, these instances were generated using \textit{Latin Hypercube Sampling} (LHS) over the uniform bounds $\mathcal{P} = [10, 200]^5$. By exploiting the affine decomposition of the viscous operator,
+To generate the training dataset of $n_s=100$ snapshots, we evaluate the high-fidelity model over a discrete parameter set $\Xi = \{\boldsymbol{\mu}^{(1)}, \dots, \boldsymbol{\mu}^{(n_s)}\} \subset \mathcal{P}$. To ensure a robust, space-filling exploration of the five-dimensional parameter domain, these instances were generated using \textit{Latin Hypercube Sampling} (LHS) over the uniform bounds $\mathcal{P} = [10, 200]^5$. 
+
+\begin{wrapfigure}{l}{0.42\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{reduced-order_model/LHS_downprojected.png}
+    \captionsetup{font=small}
+    \caption{Down-projection of LHS parameter set $\Xi$ bounded by the convex hull of the parameter space $\mathcal{P} = [10, 200]^5$.}
+    \label{fig:lhs_projection}
+\end{wrapfigure}
+
+To visually verify the spatial distribution of the sampling points across the 5D domain, the parameters were standardized and projected onto a two-dimensional subspace using \textit{principal component analysis} (PCA). Figure~\ref{fig:lhs_projection} displays the down-projected snapshots $\Xi$ alongside the convex hull of the parameter space $\mathcal{P}$. The uniform dispersion of points across the interior of the boundary confirms that the LHS scheme achieves excellent space-filling properties, effectively capturing the global parameter behavior without leaving unrepresented regions or forming dense clusters.
+
+\vspace{7pt}
+Next, by exploiting the affine decomposition of the viscous operator,
 
 \[
 A(\boldsymbol{\mu}) = \sum_{k=1}^5 \mu_k A_k,
@@ -1624,22 +1471,7 @@ where $\boldsymbol{1}_{n_s} \in \mathbb{R}^{n_s}$ is a vector of ones. Every col
 \section{Reduced Basis Construction}
 This section details the methodology for extracting a reduced basis from high-fidelity snapshots, capturing the system's core dynamics at a fraction of the full computational cost.
 
-\begin{color}{blue}
 \subsection{Proper Orthogonal Decomposition and Energy Truncation}
-
-Applying the POD-with-energy-truncation procedure of \S11.3 independently to each of the three
-training-restricted snapshot matrices -- the homogeneous velocity snapshots, the supremizer snapshots of
-\S11.3, and the pressure snapshots, each restricted to the $n_s-1=99$ training instances of \S14.1 -- at the
-energy threshold $\tau=0.9999$ reveals a rapid decay of the singular value spectrum in every case. As
-Figure~\ref{fig:energy_spectra} shows, the cumulative energy spectra rise almost vertically over the first
-handful of singular values before flattening out: retaining just $m_u=5$ velocity modes already captures
-$99.9937\%$ of the homogeneous-velocity snapshot energy, $m_t=6$ supremizer modes capture $99.9933\%$, and
-$m_p=5$ pressure modes capture $99.9999\%$ -- fewer than six modes per field, out of $99$ available training
-snapshots in every case. This roughly $95\%$ reduction in dimensionality, achieved before the fine-mesh
-resolution is even considered ($2N_v=193{,}634$ stacked velocity degrees of freedom and $N_p=24{,}473$
-pressure degrees of freedom at this refinement level, cf. Table~\ref{tab:stokes_convergence}), is the direct
-empirical confirmation of the low-intrinsic-dimension argument made in \S9: the solution manifold $\mathcal M$
-genuinely does admit a compact linear approximation.
 
 \begin{figure}[htbp]
   \centering
@@ -1666,50 +1498,6 @@ genuinely does admit a compact linear approximation.
 \end{figure}
 
 \subsection{Reduced Velocity and Pressure Spaces}
-
-The three POD bases obtained above are the columns of three matrices,
-\[
-\tilde{\mathbf V}_u \in \mathbb{R}^{2N_v\times m_u}, \qquad
-\mathbf V_s \in \mathbb{R}^{2N_v \times m_t}, \qquad
-\mathbf V_p \in \mathbb{R}^{N_p \times m_p},
-\]
-with $m_u=5$, $m_t=6$, $m_p=5$ as found above. The reduced velocity space is defined by concatenating the
-homogeneous-velocity and supremizer bases,
-\[
-\mathbf V_u = \big[\, \tilde{\mathbf V}_u \ \big|\ \mathbf V_s \,\big] \in \mathbb{R}^{2N_v \times (m_u+m_t)},
-\qquad m_u+m_t = 11,
-\]
-so that $\mathbf V_u$ spans $X_N = \mathrm{span}\{\tilde{\mathbf u}_h(\boldsymbol\mu^{(k)}),\, \mathbf t^{(k)} :
-k\in\text{train\_idx}\}$ in the notation of \S9 -- every column of $\mathbf V_u$ is either a compressed
-direction of variation across the training velocity snapshots, or a supremizer direction placed there
-specifically to satisfy the reduced inf-sup condition (\S11.3). The reduced pressure space is simply
-$\mathbf V_p$ itself,
-\[
-Q_N = \mathrm{span}\{\mathbf p_h(\boldsymbol\mu^{(k)}) : k \in \text{train\_idx}\}, \qquad \dim Q_N = m_p = 5.
-\]
-
-Note that unlike the idealized construction of \S9 -- where velocity and pressure ranks are typically taken
-equal, $\dim X_N = 2\dim Q_N$, so that each pressure mode contributes exactly one paired supremizer direction
--- the implementation here truncates each of the three snapshot sets independently at the same energy
-threshold $\tau$, so $m_u, m_t, m_p$ need not, and here do not, coincide. This is a deliberate deviation from
-the standard construction: energy truncation is applied uniformly, and each field keeps however many modes its
-own spectrum actually needs, rather than forcing a shared rank $N$ that would either under-resolve the field
-with the slowest-decaying spectrum or waste modes on the fastest-decaying one.
-
-Any solution reconstructed from the reduced spaces takes the form
-\[
-\mathbf{u}_N(\boldsymbol\mu) = \vec r_g + \mathbf V_u\, \hat{\mathbf u}_N(\boldsymbol\mu), \qquad
-\mathbf{p}_N(\boldsymbol\mu) = \mathbf V_p\, \hat{\mathbf p}_N(\boldsymbol\mu),
-\]
-where $\vec r_g$ is the same lifting function of \S4.5 -- identical across all $\boldsymbol\mu$, since the
-inlet profile does not depend on viscosity -- and $\hat{\mathbf u}_N(\boldsymbol\mu)\in\mathbb R^{m_u+m_t}$,
-$\hat{\mathbf p}_N(\boldsymbol\mu)\in\mathbb R^{m_p}$ are the reduced coefficient vectors actually solved for
-online, in place of the $2N_v+N_p \approx 218{,}000$ degrees of freedom of the original saddle-point system.
-Assembling and solving for these coefficients, using the reduced operators $\mathbf V_u^T\mathbf A_k\mathbf
-V_u$ and $\mathbf V_p^T \mathbf B_h \mathbf V_u$ built once offline from $\mathbf V_u,\mathbf V_p$, is the
-subject of \S13.
-
-\end{color}
 
 %-------------------------------------------------------------------
 
