@@ -23,7 +23,7 @@ Because viscosity enters the weak form linearly, the stiffness operator inherits
 
 ### `POD_ROM` (Reduced-Order Model)
 
-$$\mathcal{M} = \{(\mathbf{u}_h(\boldsymbol{\mu}), p_h(\boldsymbol{\mu})) : \boldsymbol{\mu}\in\mathcal{P}\}, \qquad \mathbf{t} = X_u^{-1}B_h^T\mathbf{p}$$
+$$\mathcal{M} = \{(\mathbf{u}_h(\boldsymbol{\mu}), p_h) : \boldsymbol{\mu}\in\mathcal{P}\}, \qquad \mathbf{t} = X_u^{-1}B_h^T\mathbf{p}$$
 
 Exploiting the fact that the solution manifold $\mathcal{M}$ has low intrinsic dimension despite living in a high-dimensional discrete space, the framework builds a reduced basis via Proper Orthogonal Decomposition on 100 Latin-Hypercube-sampled full-order snapshots, enriching the velocity space with supremizer modes $\mathbf{t}$ to preserve inf-sup stability at the reduced level. The offline stage precomputes all reduced operators once; the online stage then solves only a small Galerkin system per new $\boldsymbol{\mu}$, at cost independent of the underlying mesh resolution.
 
