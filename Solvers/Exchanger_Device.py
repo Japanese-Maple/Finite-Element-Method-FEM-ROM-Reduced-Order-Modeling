@@ -27,6 +27,13 @@ p_coarse, e_coarse, t_coarse = Plot_Initial_Refined_meshes(
 p_fine, e_fine, t_fine = refine(p_coarse, e_coarse, t_coarse)
 
 #_____________________________________________________________________________________________________________________________
+def parabolic_inlet_profile(y, y_bottom, y_top, mean_velocity):
+
+    width = y_top - y_bottom
+    u_max = 1.5 * mean_velocity
+    s = (y - y_bottom) / width
+    return 4.0 * u_max * s * (1.0 - s)
+
 def compute_U_P_solution(p_fine, t_fine, e_fine, p_coarse, t_coarse,
                          inlet_velocity: float = 1.0,
                          kinematic_viscosity: float = 0.01,
@@ -58,8 +65,6 @@ def compute_U_P_solution(p_fine, t_fine, e_fine, p_coarse, t_coarse,
     F[:Nv]    -= A.dot(lf_x)
     F[2*Nv:]  -= Bx.dot(lf_x)  
 
-    # print(f"K is of the shape {K.shape}")
-
     K = K.tolil()
 
     for i in dirichlet_nodes:
@@ -79,7 +84,6 @@ def compute_U_P_solution(p_fine, t_fine, e_fine, p_coarse, t_coarse,
 
     if len(p_ref_idx) == 0:
         p_ref_idx = [np.argmin(np.abs(p_coarse[:, 0] - xmax))]
-        # print("Warning: no coarse node exactly on outlet x; using nearest.")
 
     p_row = 2 * Nv + p_ref_idx[0]
     K[p_row, :] = 0.0
@@ -88,14 +92,10 @@ def compute_U_P_solution(p_fine, t_fine, e_fine, p_coarse, t_coarse,
 
     B_hT = K[:2*Nv, 2*Nv:].tocsc()
 
-    # ------------------------------------------------------------------
-    # Solve
-    # ------------------------------------------------------------------
-    # print("Solving lifted system...")
     sol = spsolve(K.tocsc(), F)
 
     if np.any(np.isnan(sol)):
-        raise RuntimeError("NaNs in solution — check mesh connectivity and BCs.")
+        raise RuntimeError("NaNs in solution.")
 
     u0_x     = sol[:Nv]
     u0_y     = sol[Nv:2*Nv]
