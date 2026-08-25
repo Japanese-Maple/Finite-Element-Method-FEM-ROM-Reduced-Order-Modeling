@@ -9,7 +9,18 @@ This project implements a two-dimensional finite element solver for the incompre
 
 $$-\nu\Delta\mathbf{u} + \nabla p = 0, \qquad \nabla\cdot\mathbf{u} = 0$$
 
-This solver handles steady-state incompressible Stokes flow under a spatially varying viscosity $\nu(\mathbf{x})$, discretized on a **P1-iso-P1** macro-element pairing (velocity on a fine mesh, pressure on a coarse mesh) that satisfies the LBB inf-sup condition without resorting to higher-order elements. It assembles the global saddle-point operator $K = \begin{bmatrix} A & 0 & B_x^T \\ 0 & A & B_y^T \\ B_x & B_y & 0 \end{bmatrix}$ and solves it directly via sparse LU factorization, enforcing Dirichlet boundary conditions through row substitution and regularizing the singular pressure null-space by pinning a single reference degree of freedom.
+This solver handles steady-state incompressible Stokes flow under a spatially varying viscosity $\nu(\mathbf{x})$, discretized on a **P1-iso-P1** macro-element pairing (velocity on a fine mesh, pressure on a coarse mesh) that satisfies the LBB inf-sup condition without resorting to higher-order elements. It assembles the global saddle-point operator 
+
+$$
+K = 
+\begin{bmatrix} 
+  A & 0 & B_x^T \\ 
+  0 & A & B_y^T \\ 
+  B_x & B_y & 0 
+\end{bmatrix}
+$$
+
+ and solves it directly via sparse LU factorization, enforcing Dirichlet boundary conditions through row substitution and regularizing the singular pressure null-space by pinning a single reference degree of freedom.
 
 ---
 
