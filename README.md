@@ -7,7 +7,11 @@ This project implements a two-dimensional finite element solver for the incompre
 
 ### `Stokes_Solver` (Saddle-Point FEM Solver)
 
-$$-\nu\Delta\mathbf{u} + \nabla p = 0, \qquad \nabla\cdot\mathbf{u} = 0$$
+$$
+\begin{cases}
+-\nu\Delta\mathbf{u} + \nabla p = 0\\
+\nabla\cdot\mathbf{u} = 0
+\end{cases}$$
 
 This solver handles steady-state incompressible Stokes flow under a spatially varying viscosity $\nu(\mathbf{x})$, discretized on a **P1-iso-P1** macro-element pairing (velocity on a fine mesh, pressure on a coarse mesh) that satisfies the LBB inf-sup condition without resorting to higher-order elements. It assembles the global saddle-point operator 
 
@@ -26,7 +30,16 @@ $$
 
 ### `Affine_Viscosity_Decomposition` (Parametrized Assembly)
 
-$$\nu(\mathbf{x};\boldsymbol{\mu}) = \sum_{k=1}^{5} \mu_k\,\psi_k(\mathbf{x}), \qquad A(\boldsymbol{\mu}) = \sum_{k=1}^{5} \mu_k A_k$$
+$$
+\nu(\mathbf{x};\boldsymbol{\mu}) = \sum_{k=1}^{p}\mu_k\,\psi_{k}(\mathbf{x}) \ ,
+\qquad
+\psi_k(\mathbf{x}) = \frac{w_{k}(\mathbf{x})}{\displaystyle \sum_{j=1}^p w_{j}(\mathbf{x})} \ ,
+\qquad
+w_{k}(\mathbf{x}) = \frac{1}{\max(d_{k}, \epsilon)^\gamma} \ ,
+\qquad
+d_{k} = \|\mathbf{x} - \mathbf{x}_k\|_2 \ ,
+\qquad A(\boldsymbol{\mu}) = \sum_{k=1}^{5} \mu_k A_k
+$$
 
 Because viscosity enters the weak form linearly, the stiffness operator inherits an affine dependence on the five-dimensional parameter vector $\boldsymbol{\mu}\in[10,200]^5$, which controls viscosity values at five Shepard-interpolated control points. This lets five parameter-independent matrices $A_1,\dots,A_5$ be assembled once and reused for any $\boldsymbol{\mu}$ as a cheap scalar-weighted sum, entirely avoiding per-query reassembly of the global operator.
 
@@ -34,7 +47,14 @@ Because viscosity enters the weak form linearly, the stiffness operator inherits
 
 ### `POD_ROM` (Reduced-Order Model)
 
-$$\mathcal{M} = \{(\mathbf{u}_h(\boldsymbol{\mu}), p_h) : \boldsymbol{\mu}\in\mathcal{P}\}, \qquad \mathbf{t} = X_u^{-1}B_h^T\mathbf{p}$$
+$$\mathcal{M} = \{(\mathbf{u}_h(\boldsymbol{\mu}), p_h) : \boldsymbol{\mu}\in\mathcal{P}\} \ , 
+\qquad 
+\mathbf{t} = X_u^{-1}B_h^T\mathbf{p} \ , 
+\qquad
+\mathbf{S}_t = \mathbf{X}_u^{-1} \left(\mathbf{B}_h^{T}\mathbf{S}_p\right) \in \mathbb{R}^{2N_v\times n_s} \ , 
+\qquad
+\mathbf{S}_t = \left[\,\mathbf{t}^{(1)} \,\middle|\, \cdots \,\middle|\, \mathbf{t}^{(n_s)}\,\right]
+$$
 
 Exploiting the fact that the solution manifold $\mathcal{M}$ has low intrinsic dimension despite living in a high-dimensional discrete space, the framework builds a reduced basis via Proper Orthogonal Decomposition on 100 Latin-Hypercube-sampled full-order snapshots, enriching the velocity space with supremizer modes $\mathbf{t}$ to preserve inf-sup stability at the reduced level. The offline stage precomputes all reduced operators once; the online stage then solves only a small Galerkin system per new $\boldsymbol{\mu}$, at cost independent of the underlying mesh resolution.
 
