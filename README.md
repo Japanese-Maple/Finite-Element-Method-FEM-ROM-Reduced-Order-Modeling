@@ -1,166 +1,32 @@
 # Finite Element Method for the Incompressible Stokes Equations
 
-This project implements a two-dimensional finite element solver for the incompressible Stokes equations using the **P1-iso-P1 mixed finite element method**.
+This project implements a two-dimensional finite element solver for the incompressible Stokes equations using the **P1-iso-P1 mixed finite element method** and then explores Reduced Order Modelling as a way to compress the amount of time needed to solve the parametrized problem.
 
-The implementation covers the complete workflow from the continuous PDE formulation to sparse matrix assembly, saddle-point system construction, and verification of the Ladyzhenskaya-Babuška-Brezzi (LBB) stability condition.
-
----
-
-## Governing Equations
-
-The steady incompressible Stokes equations are
-
-```math
--\nu \Delta \mathbf{u} + \nabla p = \mathbf{0}
-```
-
-```math
-\nabla \cdot \mathbf{u} = 0
-```
-
-where:
-
-- $\mathbf{u}$ is the velocity field
-- $p$ is the pressure field
-- $\nu$ is the kinematic viscosity
-
-These equations model low-Reynolds-number flows where viscous forces dominate inertial effects.
-
-## Weak Formulation
-
-Let
-
-```math
-u = \tilde u - r_g,
-```
-
-where $r_g$ is a lifting function satisfying the non-homogeneous Dirichlet boundary conditions.
-
-The weak formulation reads:
-
-```math
-\int_{\Omega} \nu \nabla u : \nabla v \, d\Omega
--
-\int_{\Omega} p \, (\nabla \cdot v)\, d\Omega
-=
-\int_{\Gamma_N} h \cdot v \, d\Gamma
--
-\int_{\Omega} \nu \nabla r_g : \nabla v \, d\Omega,
-\qquad \forall v \in X.
-```
-
-```math
--\int_{\Omega} q \, (\nabla \cdot u)\, d\Omega
-=
-\int_{\Omega} q \, (\nabla \cdot r_g)\, d\Omega,
-\qquad \forall q \in Q.
-```
-
-where
-
-- $u$ is the velocity field,
-- $p$ is the pressure,
-- $u$ is the kinematic viscosity,
-- $h$ denotes Neumann boundary data,
-- $r_g$ is the lifting function associated with the Dirichlet boundary conditions.
 
 ---
 
-## P1-iso-P1 Discretization
+### `Stokes_Solver` (Saddle-Point FEM Solver)
 
-The solver uses the classical **P1-iso-P1 element pair**:
+$$-\nu\Delta\mathbf{u} + \nabla p = 0, \qquad \nabla\cdot\mathbf{u} = 0$$
 
-- Velocity is discretized on a uniformly refined mesh
-- Pressure is discretized on the original coarse mesh
-- Both fields use continuous piecewise linear basis functions
-
-This macro-element construction satisfies the discrete LBB condition while retaining the simplicity and efficiency of linear finite elements.
+This solver handles steady-state incompressible Stokes flow under a spatially varying viscosity $\nu(\mathbf{x})$, discretized on a **P1-iso-P1** macro-element pairing (velocity on a fine mesh, pressure on a coarse mesh) that satisfies the LBB inf-sup condition without resorting to higher-order elements. It assembles the global saddle-point operator $K = \begin{bmatrix} A & 0 & B_x^T \\ 0 & A & B_y^T \\ B_x & B_y & 0 \end{bmatrix}$ and solves it directly via sparse LU factorization, enforcing Dirichlet boundary conditions through row substitution and regularizing the singular pressure null-space by pinning a single reference degree of freedom.
 
 ---
 
-## Matrix Assembly
+### `Affine_Viscosity_Decomposition` (Parametrized Assembly)
 
-### Velocity Stiffness Matrix
+$$\nu(\mathbf{x};\boldsymbol{\mu}) = \sum_{k=1}^{5} \mu_k\,\psi_k(\mathbf{x}), \qquad A(\boldsymbol{\mu}) = \sum_{k=1}^{5} \mu_k A_k$$
 
-```math
-A_{ij}
-=
-\int_\Omega
-\nu
-\nabla\phi_i\cdot\nabla\phi_j
-\, d\Omega
-```
-
-### Pressure Coupling Matrices
-
-```math
-(B_x)_{ij}
-=
--\int_\Omega
-\psi_j
-\frac{\partial\phi_i}{\partial x}
-\, d\Omega
-```
-
-```math
-(B_y)_{ij}
-=
--\int_\Omega
-\psi_j
-\frac{\partial\phi_i}{\partial y}
-\, d\Omega
-```
+Because viscosity enters the weak form linearly, the stiffness operator inherits an affine dependence on the five-dimensional parameter vector $\boldsymbol{\mu}\in[10,200]^5$, which controls viscosity values at five Shepard-interpolated control points. This lets five parameter-independent matrices $A_1,\dots,A_5$ be assembled once and reused for any $\boldsymbol{\mu}$ as a cheap scalar-weighted sum, entirely avoiding per-query reassembly of the global operator.
 
 ---
 
-## Global Saddle-Point System
+### `POD_ROM` (Reduced-Order Model)
 
-After assembly, the Stokes problem becomes
+$$\mathcal{M} = \{(\mathbf{u}_h(\boldsymbol{\mu}), p_h(\boldsymbol{\mu})) : \boldsymbol{\mu}\in\mathcal{P}\}, \qquad \mathbf{t} = X_u^{-1}B_h^T\mathbf{p}$$
 
-```math
-\begin{bmatrix}
-A & 0 & B_x^T \\
-0 & A & B_y^T \\
-B_x & B_y & 0
-\end{bmatrix}
-\begin{bmatrix}
-u_x \\
-u_y \\
-p
-\end{bmatrix}
-=
-\begin{bmatrix}
-F_x \\
-F_y \\
-0
-\end{bmatrix}
-```
+Exploiting the fact that the solution manifold $\mathcal{M}$ has low intrinsic dimension despite living in a high-dimensional discrete space, the framework builds a reduced basis via Proper Orthogonal Decomposition on 100 Latin-Hypercube-sampled full-order snapshots, enriching the velocity space with supremizer modes $\mathbf{t}$ to preserve inf-sup stability at the reduced level. The offline stage precomputes all reduced operators once; the online stage then solves only a small Galerkin system per new $\boldsymbol{\mu}$, at cost independent of the underlying mesh resolution.
 
-This system couples the momentum equations with the incompressibility constraint.
-
----
-
-## LBB Stability Verification
-
-The stability of the mixed discretization is verified through the discrete inf-sup condition
-
-```math
-\beta
-=
-\sqrt{
-\lambda_{\min}
-\left(
-M_p^{-1}
-B
-M_v^{-1}
-B^T
-\right)
-}
-```
-
-A strictly positive value of $\beta$ confirms stability of the chosen velocity-pressure pair.
-
----
 
 ## Features
 
@@ -174,6 +40,9 @@ A strictly positive value of $\beta$ confirms stability of the chosen velocity-p
 - Pressure null-space handling
 - Discrete LBB stability analysis
 - Python implementation using NumPy and SciPy
+- Reduced Order Model
+- Affine decomposition for the velocity operators
+- Parametrized viscosity fields
 
 ---
 
