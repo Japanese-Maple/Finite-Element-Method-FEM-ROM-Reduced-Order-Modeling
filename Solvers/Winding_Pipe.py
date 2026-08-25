@@ -119,8 +119,10 @@ def compute_U_P_solution_winding_pipe(p_fine, t_fine, e_fine, p_coarse, t_coarse
 
 if __name__ == "__main__":
 
+    print('generating the solution...')
     ux, uy, p_sol = compute_U_P_solution_winding_pipe(p_fine, t_fine, e_fine, p_coarse, t_coarse)
 
+    print('saving the solution...')
     save_simulation_data(p_fine, e_fine, t_fine,
                          p_coarse, e_coarse, t_coarse,
                          ux, uy, p_sol,
