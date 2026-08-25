@@ -311,7 +311,7 @@ def plot_streamlines(p_fine, t_fine, ux, uy,
                      cmap:str='viridis',
                      grid_num:tuple=(300,300),
                      figsize:tuple=(14, 6),
-                     savetype:str='jpeg'):
+                     savetype:str='png'):
     """
     Streamline visualization with automatic topology-based geometry masking.
     """
@@ -374,7 +374,7 @@ def plot_streamlines(p_fine, t_fine, ux, uy,
     ax.set_ylabel("y")
 
     plt.tight_layout()
-    plt.savefig(f'Outputs/Solution_Streamlines.{savetype}')
+    plt.savefig(f'Outputs/Solution_Streamlines.{savetype}', bbox_inches='tight', pad_inches=0.01)
     plt.show()
 
 #_______________________________________________________________________________________________________________________________________________________________
@@ -382,7 +382,7 @@ def plot_streamlines(p_fine, t_fine, ux, uy,
 def plot_pressure(p_coarse, t_coarse, p_sol,
                   levels:int=90,
                   figsize:tuple=(10,10),
-                  savetype:str='jpeg'):
+                  savetype:str='png'):
     """Plots the pressure"""
 
     _, plots = plt.subplots(figsize=figsize)
@@ -407,7 +407,7 @@ def plot_pressure(p_coarse, t_coarse, p_sol,
     plots.set_ylim([y_min - y_margin, y_max + y_margin])
 
     plots.set_title('Pressure $\\mathbf{P}$')
-    plt.savefig(f'Outputs/Pressure_Tricontourf.{savetype}')
+    plt.savefig(f'Outputs/Pressure_Tricontourf.{savetype}', bbox_inches='tight', pad_inches=0.01)
     plt.show()
 
 #_______________________________________________________________________________________________________________________________________________________________

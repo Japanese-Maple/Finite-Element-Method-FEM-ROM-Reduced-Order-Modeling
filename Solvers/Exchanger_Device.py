@@ -27,17 +27,16 @@ p_coarse, e_coarse, t_coarse = Plot_Initial_Refined_meshes(
 p_fine, e_fine, t_fine = refine(p_coarse, e_coarse, t_coarse)
 
 #_____________________________________________________________________________________________________________________________
-def parabolic_inlet_profile(y, y_bottom, y_top, mean_velocity):
 
-    width = y_top - y_bottom
-    u_max = 1.5 * mean_velocity
-    s = (y - y_bottom) / width
-    return 4.0 * u_max * s * (1.0 - s)
+# Solver
 
-def compute_U_P_solution(p_fine, t_fine, e_fine, p_coarse, t_coarse,
-                         inlet_velocity: float = 1.0,
-                         kinematic_viscosity: float = 0.01,
-                         return_matrices: bool = False):
+def parabolic_inlet_profile(x, x_1, x_2, alpha):
+        return -alpha*(x - x_1)*(x - x_2)
+
+def compute_U_P_solution_exchanger_device(p_fine, t_fine, e_fine, p_coarse, t_coarse,
+                                          alpha: float = 3.0,
+                                          kinematic_viscosity: float = 1,
+                                          return_matrices: bool = False):
 
     Nv = p_fine.shape[0]
     Np = p_coarse.shape[0]
@@ -49,13 +48,19 @@ def compute_U_P_solution(p_fine, t_fine, e_fine, p_coarse, t_coarse,
     inlet_idx  = np.where(np.abs(p_fine[:, 0] - xmin) < eps)[0]
     outlet_idx = np.where(np.abs(p_fine[:, 0] - xmax) < eps)[0]
 
+    corner_idx  = [inlet_idx[np.argmax(p_fine[inlet_idx, 1])], 
+                inlet_idx[np.argmin(p_fine[inlet_idx, 1])]]
+
     boundary_nodes = np.unique(e_fine[e_fine[:, 2] > 0, 0:2])
     v_wall_idx = np.setdiff1d(boundary_nodes, np.concatenate([inlet_idx, outlet_idx]))
     dirichlet_nodes = np.unique(np.concatenate([inlet_idx, v_wall_idx]))
 
     lf_x = np.zeros(Nv)
     lf_y = np.zeros(Nv)
-    lf_x[inlet_idx] = inlet_velocity          
+
+    y_inlet = p_fine[inlet_idx, 1]
+    y_top, y_bottom = p_fine[corner_idx[0], 1], p_fine[corner_idx[1], 1]
+    lf_x[inlet_idx] = parabolic_inlet_profile(y_inlet, y_top, y_bottom, alpha=alpha)
 
     A  = calculate_velocity_A(p_fine, t_fine, kinematic_viscosity)
     Bx, By = calculate_pressure_B(p_fine, t_fine, p_coarse, t_coarse)
@@ -101,18 +106,9 @@ def compute_U_P_solution(p_fine, t_fine, e_fine, p_coarse, t_coarse,
     u0_y     = sol[Nv:2*Nv]
     pressure = sol[2*Nv:]
 
-    # Recover full velocity
     ux = u0_x + lf_x
     uy = u0_y + lf_y
 
-    # ------------------------------------------------------------------
-    # Diagnostics
-    # ------------------------------------------------------------------
-    # div = Bx @ ux + By @ uy
-    # print(f"||div u|| = {np.linalg.norm(div):.3e}")
-    # print(f"max |div| = {np.max(np.abs(div)):.3e}")
-    # print(f"pressure  min/mean/max = "
-    #       f"{pressure.min():.4f} / {pressure.mean():.4f} / {pressure.max():.4f}")
     if return_matrices:
         return ux, uy, pressure, Xu_bc, B_hT
 
@@ -122,7 +118,7 @@ def compute_U_P_solution(p_fine, t_fine, e_fine, p_coarse, t_coarse,
 
 if __name__ == "__main__":
 
-    ux, uy, p_sol = compute_U_P_solution(p_fine, t_fine, e_fine, p_coarse, t_coarse)
+    ux, uy, p_sol = compute_U_P_solution_exchanger_device(p_fine, t_fine, e_fine, p_coarse, t_coarse)
 
     save_simulation_data(p_fine, e_fine, t_fine,
                          p_coarse, e_coarse, t_coarse,
