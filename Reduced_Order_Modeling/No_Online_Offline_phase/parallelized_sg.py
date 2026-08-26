@@ -14,7 +14,7 @@ fem_dir = os.path.dirname(os.path.dirname(script_dir))
 if fem_dir not in sys.path:
     sys.path.append(fem_dir)
 
-from Solvers.Exchanger_Device import compute_U_P_solution
+from Solvers.Exchanger_Device import compute_U_P_solution_exchanger_device
 from Utilities.Mesh_processing import refine
 from Utilities.Plot_functions import Plot_Initial_Refined_meshes
 
@@ -24,10 +24,10 @@ def solve_snapshot_worker(args):
     """Worker function to solve a single snapshot."""
     i, v_t, p_f, t_f, e_f, p_c, t_c = args
     
-    ux, uy, p_sol = compute_U_P_solution(
+    ux, uy, p_sol = compute_U_P_solution_exchanger_device(
         p_f, t_f, e_f, 
         p_c, t_c,
-        inlet_velocity=1.0,
+        alpha=3.0,
         kinematic_viscosity=v_t
     )
     
@@ -46,7 +46,7 @@ if __name__ == '__main__':
     )
     p_fine, e_fine, t_fine = refine(p_coarse, e_coarse, t_coarse)
 
-    npz_path = os.path.join(fem_dir, 'Reduced_Order_Modeling', 'Data', 'viscosity_snapshots.npz')
+    npz_path = os.path.join(fem_dir, 'Reduced_Order_Modeling', 'No_Online_Offline_phase', 'Data', 'viscosity_snapshots.npz')
     with np.load(npz_path) as data:
         v_t_snapshots = data['v_t_snapshots']
         parameters    = data['parameters']

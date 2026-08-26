@@ -13,7 +13,7 @@ fem_dir = os.path.dirname(os.path.dirname(script_dir))
 if fem_dir not in sys.path:
     sys.path.append(fem_dir)
 
-from Solvers.Exchanger_Device import compute_U_P_solution
+from Solvers.Exchanger_Device import compute_U_P_solution_exchanger_device
 from Utilities.Mesh_processing import refine
 from Utilities.Plot_functions import Plot_Initial_Refined_meshes
 
@@ -69,10 +69,10 @@ for i in tqdm(range(num_snapshots), desc="Evaluating FOM Snapshots", unit="state
     
     v_t = v_t_snapshots[i]
     
-    ux, uy, p_sol = compute_U_P_solution(
+    ux, uy, p_sol = compute_U_P_solution_exchanger_device(
         p_fine, t_fine, e_fine, 
         p_coarse, t_coarse,
-        inlet_velocity=1.0,
+        alpha=3.0,
         kinematic_viscosity=v_t
     )
     

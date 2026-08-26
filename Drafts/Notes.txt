@@ -129,3 +129,163 @@ plt.show();
     # lam0 = 1.0 - lam1 - lam2
 
     # psi = np.stack([lam0, lam1, lam2], axis=1)
+
+#----------------------------------------------------------------------------------
+
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+from scipy.interpolate import griddata
+import matplotlib.tri as tri
+
+tri_fine   = tri.Triangulation(p_fine[:, 0], p_fine[:, 1], t_fine[:, :3])
+tri_coarse = tri.Triangulation(p_coarse[:, 0], p_coarse[:, 1], t_coarse[:, :3])
+
+# ------------------------------------------------------------------
+# Streamline grid
+# ------------------------------------------------------------------
+
+nx, ny = 300, 300
+
+xi = np.linspace(p_fine[:,0].min(), p_fine[:,0].max(), nx)
+yi = np.linspace(p_fine[:,1].min(), p_fine[:,1].max(), ny)
+X, Y = np.meshgrid(xi, yi)
+
+triang = tri.Triangulation(
+    p_fine[:,0],
+    p_fine[:,1],
+    t_fine[:, :3]
+)
+
+trifinder = triang.get_trifinder()
+mask = (trifinder(X, Y) == -1)
+
+def interpolate_velocity(ux, uy):
+    U = griddata((p_fine[:,0], p_fine[:,1]), ux, (X, Y), method="cubic")
+    V = griddata((p_fine[:,0], p_fine[:,1]), uy, (X, Y), method="cubic")
+
+    U = np.ma.array(U, mask=mask)
+    V = np.ma.array(V, mask=mask)
+
+    return U, V
+
+U_true, V_true = interpolate_velocity(ux_true, uy_true)
+U_rom,  V_rom  = interpolate_velocity(ux_rom,  uy_rom)
+
+# ------------------------------------------------------------------
+# Common colour scales
+# ------------------------------------------------------------------
+
+vel_min = min(Umag_true.min(), Umag_rom.min())
+vel_max = max(Umag_true.max(), Umag_rom.max())
+
+p_min = min(p_true.min(), p_rom.min())
+p_max = max(p_true.max(), p_rom.max())
+
+fig, axes = plt.subplots(2, 3, figsize=(21, 9))
+
+# ==============================================================
+# Velocity magnitude
+# ==============================================================
+
+velocity_fields = [
+    (Umag_true, "FOM $|\\mathbf{u}|$", U_true, V_true),
+    (Umag_rom,  "ROM $|\\mathbf{u}|$", U_rom,  V_rom),
+]
+
+for ax, (field, title, U, V) in zip(axes[0, :2], velocity_fields):
+
+    cf = ax.tricontourf(
+        tri_fine,
+        field,
+        levels=20,
+        cmap="viridis",
+        vmin=vel_min,
+        vmax=vel_max
+    )
+
+    ax.streamplot(
+        X,
+        Y,
+        U,
+        V,
+        density=3.5,
+        color="white",
+        linewidth=1.1,
+        arrowsize=1.1
+    )
+
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="3%", pad=0.1)
+    plt.colorbar(cf, cax=cax)
+
+    ax.set_title(title)
+    ax.set_aspect("equal")
+
+# Velocity error
+
+cf = axes[0,2].tricontourf(
+    tri_fine,
+    abs_err_u,
+    levels=20,
+    cmap="inferno"
+)
+
+divider = make_axes_locatable(axes[0,2])
+cax = divider.append_axes("right", size="3%", pad=0.1)
+plt.colorbar(cf, cax=cax)
+
+axes[0,2].set_title("Abs. Error $|\\mathbf{u}|$")
+axes[0,2].set_aspect("equal")
+
+# ==============================================================
+# Pressure
+# ==============================================================
+
+pressure_fields = [
+    (p_true, "FOM $p$"),
+    (p_rom,  "ROM $p$")
+]
+
+for ax, (field, title) in zip(axes[1, :2], pressure_fields):
+
+    cf = ax.tricontourf(
+        tri_coarse,
+        field,
+        levels=20,
+        cmap="coolwarm",
+        vmin=p_min,
+        vmax=p_max
+    )
+
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="3%", pad=0.1)
+    plt.colorbar(cf, cax=cax)
+
+    ax.set_title(title)
+    ax.set_aspect("equal")
+
+# Pressure error
+
+cf = axes[1,2].tricontourf(
+    tri_coarse,
+    abs_err_p,
+    levels=20,
+    cmap="inferno"
+)
+
+divider = make_axes_locatable(axes[1,2])
+cax = divider.append_axes("right", size="3%", pad=0.1)
+plt.colorbar(cf, cax=cax)
+
+axes[1,2].set_title("Abs. Error $p$")
+axes[1,2].set_aspect("equal")
+
+plt.suptitle(
+    f"ROM vs FOM (Snapshot {test_idx})\n"
+    f"Relative $L^2$ Error: "
+    f"$|\\mathbf{{u}}|$ = {rel_u:.2%}, "
+    f"$p$ = {rel_p:.2%}",
+    fontsize=15
+)
+
+plt.tight_layout()
+plt.show()

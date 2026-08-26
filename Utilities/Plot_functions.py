@@ -305,60 +305,58 @@ def K_matrix_structure(K_mat, dim_A, dim_B,
 
 #_______________________________________________________________________________________________________________________________________________________________
 
-def plot_streamlines(p_fine, t_fine, ux, uy,
+def plot_streamlines(p_fine, t_fine, ux=None, uy=None,
                      density:float=3.5, 
                      levels:int=90,
                      cmap:str='viridis',
                      grid_num:tuple=(300,300),
                      figsize:tuple=(14, 6),
-                     savetype:str='png'):
+                     savetype:str='png',
+                     ax=None, field_override=None, vmin=None, vmax=None):
     """
     Streamline visualization with automatic topology-based geometry masking.
+    Backwards compatible: Can be run standalone or passed an 'ax' to plot within a grid.
     """
+    is_standalone = (ax is None)
+    if is_standalone:
+        _, ax = plt.subplots(figsize=figsize)
+
     x = p_fine[:, 0]
     y = p_fine[:, 1]
 
-    nx, ny = grid_num
-    xi = np.linspace(x.min(), x.max(), nx)
-    yi = np.linspace(y.min(), y.max(), ny)
-    X, Y = np.meshgrid(xi, yi)
+    if ux is not None and uy is not None:
+        nx, ny = grid_num
+        xi = np.linspace(x.min(), x.max(), nx)
+        yi = np.linspace(y.min(), y.max(), ny)
+        X, Y = np.meshgrid(xi, yi)
 
-    # Interpolation of FEM velocity:
-    U = griddata((x, y), ux, (X, Y), method='cubic')
-    V = griddata((x, y), uy, (X, Y), method='cubic')
+        # Interpolation of FEM velocity:
+        U = griddata((x, y), ux, (X, Y), method='cubic')
+        V = griddata((x, y), uy, (X, Y), method='cubic')
 
-    triang_v = tri.Triangulation(x, y, t_fine[:, :3])
-    trifinder = triang_v.get_trifinder()
-    
-    # If a grid point (X, Y) lands in a hole/obstacle, trifinder returns -1
-    geometry_mask = (trifinder(X, Y) == -1)
-    U = np.ma.array(U, mask=geometry_mask)
-    V = np.ma.array(V, mask=geometry_mask)
+        triang_v = tri.Triangulation(x, y, t_fine[:, :3])
+        trifinder = triang_v.get_trifinder()
+        
+        # If a grid point (X, Y) lands in a hole/obstacle, trifinder returns -1
+        geometry_mask = (trifinder(X, Y) == -1)
+        U = np.ma.array(U, mask=geometry_mask)
+        V = np.ma.array(V, mask=geometry_mask)
 
-    speed = np.ma.sqrt(U**2 + V**2)
+        speed = np.ma.sqrt(U**2 + V**2)
 
-    # The Plot:
-    _, ax = plt.subplots(figsize=figsize)
-
-    cf = ax.contourf(
-        X, Y,
-        speed,
-        levels=levels,
-        cmap=cmap
-    )
+    if field_override is not None:
+        triang_v = tri.Triangulation(x, y, t_fine[:, :3])
+        cf = ax.tricontourf(triang_v, field_override, levels=levels, cmap=cmap, vmin=vmin, vmax=vmax)
+    else:
+        cf = ax.contourf(X, Y, speed, levels=levels, cmap=cmap, vmin=vmin, vmax=vmax)
     
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="3%", pad=0.1)
-    plt.colorbar(cf, cax=cax, label='$\\|\\vec{u}\\|$')
+    c_label = '$\\|\\vec{u}\\|$' if field_override is None else ''
+    plt.colorbar(cf, cax=cax, label=c_label)
 
-    ax.streamplot(
-        X, Y,
-        U, V,
-        density=density,
-        linewidth=1.2,
-        arrowsize=1.2,
-        color='white'
-    )
+    if ux is not None and uy is not None:
+        ax.streamplot(X, Y, U, V, density=density, linewidth=1.2, arrowsize=1.2, color='white')
 
     x_min, x_max = p_fine[:,0].min(), p_fine[:,0].max()
     x_margin = np.abs(x_max - x_min)*0.03
@@ -369,46 +367,51 @@ def plot_streamlines(p_fine, t_fine, ux, uy,
     ax.set_ylim([y_min - y_margin, y_max + y_margin])
 
     ax.set_aspect('equal')
-    ax.set_title("Streamlines of $\\vec{u}$")
     ax.set_xlabel("x")
     ax.set_ylabel("y")
 
-    plt.tight_layout()
-    plt.savefig(f'Outputs/Solution_Streamlines.{savetype}', bbox_inches='tight', pad_inches=0.01)
-    plt.show()
+    if is_standalone:
+        ax.set_title("Streamlines of $\\vec{u}$")
+        plt.tight_layout()
+        plt.savefig(f'Outputs/Solution_Streamlines.{savetype}', bbox_inches='tight', pad_inches=0.01)
+        plt.show()
 
 #_______________________________________________________________________________________________________________________________________________________________
 
 def plot_pressure(p_coarse, t_coarse, p_sol,
                   levels:int=90,
                   figsize:tuple=(10,10),
-                  savetype:str='png'):
+                  savetype:str='png',
+                  ax=None, vmin=None, vmax=None, cmap='viridis'):
     """Plots the pressure"""
 
-    _, plots = plt.subplots(figsize=figsize)
+    is_standalone = (ax is None)
+    if is_standalone:
+        _, ax = plt.subplots(figsize=figsize)
 
     triangulation = tri.Triangulation(p_coarse[:, 0], p_coarse[:, 1], t_coarse[:, :3])
-    cf = plots.tricontourf(triangulation, p_sol, levels=levels)
+    cf = ax.tricontourf(triangulation, p_sol, levels=levels, cmap=cmap, vmin=vmin, vmax=vmax)
 
-    divider = make_axes_locatable(plots)
+    divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="3%", pad=0.1)
     plt.colorbar(cf, cax=cax, label='$\\mathbf{P}$')
   
-    plots.set_xlabel("x")
-    plots.set_ylabel("y")
-    plots.set_aspect('equal')
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
+    ax.set_aspect('equal')
 
     x_min, x_max = p_coarse[:,0].min(), p_coarse[:,0].max()
     x_margin = np.abs(x_max - x_min)*0.03
     y_min, y_max = p_coarse[:,1].min(), p_coarse[:,1].max()
     y_margin = np.abs(y_max - y_min)*0.03
 
-    plots.set_xlim([x_min - x_margin, x_max + x_margin])
-    plots.set_ylim([y_min - y_margin, y_max + y_margin])
+    ax.set_xlim([x_min - x_margin, x_max + x_margin])
+    ax.set_ylim([y_min - y_margin, y_max + y_margin])
 
-    plots.set_title('Pressure $\\mathbf{P}$')
-    plt.savefig(f'Outputs/Pressure_Tricontourf.{savetype}', bbox_inches='tight', pad_inches=0.01)
-    plt.show()
+    if is_standalone:
+        ax.set_title('Pressure $\\mathbf{P}$')
+        plt.savefig(f'Outputs/Pressure_Tricontourf.{savetype}', bbox_inches='tight', pad_inches=0.01)
+        plt.show()
 
 #_______________________________________________________________________________________________________________________________________________________________
 
