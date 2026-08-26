@@ -7,24 +7,18 @@ fem_dir = os.path.dirname(script_dir)
 if fem_dir not in sys.path:
     sys.path.append(fem_dir)
 
-from scipy.sparse.linalg import spsolve
+import numpy as np
 import scipy.sparse as sp
+from scipy.sparse.linalg import spsolve
 
-from Utilities.Stokes_felib import *
-from Utilities.Mesh_processing import *
-from Utilities.Plot_functions import *
-
-#_____________________________________________________________________________________________________________________________
-
-# Mesh
-
-p_coarse, e_coarse, t_coarse = Plot_Initial_Refined_meshes(
-    data_path='Meshes/exchanger_device_altered_mesh_data.npz',
-    num_of_refinements=3,
-    figsize=(16, 4),
-    plot=False
+from Utilities.Mesh_processing import refine
+from Utilities.Plot_functions import Plot_Initial_Refined_meshes
+from Utilities.Stokes_felib import (
+     calculate_velocity_A,
+     calculate_pressure_B,
+     calculate_Saddle_point_K,
+     save_simulation_data
 )
-p_fine, e_fine, t_fine = refine(p_coarse, e_coarse, t_coarse)
 
 #_____________________________________________________________________________________________________________________________
 
@@ -68,34 +62,32 @@ def compute_U_P_solution_exchanger_device(p_fine, t_fine, e_fine, p_coarse, t_co
 
     F = np.zeros(2 * Nv + Np)
     F[:Nv]    -= A.dot(lf_x)
-    F[2*Nv:]  -= Bx.dot(lf_x)  
-
-    K = K.tolil()
-
-    for i in dirichlet_nodes:
-        K[i, :]  = 0.0
-        K[i, i]  = 1.0
-        F[i]     = 0.0
-
-        iy = i + Nv
-        K[iy, :] = 0.0
-        K[iy, iy] = 1.0
-        F[iy]    = 0.0
-
-    Xu_bc = K[:2*Nv, :2*Nv].tocsc()
+    F[2*Nv:]  -= Bx.dot(lf_x)
 
     is_outlet_p = np.abs(p_coarse[:, 0] - xmax) < eps
     p_ref_idx   = np.where(is_outlet_p)[0]
-
     if len(p_ref_idx) == 0:
         p_ref_idx = [np.argmin(np.abs(p_coarse[:, 0] - xmax))]
-
     p_row = 2 * Nv + p_ref_idx[0]
-    K[p_row, :] = 0.0
-    K[p_row, p_row] = 1.0
-    F[p_row] = 0.0        
 
-    B_hT = K[:2*Nv, 2*Nv:].tocsc()
+    Ntot = 2 * Nv + Np
+    dirichlet_rows = np.concatenate([dirichlet_nodes, dirichlet_nodes + Nv, [p_row]])
+
+    K = K.tocsr()
+    mask = np.ones(Ntot)
+    mask[dirichlet_rows] = 0.0
+    K = sp.diags(mask) @ K
+
+    diag_fix = np.zeros(Ntot)
+    diag_fix[dirichlet_rows] = 1.0
+    K = K + sp.diags(diag_fix)
+
+    F[dirichlet_rows] = 0.0
+
+    Xu_bc, B_hT = None, None
+    if return_matrices:
+        Xu_bc = K[:2*Nv, :2*Nv].tocsc()
+        B_hT  = K[:2*Nv, 2*Nv:].tocsc()
 
     sol = spsolve(K.tocsc(), F)
 
@@ -117,6 +109,15 @@ def compute_U_P_solution_exchanger_device(p_fine, t_fine, e_fine, p_coarse, t_co
 #_____________________________________________________________________________________________________________________________
 
 if __name__ == "__main__":
+    
+    print('generating the mesh...')
+    p_coarse, e_coarse, t_coarse = Plot_Initial_Refined_meshes(
+        data_path='Meshes/exchanger_device_altered_mesh_data.npz',
+        num_of_refinements=3,
+        figsize=(16, 4),
+        plot=False
+    )
+    p_fine, e_fine, t_fine = refine(p_coarse, e_coarse, t_coarse)
 
     print('generating the solution...')
     ux, uy, p_sol = compute_U_P_solution_exchanger_device(p_fine, t_fine, e_fine, p_coarse, t_coarse)
