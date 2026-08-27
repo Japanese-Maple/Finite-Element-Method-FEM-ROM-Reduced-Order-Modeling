@@ -93,12 +93,13 @@ def Plot_Initial_Refined_meshes(data_path: str, num_of_refinements: int = 3,
 
         ax[i].set_xlim(x_min - margin_x, x_max + margin_x)
         ax[i].set_ylim(y_min - margin_y, y_max + margin_y)
+        ax[i].grid(False)
         ax[i].set_aspect('equal')
         ax[i].legend()
  
     plt.suptitle(f'Initial Mesh ({len(p_raw)} Nodes, {len(tri_idx)} Triangles) --> Refined Mesh ({len(p)} Nodes, {len(t)} Triangles)')
     plt.savefig(f"Outputs/Mesh_Refinement.{savetype}")
-
+    
     if plot==True:        
         plt.show()
     else:
