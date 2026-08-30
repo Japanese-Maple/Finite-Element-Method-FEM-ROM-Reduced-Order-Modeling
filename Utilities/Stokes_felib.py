@@ -134,70 +134,120 @@ def calculate_mass_M(p, t,):
 #     return B_x, B_y
 
 
+# def calculate_pressure_B(p_fine, t_fine, p_coarse, t_coarse):
+
+#     Nt_fine   = t_fine.shape[0]
+#     Np_fine   = p_fine.shape[0]
+
+#     Nt_coarse = t_coarse.shape[0]
+#     Np_coarse = p_coarse.shape[0]
+
+#     fine_to_coarse = np.repeat(np.arange(Nt_coarse), 4)[:Nt_fine]
+
+#     # Calculating fine-triangle & coarse-triangle nodes
+#     tf = t_fine[:, :3]
+#     tc = t_coarse[fine_to_coarse, :3]
+
+#     pf = p_fine[tf]
+
+#     # Calculating Jacobians
+#     Jf = np.stack([pf[:, 1] - pf[:, 0],
+#                    pf[:, 2] - pf[:, 0]], axis=2)
+  
+#     det_Jf = Jf[:, 0, 0] * Jf[:, 1, 1] - Jf[:, 0, 1] * Jf[:, 1, 0]
+#     area  = 0.5 * np.abs(det_Jf)
+
+#     # Gradients via closed-form 2×2 inverse
+#     inv_det_Jf = 1.0 / det_Jf                                            
+
+#     inv_Jf_T = np.empty((Nt_fine, 2, 2))
+#     inv_Jf_T[:, 0, 0] =  Jf[:, 1, 1] * inv_det_Jf
+#     inv_Jf_T[:, 0, 1] = -Jf[:, 1, 0] * inv_det_Jf
+#     inv_Jf_T[:, 1, 0] = -Jf[:, 0, 1] * inv_det_Jf
+#     inv_Jf_T[:, 1, 1] =  Jf[:, 0, 0] * inv_det_Jf
+
+#     test_function_derivatives = np.array([[-1, -1],
+#                                           [ 1,  0],
+#                                           [ 0,  1]])
+
+#     grads = np.einsum('ndk,ik->nid', inv_Jf_T, test_function_derivatives)
+
+#     # Precomputed constant values of psi at the 4 child centroids
+#     psi_children = np.array([
+#         [2/3, 1/6, 1/6],  # T1
+#         [1/6, 2/3, 1/6],  # T2
+#         [1/6, 1/6, 2/3],  # T3
+#         [1/3, 1/3, 1/3]   # T4
+#     ])
+
+#     psi = np.tile(psi_children, (Nt_coarse, 1))[:Nt_fine] 
+
+#     # Local B blocks
+#     Bx_loc = -area[:, None, None] * np.einsum('ni,nj->nij', psi, grads[:, :, 0])
+#     By_loc = -area[:, None, None] * np.einsum('ni,nj->nij', psi, grads[:, :, 1])
+
+#     # Index arrays & sparse Bx, By
+#     rowidx = np.repeat(tc, 3, axis=1).ravel()
+#     colidx = np.tile(tf, (1, 3)).ravel()
+
+#     B_x = sparse.csc_matrix(
+#         (Bx_loc.ravel(), (rowidx, colidx)),
+#         shape=(Np_coarse, Np_fine)
+#     )
+#     B_y = sparse.csc_matrix(
+#         (By_loc.ravel(), (rowidx, colidx)),
+#         shape=(Np_coarse, Np_fine)
+#     )
+
+#     return B_x, B_y
+
 def calculate_pressure_B(p_fine, t_fine, p_coarse, t_coarse):
 
     Nt_fine   = t_fine.shape[0]
     Np_fine   = p_fine.shape[0]
-
     Nt_coarse = t_coarse.shape[0]
     Np_coarse = p_coarse.shape[0]
 
     fine_to_coarse = np.repeat(np.arange(Nt_coarse), 4)[:Nt_fine]
 
-    # Calculating fine-triangle & coarse-triangle nodes
     tf = t_fine[:, :3]
     tc = t_coarse[fine_to_coarse, :3]
+    pf = p_fine[tf]                          # (Nt_fine, 3, 2)
 
-    pf = p_fine[tf]
+    y3_y1 = pf[:, 2, 1] - pf[:, 0, 1]
+    y2_y1 = pf[:, 1, 1] - pf[:, 0, 1]
+    x3_x1 = pf[:, 2, 0] - pf[:, 0, 0]
+    x2_x1 = pf[:, 1, 0] - pf[:, 0, 0]
 
-    # Calculating Jacobians
-    Jf = np.stack([pf[:, 1] - pf[:, 0],
-                   pf[:, 2] - pf[:, 0]], axis=2)
-  
-    det_Jf = Jf[:, 0, 0] * Jf[:, 1, 1] - Jf[:, 0, 1] * Jf[:, 1, 0]
-    area  = 0.5 * np.abs(det_Jf)
+    grad_hat = np.array([[-1., -1.],
+                         [ 1.,  0.],
+                         [ 0.,  1.]])        # (3, 2), cols = [d/dξ1, d/dξ2]
 
-    # Gradients via closed-form 2×2 inverse
-    inv_det_Jf = 1.0 / det_Jf                                            
+    area_grad_x = 0.5 * (y3_y1[:, None] * grad_hat[:, 0]
+                        - y2_y1[:, None] * grad_hat[:, 1])
 
-    inv_Jf_T = np.empty((Nt_fine, 2, 2))
-    inv_Jf_T[:, 0, 0] =  Jf[:, 1, 1] * inv_det_Jf
-    inv_Jf_T[:, 0, 1] = -Jf[:, 1, 0] * inv_det_Jf
-    inv_Jf_T[:, 1, 0] = -Jf[:, 0, 1] * inv_det_Jf
-    inv_Jf_T[:, 1, 1] =  Jf[:, 0, 0] * inv_det_Jf
+    area_grad_y = 0.5 * (x2_x1[:, None] * grad_hat[:, 1]
+                        - x3_x1[:, None] * grad_hat[:, 0])
 
-    test_function_derivatives = np.array([[-1, -1],
-                                          [ 1,  0],
-                                          [ 0,  1]])
-
-    grads = np.einsum('ndk,ik->nid', inv_Jf_T, test_function_derivatives)
-
-    # Precomputed constant values of psi at the 4 child centroids
     psi_children = np.array([
-        [2/3, 1/6, 1/6],  # T1
-        [1/6, 2/3, 1/6],  # T2
-        [1/6, 1/6, 2/3],  # T3
-        [1/3, 1/3, 1/3]   # T4
+        [2/3, 1/6, 1/6],
+        [1/6, 2/3, 1/6],
+        [1/6, 1/6, 2/3],
+        [1/3, 1/3, 1/3],
     ])
 
-    psi = np.tile(psi_children, (Nt_coarse, 1))[:Nt_fine] 
+    psi = np.tile(psi_children, (Nt_coarse, 1))[:Nt_fine]
 
-    # Local B blocks
-    Bx_loc = -area[:, None, None] * np.einsum('ni,nj->nij', psi, grads[:, :, 0])
-    By_loc = -area[:, None, None] * np.einsum('ni,nj->nij', psi, grads[:, :, 1])
+    Bx_loc = -np.einsum('nj,ni->nji', psi, area_grad_x)
+    By_loc = -np.einsum('nj,ni->nji', psi, area_grad_y)
 
-    # Index arrays & sparse Bx, By
     rowidx = np.repeat(tc, 3, axis=1).ravel()
     colidx = np.tile(tf, (1, 3)).ravel()
 
     B_x = sparse.csc_matrix(
-        (Bx_loc.ravel(), (rowidx, colidx)),
-        shape=(Np_coarse, Np_fine)
-    )
+        (Bx_loc.ravel(), (rowidx, colidx)), shape=(Np_coarse, Np_fine))
     B_y = sparse.csc_matrix(
-        (By_loc.ravel(), (rowidx, colidx)),
-        shape=(Np_coarse, Np_fine)
-    )
+        (By_loc.ravel(), (rowidx, colidx)), shape=(Np_coarse, Np_fine))
 
     return B_x, B_y
 #_______________________________________________________________________________________________________________________________________________________________
