@@ -10,7 +10,8 @@ from .Plot_functions import (
 
 #_______________________________________________________________________________________________________________________________________________________________
 
-def ROM_solution_statistics(ux_FOM, uy_FOM, p_FOM, ux_ROM, uy_ROM, p_ROM):
+def ROM_solution_statistics(ux_FOM, uy_FOM, p_FOM, ux_ROM, uy_ROM, p_ROM,
+                            display_errors:bool=False):
 
     Umag_FOM  = np.sqrt(ux_FOM**2 + uy_FOM**2)
     Umag_ROM  = np.sqrt(ux_ROM**2 + uy_ROM**2)
@@ -20,8 +21,9 @@ def ROM_solution_statistics(ux_FOM, uy_FOM, p_FOM, ux_ROM, uy_ROM, p_ROM):
     rel_u = np.linalg.norm(Umag_ROM - Umag_FOM) / np.linalg.norm(Umag_FOM)
     rel_p = np.linalg.norm(p_ROM - p_FOM) / np.linalg.norm(p_FOM)
 
-    display(Math(fr"\text{{Relative }} L_2 \text{{ error }} \|u\|_2: {rel_u:.3e}"))
-    display(Math(fr"\text{{Relative }} L_2 \text{{ error }} p : {rel_p:.3e}"))
+    if display_errors:
+        display(Math(fr"\text{{Relative }} L_2 \text{{ error }} \|u\|_2: {rel_u:.3e}"))
+        display(Math(fr"\text{{Relative }} L_2 \text{{ error }} p : {rel_p:.3e}"))
 
     return Umag_FOM, Umag_ROM, abs_err_u, abs_err_p, rel_u, rel_p
 
@@ -33,7 +35,8 @@ def ROM_FOM_comparison(ux_true, uy_true, p_true, ux_rom, uy_rom, p_rom,
                        savetype='png'):
 
     Umag_true, Umag_rom, abs_err_u, abs_err_p, rel_u, rel_p = ROM_solution_statistics(ux_true, uy_true, p_true,
-                                                                                      ux_rom,  uy_rom,  p_rom)
+                                                                                      ux_rom,  uy_rom,  p_rom,
+                                                                                      display_errors=True)
     fig, axes = plt.subplots(2, 3, figsize=figsize)
 
     vel_min = min(Umag_true.min(), Umag_rom.min())
@@ -83,3 +86,5 @@ def ROM_FOM_comparison(ux_true, uy_true, p_true, ux_rom, uy_rom, p_rom,
     plt.tight_layout()
     plt.savefig(f'Outputs/ROM_FEM_comparison.{savetype}', bbox_inches='tight', pad_inches=0.01)
     plt.show()
+
+#_______________________________________________________________________________________________________________________________________________________________
