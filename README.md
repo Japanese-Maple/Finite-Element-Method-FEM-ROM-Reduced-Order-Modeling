@@ -40,7 +40,10 @@ $$
 \qquad
 w_{k}(\mathbf{x}) = \frac{1}{\max(d_{k}, \epsilon)^\gamma} \ ,
 \qquad
-d_{k} = \|\mathbf{x} - \mathbf{x}_k\|_2 \ ,
+d_{k} = \|\mathbf{x} - \mathbf{x}_k\|_2 
+$$
+
+$$
 \qquad A(\boldsymbol{\mu}) = \sum_{k=1}^{5} \mu_k A_k
 $$
 
