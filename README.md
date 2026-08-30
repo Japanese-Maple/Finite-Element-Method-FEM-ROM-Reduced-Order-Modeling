@@ -3,7 +3,7 @@
 This project implements a two-dimensional finite element solver for the incompressible Stokes equations using the **P1-iso-P1 mixed finite element method** and then explores Reduced Order Modelling as a way to compress the amount of time needed to solve the parametrized problem.
 
 <p align="center">
-  <img src="Outputs/Combined_Solution.png" alt="Alt Text" width="1500"/>
+  <img src="Outputs/Combined_Solution_readme.png" alt="Alt Text" width="1500"/>
 </p>
 
 ---
