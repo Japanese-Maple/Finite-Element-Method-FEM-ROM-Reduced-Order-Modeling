@@ -642,3 +642,48 @@ def plot_combined_solution(
     plt.tight_layout()
     plt.savefig(f'Outputs/Combined_Solution.{savetype}', bbox_inches='tight')
     plt.show()
+
+#_______________________________________________________________________________________________________________________________________________________________
+
+def Plot_Velocity_and_Pressure(p_fine, t_fine, p_coarse, t_coarse, e_coarse, ux, uy, p_sol,
+                               density:float=3.1, levels:int=30,
+                               figsize:tuple=(18, 6), savetype:str='png'):
+    
+    _, (ax_u, ax_p) = plt.subplots(1, 2, figsize=figsize)
+
+    plot_streamlines(
+        p_fine=p_fine, 
+        t_fine=t_fine, 
+        ux=ux, 
+        uy=uy, 
+        ax=ax_u,
+        density=density,
+        levels=levels
+    )
+
+    ax_u.set_title("Velocity Field $\\vec{u}$ and Streamlines")
+
+    plot_pressure(
+        p_coarse, 
+        t_coarse,
+        p_sol,
+        ax=ax_p,
+        levels=levels
+    )
+    ax_p.set_title("Pressure Field $\\mathbf{P}$")
+
+    # Edge ────────────────────────────────────────────────────────────────────────────────────────────────
+    flag1_mask = (e_coarse[:, -1] == 1)
+    boundary_edges = e_coarse[flag1_mask, :2].astype(int)
+    x_coords = p_coarse[boundary_edges, 0].T
+    y_coords = p_coarse[boundary_edges, 1].T
+
+    for ax in [ax_p, ax_u]:
+        ax.plot(x_coords, y_coords, color='b', linewidth=1.5, label='Boundary')
+
+    ax_p.grid(False)
+    ax_u.grid(False)
+
+    plt.tight_layout()
+    plt.savefig(f'Outputs/Velocity_and_Pressure_SideBySide.{savetype}', bbox_inches='tight', pad_inches=0.01)
+    plt.show()
