@@ -15,17 +15,33 @@
 \usepackage{caption}    % For \captionof and advanced caption options
 \usepackage{subcaption} % For subfigure environment
 \usepackage{listings}   % For code listings
-
+\usepackage{tabularx}
+\usepackage{array}
 \usepackage{xcolor}     % for color definitions
 \usepackage{titlesec}   % for section title customization
 
-% Define your custom color
-\definecolor{deepdarkgreen}{RGB}{53, 94, 59}
-\definecolor{heaven}{RGB}{153, 179, 255}
-\titleformat{\section}
-  {\color{deepdarkgreen}\normalfont\Large\bfseries} % format: color + font
-  {\thesection}{1em}{} % section number formatting
+% Center X columns vertically (middle alignment)
+\renewcommand{\tabularxcolumn}[1]{m{#1}}
+% Define a horizontally centered X column type
+\newcolumntype{Y}{>{\centering\arraybackslash}X}
 
+\definecolor{deepdarkgreen}{RGB}{53, 94, 59}
+\definecolor{dg}{RGB}{0, 55, 0}
+\definecolor{db}{RGB}{0, 0, 103}
+\definecolor{heaven}{RGB}{153, 179, 255}
+
+\titleformat{\section}
+  {\color{deepdarkgreen}\normalfont\Large\bfseries}
+  {\thesection}{1em}{}
+
+% \titleformat{\subsection}
+%   {\color{dg}\normalfont\large\bfseries}
+%   {\thesubsection}{1em}{}
+
+% \titleformat{\subsubsection}
+%   {\color{db}\normalfont\normalsize\bfseries}
+%   {\thesubsubsection}{1em}{}
+  
 % theorem environments
 \newtheorem{theorem}{Theorem}[section]
 \newtheorem{lemma}[theorem]{Lemma}
@@ -243,24 +259,34 @@ $
 \end{center}
 \end{tcolorbox}
 
-We will now take a close look at the mapping and derive a Jacobian:
+We will now come up with the proper mapping and check it:
 
 \[
 \begin{aligned}
-    x(\xi_1, \xi_2) &= x_1 + (x_2 - x_1)\xi_1 + (x_3 - x_1)\xi_2\\[10pt]
+\left.
+\begin{array}{cc}
+    x(\xi_1, \xi_2) &= x_1 + (x_2 - x_1)\xi_1 + (x_3 - x_1)\xi_2\\[5pt]
     y(\xi_1, \xi_2) &= y_1 + (y_2 - y_1)\xi_1 + (y_3 - y_1)\xi_2
+\end{array}
+\right|
+\qquad 
+\begin{array}{ccc}
+    x(0, 0) = x_1 \quad & \quad x(1, 0) = x_2 \quad & \quad x(0, 1) = x_3\\[5pt]
+    y(0, 0) = y_1 \quad & \quad y(1, 0) = y_2 \quad & \quad y(0, 1) = y_3
+\end{array}
 \end{aligned}
 \]
 
-The mapping can be easily checked: 
-\[
-\begin{array}{ccc}
-    x(0, 0) = x_1 \qquad & \qquad x(1, 0) = x_2 \qquad & \qquad x(0, 1) = x_3\\[10pt]
-    y(0, 0) = y_1 \qquad & \qquad y(1, 0) = y_2 \qquad & \qquad y(0, 1) = y_3
-\end{array}
-\]
+\begin{wrapfigure}[9]{l}{0.25\textwidth}
+    \centering
+    \includesvg[width=1\linewidth]{Jacobian_tri_transform.svg}
+    \captionsetup{font=small}
+    \caption{The affine map $\mathbf{\Phi}$ from the reference triangle $\hat T$ to a physical triangle $T$.}
+    \label{fig:p1-iso-p1-general-visual}
+\end{wrapfigure}
 
-We can now take the Jacobian:
+\vspace{2em}
+The Jacobian is derived as follows:
 
 \[
 \mathbf{J}_T = \begin{bmatrix}
@@ -273,6 +299,7 @@ We can now take the Jacobian:
 \end{bmatrix}
 \]
 
+\vspace{2em}
 It is also necessary to take a look at the original shape functions' derivatives:
 
 \begin{equation}
@@ -305,7 +332,9 @@ It is also necessary to take a look at the original shape functions' derivatives
          d & -b \\
         -c &  a
     \end{bmatrix}
-    \right| = \frac{1}{|\mathbf{J}_T|} 
+    \right| 
+    \\[10pt]
+    &= \frac{1}{|\mathbf{J}_T|} 
     \begin{bmatrix}
          y_3 - y_1 & y_1 - y_2 \\
          x_1 - x_3 & x_2 - x_1 
@@ -323,14 +352,12 @@ It is also necessary to take a look at the original shape functions' derivatives
 \end{equation}
 
 
-
-\begin{figure}[H]
-    \centering
-    \includesvg[width=0.7\linewidth]{Jacobian_tri_transform.svg}
-\end{figure}
-
+\newpage
 \subsection{Stiffness Matrix \texorpdfstring{$\mathbf{A}$}{A}}\label{sec:stiffness_matrix}
 
+The stiffness matrix $\mathbf{A}$ is the discrete counterpart of the viscous diffusion term, and it is this operator that carries the physical viscosity $\nu$ into the algebraic system: every velocity degree of freedom is coupled to its neighbors through $\mathbf{A}$, in exactly the same way the continuous Laplacian couples a velocity field to itself through spatial derivatives. As with every operator derived in this chapter, its construction starts directly from the corresponding term in the weak formulation and proceeds by substituting the finite element expansion of the trial and test functions.
+
+\subsubsection*{Weak formulation}
 To determine the discrete operator for the viscous term, we begin with the bilinear form involving the velocity test and trial functions:
 
 \begin{tcolorbox}[
@@ -385,7 +412,8 @@ u_y(x,y) \approx \displaystyle\sum_{i=1}^{N_v}u^y_i\phi_i(x,y)
 \end{aligned}
 \]
 
-\vspace{1.5ex}
+\vspace{1.5em}
+\subsubsection*{Local Matrix}
 
 Now using the derived coordinate transformation, performed with the help of the Jacobian, we can calculate the local matrix $\mathbf{A}^{loc} \in \mathbb{R}^{3\times3}$
 
@@ -459,7 +487,7 @@ Please note that the matrices $\mathbf{Q}$ and $\mathbf{A}^{loc}$ are symmetric.
 %----------------------------------------------------------------------------
 \subsection{Pressure Matrices \texorpdfstring{$\mathbf{B}_x$ and $\mathbf{B}_y$}{Bx and By} on the \texorpdfstring{$P_1$-iso-$P_1$}{P1-iso-P1} Macro-Element}
 
-\begin{wrapfigure}[7]{l}{0.23\textwidth}
+\begin{wrapfigure}[18]{l}{0.23\textwidth}
     \centering
     \includesvg[width=\linewidth]{P1-iso-P1.svg}
     \captionsetup{font=small}
@@ -468,6 +496,9 @@ Please note that the matrices $\mathbf{Q}$ and $\mathbf{A}^{loc}$ are symmetric.
 \end{wrapfigure}
 
 Unlike a conforming equal-order pairing, the pressure basis function $\psi_j$ is supported on the \textit{macro} triangle $T^c \in \mathcal{T}_H$, while the velocity basis functions $\phi_i$ are supported on the four \textit{child} triangles $T^f_1,T^f_2,T^f_3,T^f_4 \in \mathcal{T}_h$ obtained by connecting the edge midpoints of $T^c$. Consequently the coupling integral must be split into a sum over the four children, and the pressure basis function must be re-expressed in each child's own local reference coordinates. This restriction is the main idea of the $P_1$-iso-$P_1$ assembly.
+
+The matrices $\mathbf{B}_x$ and $\mathbf{B}_y$ are the discrete counterpart of the divergence operator: together they enforce incompressibility by coupling every pressure degree of freedom to the velocity field's local rate of expansion or contraction, in exactly the same way the continuous operator $\nabla\cdot\mathbf{u}$ couples pressure to velocity through the incompressibility constraint. Where $\mathbf{A}$ measures how velocity varies against itself, $\mathbf{B}_x,\mathbf{B}_y$ measure how velocity varies against pressure, and it is this cross-coupling that gives the assembled system its saddle-point structure. As with $\mathbf{A}$, their construction starts directly from the corresponding term in the weak formulation and proceeds by substituting the finite element expansion of the trial and test functions -- only here the added subtlety of the $P_1$-iso-$P_1$ macro-element geometry, described above, must be threaded through every step.
+
 
 %----------------------------------------------------------------------------
 
@@ -483,6 +514,188 @@ Unlike a conforming equal-order pairing, the pressure basis function $\psi_j$ is
    $\displaystyle -\int_{\Omega} p(\nabla \cdot v) \, d\Omega$ 
 \end{center}
 \end{tcolorbox}
+
+\begin{align*}
+-\int_{\Omega} p (\nabla \cdot \mathbf{v}) \, d\Omega &= \left| \begin{aligned} p(x,y) &\approx \sum_{j=1}^{N_p} p_j \psi_j \\ \mathbf{v}(x,y) &= \begin{bmatrix} v_x(x,y) \\ v_y(x,y) \end{bmatrix} \end{aligned} \right| = -\int_{\Omega} \sum_{j=1}^{N_p} p_j \psi_j \begin{bmatrix} \frac{\partial}{\partial x} \\ \frac{\partial}{\partial y} \end{bmatrix} \cdot \begin{bmatrix} v_x \\ v_y \end{bmatrix} \, d\Omega = \\[10pt]
+&= \left[ \sum_{j=1}^{N_p} p_j \cdot \left( -\int_{\Omega} \psi_j \frac{\partial v_x}{\partial x} \, d\Omega \right) \right] + \left[ \sum_{j=1}^{N_p} p_j \cdot \left( -\int_{\Omega} \psi_j \frac{\partial v_y}{\partial y} \, d\Omega \right) \right] = \left| \begin{aligned} v_x(x,y) &= \phi_i(x,y) \\ v_y(x,y) &= \phi_i(x,y) \end{aligned} \right| = \\[10pt]
+&= \sum_{j=1}^{N_p} p_j \cdot \left( -\int_{\Omega} \psi_j \frac{\partial \phi_i}{\partial x} \, d\Omega \right) + \sum_{j=1}^{N_p} p_j \cdot \left( -\int_{\Omega} \psi_j \frac{\partial \phi_i}{\partial y} \, d\Omega \right) = \sum_{j=1}^{N_p} p_j (B_x)_{ji} + \sum_{j=1}^{N_p} p_j (B_y)_{ji} = \\[10pt]
+&= \mathbf{B}_x^T \mathbf{p} + \mathbf{B}_y^T \mathbf{p} = \begin{bmatrix} \mathbf{B}_x^T & \mathbf{B}_y^T \end{bmatrix} 
+\begin{bmatrix} 
+    \mathbf{p} \\ 
+    \mathbf{p} 
+\end{bmatrix} 
+\end{align*}
+
+\subsubsection*{Local Matrix}
+
+Summing the contribution from each of the four children, the local matrix entries are expressed as follows:
+\[
+\begin{aligned}
+    \left(\mathbf{B}_x^{loc}\right)_{ij} 
+    &= -\sum_{m=1}^{4} \int_{T^f_m} \psi_j \frac{\partial \phi_i}{\partial x} \, d\Omega = \left|
+    \begin{array}{c}
+         \frac{\partial \phi_i}{\partial x} = |\mathbf{J}_{T}|^{-1}\left((y_3 - y_1)\frac{\partial \hat{\phi} _i}{\partial \xi _1} - (y_2 - y_1)\frac{\partial \hat{\phi} _i}{\partial \xi _2}\right)\\[7pt]
+         d\Omega = dxdy=\left|\mathbf{J}_{T}\right|d\xi_1d\xi_2
+    \end{array}
+    \right|=\\[10pt]
+    &= -\sum_{m=1}^{4} \left[(y^m_3 - y^m_1)\frac{\partial \hat{\phi} _i}{\partial \xi _1} - (y^m_2 - y^m_1)\frac{\partial \hat{\phi} _i}{\partial \xi _2} \right]\int_{\hat{T}} \hat{\psi}_j \, d\xi_1d\xi_2 
+    = -\sum_{m=1}^{4} \frac{1}{2}\mathbf{\Lambda}_{jm}  \left[(y^m_3 - y^m_1)\frac{\partial \hat{\phi} _i}{\partial \xi _1} - (y^m_2 - y^m_1)\frac{\partial \hat{\phi} _i}{\partial \xi _2} \right]
+\end{aligned}
+\]
+
+Similarly:
+\[
+\left(\mathbf{B}_y^{loc}\right)_{ij} = -\sum_{m=1}^{4} \int_{T^f_m} \psi_j \frac{\partial \phi_i}{\partial y} \, d\Omega,
+= -\sum_{m=1}^{4} \frac{1}{2}\mathbf{\Lambda}_{jm}  \left[-(x_3 - x_1)\frac{\partial \hat{\phi} _i}{\partial \xi _1} + (x_2 - x_1)\frac{\partial \hat{\phi} _i}{\partial \xi _2}\right]
+\]
+
+
+%-----
+
+\noindent
+\begin{minipage}{0.28\textwidth}
+    \centering
+    \includesvg[width=\linewidth]{Centroids.svg}
+    \label{fig:p1-iso-p1-general-visual}
+\end{minipage}%
+\hfill
+\small
+\begin{minipage}{0.78\textwidth}
+    \centering
+    $\begin{aligned}
+    q_1 = \left(\frac{0 + \frac{1}{2} + 0}{3}, \, \frac{\frac{1}{2} + 0 + 0}{3}\right)
+    = \left(\frac{1}{6}, \, \frac{1}{6}\right) & \qquad
+    q_2 = \left(\frac{1 + \frac{1}{2} + \frac{1}{2}}{3}, \, \frac{0 + \frac{1}{2} + 0}{3}\right) 
+    = \left(\frac{2}{3}, \, \frac{1}{6}\right)\\[7pt]
+    q_3 = \left(\frac{0 + \frac{1}{2} + 0}{3}, \, \frac{1 + \frac{1}{2} + \frac{1}{2}}{3}\right) 
+    = \left(\frac{1}{6}, \, \frac{2}{3}\right) & \qquad
+    q_4 = \left(\frac{\frac{1}{2} + 0 + \frac{1}{2}}{3}, \, \frac{\frac{1}{2} + 0 + \frac{1}{2}}{3}\right) 
+    = \left(\frac{1}{3}, \, \frac{1}{3}\right)      
+    \end{aligned}$
+\normalsize
+\end{minipage}
+
+\noindent
+\begin{minipage}[c]{0.70\textwidth}
+    \centering
+    \renewcommand{\arraystretch}{2.0}
+    \setlength{\tabcolsep}{3pt}
+    \begin{tabularx}{\linewidth}{|l|Y|Y|Y|Y|}
+    \hline
+     & $q_1$ & $q_2$ & $q_3$ & $q_4$ \\ \hline
+    $\hat{\psi}_1 = 1 - \xi_1 - \xi_2$ & 
+    $\mathbf{\dfrac{2}{3}}$ & 
+    $\mathbf{\dfrac{1}{6}}$ & 
+    $\mathbf{\dfrac{1}{6}}$ & 
+    $\mathbf{\dfrac{1}{3}}$ \\ \hline
+    $\hat{\psi}_2 = \xi_1$ & 
+    $\mathbf{\dfrac{1}{6}}$ & 
+    $\mathbf{\dfrac{2}{3}}$ & 
+    $\mathbf{\dfrac{1}{6}}$ & 
+    $\mathbf{\dfrac{1}{3}}$ \\ \hline
+    $\hat{\psi}_3 = \xi_2$ & 
+    $\mathbf{\dfrac{1}{6}}$ & 
+    $\mathbf{\dfrac{1}{6}}$ & 
+    $\mathbf{\dfrac{2}{3}}$ & 
+    $\mathbf{\dfrac{1}{3}}$ \\ \hline
+    \end{tabularx}
+\end{minipage}%
+\hfill
+\begin{minipage}[c]{0.29\textwidth}
+    \centering
+    \renewcommand{\arraystretch}{2.5}
+    \[
+    \mathbf{\Lambda} = 
+    \left[
+    \begin{array}{cccc}
+        \dfrac{2}{3} & \dfrac{1}{6} & \dfrac{1}{6} & \dfrac{1}{3} \\
+        \dfrac{1}{6} & \dfrac{2}{3} & \dfrac{1}{6} & \dfrac{1}{3} \\
+        \dfrac{1}{6} & \dfrac{1}{6} & \dfrac{2}{3} & \dfrac{1}{3} 
+    \end{array}
+    \right]
+    \]
+\end{minipage}
+
+%----------------------------------------------------------
+
+\subsection{Load Vector \texorpdfstring{$\mathbf{F}$}{F} Assembly and Inhomogeneous Boundary Lifting}
+
+The load vector $\mathbf{F}$ is the discrete counterpart of the right-hand side of the momentum equation in \eqref{eq:stokes_weak}. Unlike $\mathbf{A}$, $\mathbf{B}_x$, and $\mathbf{B}_y$, which are bilinear forms coupling two finite element expansions, $\mathbf{F}$ is assembled from a \textit{linear} functional of the test function $v$ alone: it collects the prescribed Neumann traction on $\Gamma_N$ and, through the boundary lifting technique of \eqref{eq:stokes_weak}, the contribution of the known inhomogeneous Dirichlet data carried by $\mathbf{r}_g$. As with $\mathbf{A}$ and $\mathbf{B}_x,\mathbf{B}_y$, its construction starts directly from the corresponding term in the weak formulation and proceeds by substituting the finite element expansion of the test function.
+
+\subsubsection*{Weak formulation}
+
+\begin{tcolorbox}[
+    colframe=ForestGreen, 
+    colback=ForestGreen!7!white, 
+    sharp corners
+]
+\begin{center}
+   $\displaystyle \int_{\Gamma_N} h \cdot v \, d\Gamma - \int_{\Omega} \nu \nabla r_g : \nabla v \, d\Omega$
+\end{center}
+\end{tcolorbox}
+
+\[
+\begin{aligned}
+\int_{\Gamma_N} \mathbf{h}\cdot\mathbf{v}\,d\Gamma - \int_{\Omega}\nu\nabla \mathbf{r}_g:\nabla \mathbf{v}\,d\Omega
+&=\left|
+\begin{array}{c}
+    \mathbf{h}(x,y) = \begin{bmatrix} h_x(x,y) \\ h_y(x,y) \end{bmatrix}
+    \qquad
+    \mathbf{v}(x,y) = \begin{bmatrix} v_x(x,y) \\ v_y(x,y) \end{bmatrix}
+    \qquad
+    \mathbf{r}_g(x,y) = \begin{bmatrix} r_g^x(x,y) \\ r_g^y(x,y) \end{bmatrix}
+\end{array}
+\right| = \\[10pt]
+&=\int_{\Gamma_N}\!\left(h_x v_x + h_y v_y\right)d\Gamma
+- \int_{\Omega}\nu\left(\nabla r_g^x\cdot\nabla v_x + \nabla r_g^y\cdot\nabla v_y\right)d\Omega = \\[10pt]
+&=\left[\int_{\Gamma_N}\! h_x v_x\,d\Gamma - \int_{\Omega}\nu\nabla r_g^x\cdot\nabla v_x\,d\Omega\right]
++\left[\int_{\Gamma_N}\! h_y v_y\,d\Gamma - \int_{\Omega}\nu\nabla r_g^y\cdot\nabla v_y\,d\Omega\right] =
+\\[10pt]
+&=\left|
+\begin{array}{c}
+    r_g^x(x,y) \approx \displaystyle\sum_{i=1}^{N_v} \left(\mathbf{r}_g^{\,x}\right)_i \phi_i(x,y)
+    \qquad
+    r_g^y(x,y) \approx \displaystyle\sum_{i=1}^{N_v} \left(\mathbf{r}_g^{\,y}\right)_i \phi_i(x,y)
+\end{array}
+\right| = \\[10pt]
+&=\left[\int_{\Gamma_N}\! h_x v_x\,d\Gamma - \sum_{i=1}^{N_v}\left(\mathbf{r}_g^{\,x}\right)_i\int_{\Omega}\nu\nabla \phi_i\cdot\nabla v_x\,d\Omega\right]
++\left[\cdots\right]_{y} = \\[10pt]
+&=\left|\substack{\displaystyle\text{We now set $v_x(x,y) = \phi_j(x,y)$} \\ \displaystyle\text{and $v_y(x,y) = \phi_j(x,y)$}}\right| = \\[10pt]
+&=\left[\int_{\Gamma_N}\! h_x \phi_j\,d\Gamma - \sum_{i=1}^{N_v}\left(\mathbf{r}_g^{\,x}\right)_i A_{ji}\right]
++\left[\int_{\Gamma_N}\! h_y \phi_j\,d\Gamma - \sum_{i=1}^{N_v}\left(\mathbf{r}_g^{\,y}\right)_i A_{ji}\right] = \\[10pt]
+&=\left|\mathbf{A}=\mathbf{A}^T\right| = \left(\mathbf{F}_{forces}^{\,x} - \mathbf{A}\vec{r}_g^{\,x}\right)_j
++\left(\mathbf{F}_{forces}^{\,y} - \mathbf{A}\vec{r}_g^{\,y}\right)_j
+\end{aligned}
+\]
+
+\vspace{1ex}
+where:
+
+\[
+\left(\mathbf{F}_{forces}^{\,x}\right)_j = \int_{\Gamma_N} h_x\,\phi_j\,d\Gamma 
+\qquad \qquad \qquad
+\left(\mathbf{F}_{forces}^{\,y}\right)_j = \int_{\Gamma_N} h_y\,\phi_j\,d\Gamma
+\]
+
+are the discrete Neumann traction loads, and the second term in each bracket is exactly the stiffness matrix $\mathbf{A}$ applied to the known lifting coefficients, since it is the same bilinear form $\int_\Omega \nu\nabla\phi_i\cdot\nabla\phi_j\,d\Omega$ evaluated once with the trial index attached to $\mathbf{r}_g$ rather than to an unknown $\mathbf{u}$. Stacking the $x$- and $y$-components gives the final, compact result:
+
+\[
+\mathbf{F} = \int_{\Gamma_N} h \cdot v \, d\Gamma - \int_{\Omega} \nu \nabla r_g : \nabla v \, d\Omega = \mathbf{F}_{forces} - 
+\begin{bmatrix}
+    \mathbf{A} & \mathbf{0} \\
+    \mathbf{0} & \mathbf{A}
+\end{bmatrix}
+\begin{bmatrix}
+    \mathbf{r}_g^x \\
+    \mathbf{r}_g^y
+\end{bmatrix}= \mathbf{F}_{forces} - \mathbf{M}_v \mathbf{r}_g
+\]
+
+During the further calculations no Neumann boundary conditions are enforced, so the expression simplifies further to just:
+
+\[
+\mathbf{F} = - \mathbf{M}_v\mathbf{r}_g
+\]
 
 \subsection{Saddle-Point Block Matrix \texorpdfstring{$\mathbf{K}$}{K}}
 
@@ -534,7 +747,7 @@ The block layout reflects the underlying \textbf{mixed formulation}~\eqref{eq:st
 \subsubsection*{Construction of the Lifting Function \texorpdfstring{$\mathbf{r}_g$}{rg}}
 
 The strong Dirichlet condition reads $\mathbf u = \mathbf g$ on $\Gamma_D$, and the weak formulation is stated for the homogeneous unknown $\mathbf u \in X$ via the decomposition
-$\mathbf{u} = \mathbf{u}_h + \mathbf{r}_g$. Discretely, $\mathbf{r}_g \in \mathbb{R}^{2N_v}$ is simply the nodal interpolant of $\mathbf g$. For every fine-mesh node $X_i$,
+$\mathbf{u} = \mathbf{u}_h + \mathbf{r}_g$. Discretely, $\mathbf{r}_g \in \mathbb{R}^{2N_v}$ is simply the nodal interpolant of $\mathbf g$. For every fine-mesh node $X_i$:
 
 \begin{equation}
 \label{eq:lifting_function}
@@ -544,10 +757,25 @@ $\mathbf{u} = \mathbf{u}_h + \mathbf{r}_g$. Discretely, $\mathbf{r}_g \in \mathb
     0 & \text{otherwise},
 \end{cases}
 \qquad
-\left(\mathbf{r}_g^{\,y}\right)_i = 0 \ \ \forall i,
+\forall i, \,\left(\mathbf{r}_g^{\,y}\right)_i = 0
 \end{equation}
 
-where $\Gamma_D = \Gamma_D^{\text{inlet}} \cup \Gamma_D^{\text{wall}}$ collects every boundary node except the outlet which is left as the natural, traction-free boundary $\Gamma_N$, so $h = \mathbf 0$ and $\mathbf F_{forces} = \mathbf 0$ in the later experiments. Walls carry the homogeneous no-slip value $g=\mathbf 0$ automatically, since $\mathbf{r}_g$ is zero everywhere it is not explicitly prescribed.
+\vspace{1.5em}
+Specifically, the horizontal inflow velocity $g_x$ is prescribed as a parameterized Poiseuille parabolic profile across the inlet segment $[y_1, y_2]$:
+
+\[
+g_x(y) = -\alpha (y - y_1)(y - y_2),
+\]
+
+where $\alpha > 0$ controls the peak inflow amplitude, and $g_x(y_1) = g_x(y_2) = 0$ enforces zero velocity at the boundaries of the inlet. Walls carry the homogeneous no-slip value $\mathbf g = \mathbf 0$ automatically, since $\mathbf{r}_g$ is zero everywhere it is not explicitly prescribed. Finally, the outlet is left as the traction-free boundary $\Gamma_N$, so $\mathbf h = \mathbf 0$ and $\mathbf F_{\text{forces}} = \mathbf 0$ in subsequent formulations.
+
+\begin{figure}[H]
+    \centering
+    \captionsetup{font=small}
+    \includegraphics[width=0.91\textwidth]{Conditioning_Inlet.png}
+    \caption{Computational domain and boundary node classification. The left boundary features an inflow velocity function $g_x(y)$ evaluated at green inlet nodes. It is important that the function remains anchored to zero at the top and bottom blue corner nodes to guarantee seamless continuity with the no-slip black Dirichlet wall nodes. The downstream outlet red boundary nodes remain unconstrained for traction-free outflow.}
+    \label{fig:inlet_boundary_conditioning}
+\end{figure}
 
 \begin{color}{blue}
 \subsubsection*{Momentum and Continuity Right-Hand Sides}
@@ -581,10 +809,8 @@ Assembling all three rows, the full right-hand side of the lifted saddle-point s
 
 \subsubsection*{Enforcing the Homogeneous Dirichlet Condition}
 
-Because $\mathbf u \in X$ requires $\mathbf u = \mathbf 0$ exactly on $\Gamma_D$, every degree of freedom
-$i \in \Gamma_D$ must be pinned to zero in the linear system itself, not merely approximated. This is done by
-row substitution: for each such $i$, row $i$ of $\mathbf K$ is replaced by the $i$-th unit row and $F_i$ is set
-to zero,
+Because $\mathbf u \in X$ requires $\mathbf u = \mathbf 0$ exactly on $\Gamma_D$, every degree of freedom $i \in \Gamma_D$ must be pinned to zero in the linear system itself, not merely approximated. This is done by row substitution: for each such $i$, row $i$ of $\mathbf K$ is replaced by the $i$-th unit row and $F_i$ is set to zero,
+
 \[
 \mathbf K_{i,:} \leftarrow \mathbf e_i^T, \qquad F_i \leftarrow 0,
 \]
@@ -1073,16 +1299,16 @@ The \textit{Winding Pipe} models an internal distribution manifold containing ge
 \begin{figure}[H]
     \centering
     \captionsetup{font=small}
-    \begin{subfigure}[b]{0.513\textwidth}
+    \begin{subfigure}[b]{0.482\textwidth}
         \centering
-        \includegraphics[width=\textwidth]{Winding Pipe/Pressure_Tricontourf.jpeg}
+        \includegraphics[width=\textwidth]{Winding Pipe/Pressure_Tricontourf.png}
         \caption{Continuous Piecewise Linear Pressure Contour Map.}
         \label{fig:winding_pipe_pressure}
     \end{subfigure}
     \hfill
     \begin{subfigure}[b]{0.48\textwidth}
         \centering
-        \includegraphics[width=\textwidth]{Winding Pipe/Solution_Streamlines.jpeg}
+        \includegraphics[width=\textwidth]{Winding Pipe/Solution_Streamlines.png}
         \caption{Computed Velocity Streamline Vector Paths.}
         \label{fig:winding_pipe_streamlines}
     \end{subfigure}
@@ -1093,7 +1319,8 @@ The \textit{Winding Pipe} models an internal distribution manifold containing ge
 As observed in Figure~\ref{fig:winding_pipe_full}, the velocity streamlines adapt smoothly around the internal channel obstacles without displaying spurious velocity vector spikes. Concurrently, the pressure distribution field (Figure~\ref{fig:winding_pipe_pressure}) displays a continuous linear gradient drop, confirming the inf-sup spatial stability of the dual-grid discretization matrix configuration.
 
 %-------------------------------------------------------------------
-
+\begin{color}{blue}
+    
 \newpage
 \section{Convergence of Numerical Solutions}
 
@@ -1102,21 +1329,21 @@ As observed in Figure~\ref{fig:winding_pipe_full}, the velocity streamlines adap
 \begin{figure}[H]
     \centering
     \captionsetup{font=small}
-    \begin{subfigure}[b]{0.495\textwidth}
+    \begin{subfigure}[b]{0.478\textwidth}
         \centering
-        \includegraphics[width=\textwidth]{Z-Mesh/pressure_z_mesh.png}
+        \includegraphics[width=\textwidth]{Z-Mesh/Pressure_Tricontourf.png}
         \caption{Continuous Piecewise Linear Pressure Contour Map.}
         \label{fig:z-mesh_pressure}
     \end{subfigure}
     \hfill
     \begin{subfigure}[b]{0.48\textwidth}
         \centering
-        \includegraphics[width=\textwidth]{Z-Mesh/flow_z_mesh.png}
+        \includegraphics[width=\textwidth]{Z-Mesh/Solution_Streamlines.png}
         \caption{Computed Velocity Streamline Vector Paths.}
         \label{fig:z-mesh_streamlines}
     \end{subfigure}
     \caption{Complete Stokes flow simulation inside the \textit{Z-Shaped Channel Device} domain.}
-    \label{fig:winding_pipe_full}
+    \label{fig:z-mesh}
 \end{figure}
 
 To investigate the convergence behavior of the P1-iso-P1 discretization, a reference solution was first computed on the finest available mesh, obtained after seven uniform refinements of the initial domain geometry. Solutions on coarser meshes were then compared against this reference solution.
@@ -1208,7 +1435,7 @@ where \(E_h\) denotes the corresponding \(L^2\)-error.
 }
 \end{table}
 
-Table~\ref{tab:stokes_convergence} demonstrates a consistent reduction of both the velocity and pressure errors as the mesh is refined, indicating convergence of the numerical solution toward the reference solution. The velocity error decreases from $39.5400$ on the coarsest mesh to $0.7305$ on the finest mesh considered, with observed convergence rates oscillating between $0.54$ and $1.27$. The pressure error also decreases, although at a significantly slower rate, from $4826.3$ to $2438.1$. This behavior is expected, as the pressure approximation is computed on the coarser mesh of the P1-iso-P1 discretization and therefore converges more slowly than the velocity field. Additionally, the re-entrant corners inherent to this specific device geometry introduce flow singularities that naturally degrade the theoretical asymptotic convergence rates. Overall, the results confirm that mesh refinement improves the accuracy of both solution components and provide numerical evidence for the convergence of the implemented Stokes finite element method.
+Table~\ref{tab:stokes_convergence} demonstrates a consistent reduction of velocity and non-consistent pressure errors as the mesh is refined, indicating convergence of the numerical solution toward the reference solution. The velocity error decreases from $39.5400$ on the coarsest mesh to $0.7305$ on the finest mesh considered, with observed convergence rates oscillating between $0.54$ and $1.27$. The pressure error also decreases, although at a significantly slower rate, from $4826.3$ to $2438.1$. This behavior is expected, as the pressure approximation is computed on the coarser mesh of the P1-iso-P1 discretization and therefore converges more slowly than the velocity field. Additionally, the re-entrant corners inherent to this specific device geometry introduce flow singularities that naturally degrade the theoretical asymptotic convergence rates. Overall, the results confirm that mesh refinement improves the accuracy of both solution components and provide numerical evidence for the convergence of the implemented Stokes finite element method.
 
 \begin{figure}[H]
     \centering
@@ -1219,6 +1446,7 @@ Table~\ref{tab:stokes_convergence} demonstrates a consistent reduction of both t
 \end{figure}
 
 Figure~\ref{fig:convergence_plot} visualizes the convergence behavior detailed in Table~\ref{tab:stokes_convergence} by plotting the $L^2$ error norms against the velocity degrees of freedom on a logarithmic scale. The solid blue line demonstrates a steady, near-linear decrease in the velocity error, ultimately achieving a final convergence rate of $r_u = 0.722$. In contrast, the dashed orange line representing the pressure error starts at a significantly higher magnitude and exhibits a much flatter trajectory, finalizing at a rate of $r_p = 0.585$. This visual disparity emphasizes the slower convergence of the pressure field inherent to the P1-iso-P1 element pair, particularly when subjected to the geometric singularities of the Z-shaped domain.
+\end{color}
 
 %-------------------------------------------------------------------
 
@@ -1227,7 +1455,7 @@ Figure~\ref{fig:convergence_plot} visualizes the convergence behavior detailed i
 The finite element discretization developed in the preceding sections yields a numerically reliable, but computationally expensive, \emph{full-order model} (FOM): even at moderate refinement levels the $P_1$-iso-$P_1$ discretization produces velocity systems with $\mathcal{O}(10^5)$ degrees of freedom (Table~\ref{tab:stokes_convergence}), and every change in the physical configuration requires reassembling and resolving the full saddle-point system. This cost becomes prohibitive in \emph{many-query} settings --- parameter studies, optimization loops, or real-time control --- where the Stokes system must be solved repeatedly for many instances of a parameter vector $\boldsymbol\mu \in \mathcal{P} \subset \mathbb{R}^p$.
 In the present study, $\boldsymbol\mu$ parametrizes a spatially varying kinematic viscosity field, and solving the FOM anew for every parameter instance is computationally wasteful: nearby parameters produce similar flow fields, so the resulting solution manifold, 
 $$
-\mathcal{M} = \left\{ (\mathbf{u}_h(\boldsymbol\mu), p_h(\boldsymbol\mu)) : \boldsymbol\mu \in \mathcal{P} \right\},
+\mathcal{M} = \left\{ (\mathbf{u}_h(\boldsymbol\mu), p_h) : \boldsymbol\mu \in \mathcal{P} \right\},
 $$
 possesses low intrinsic dimension despite living in a high-dimensional discrete space, and can be well approximated by a low-dimensional linear subspace. This observation is the central premise of \textit{reduced-order modeling} (ROM): rather than repeatedly solving the full-order system, one projects the problem onto a much smaller subspace and solves a reduced Galerkin system instead.
 
@@ -1257,7 +1485,7 @@ w_{k}(\mathbf{x}) = \frac{1}{\max(d_{k}, \epsilon)^\gamma} \ ,
 d_{k} = \|\mathbf{x} - \mathbf{x}_k\|_2 \ ,
 \] 
 
-where 
+where: 
 \begin{itemize}    
     \item $\boldsymbol{\mu} =     
         \begin{bmatrix}        
@@ -1335,7 +1563,7 @@ To generate the training dataset of $n_s=100$ snapshots, we evaluate the high-fi
     \label{fig:lhs_projection}
 \end{wrapfigure}
 
-To visually verify the spatial distribution of the sampling points across the 5D domain, the parameters were standardized and projected onto a two-dimensional subspace using \textit{principal component analysis} (PCA). Figure~\ref{fig:lhs_projection} displays the down-projected snapshots $\Xi$ alongside the convex hull of the parameter space $\mathcal{P}$. The uniform dispersion of points across the interior of the boundary confirms that the LHS scheme achieves excellent space-filling properties, effectively capturing the global parameter behavior without leaving unrepresented regions or forming dense clusters.
+To visually verify the spatial distribution of the sampling points across the 5D domain, the parameters were standardized and projected onto a two-dimensional subspace using \textit{principal component analysis} (PCA). Figure~\ref{fig:lhs_projection} displays the down-projected set $\Xi$ alongside the convex hull of the parameter space $\mathcal{P}$. While the projected samples visually cluster toward the center of the subspace rather than filling the entire boundary uniformly, this is a consequence of dimensionality reduction. By the Central Limit Theorem, linear projections of high-dimensional uniform variables naturally converge toward a normal distribution. The underlying LHS scheme successfully achieves excellent space-filling properties, effectively capturing the global parameter behavior across the full high-dimensional domain.
 
 \vspace{7pt}
 Next, by exploiting the affine decomposition of the viscous operator,
@@ -1410,7 +1638,7 @@ Now, for every pressure snapshot $\mathbf{p}_h(\boldsymbol\mu^{(k)})$, $k=1,\dot
 solution $\mathbf{t}^{(k)}$ is obtained by solving the auxiliary linear system
 
 \[
-\mathbf{X}_u\, \mathbf{t}^{(k)} = \mathbf{B}_h^T\, \mathbf{p}_h(\boldsymbol\mu^{(k)}), \, \text{where:} \quad
+\mathbf{X}_u\, \mathbf{t}^{(k)} = \mathbf{B}_h^T\, \mathbf{p}_h(\boldsymbol\mu^{(k)}), \, \qquad \text{where:} \quad
 \mathbf{B}_h^T = 
 \begin{bmatrix}
     \mathbf{B}_{xD}^T \\[7pt]
@@ -1422,6 +1650,7 @@ solution $\mathbf{t}^{(k)}$ is obtained by solving the auxiliary linear system
 \end{bmatrix}.
 \]
 
+\vspace{1em}
 By first constructing the global saddle-point matrix $\mathbf{K}$ with unit viscosity ($\nu = 1$) and enforcing homogeneous Dirichlet boundary conditions, the required operators are extracted directly via matrix slicing. Slicing rows $[0, 2N_v)$ from $\mathbf{K}$ yields a rectangular matrix with the corresponding needed operators: 
 \begin{itemize}
     \item the velocity block operator $\mathbf{X}_u = \mathbf{K}[0:2N_v, \, 0:2N_v] \in \mathbb{R}^{2N_v\times 2N_v}$,
