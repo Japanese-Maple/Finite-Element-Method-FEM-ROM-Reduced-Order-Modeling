@@ -72,6 +72,11 @@ $$
 
 Exploiting the fact that the solution manifold $\mathcal{M}$ has low intrinsic dimension despite living in a high-dimensional discrete space, the framework builds a reduced basis via Proper Orthogonal Decomposition on 100 Latin-Hypercube-sampled full-order snapshots, enriching the velocity space with supremizer modes $\mathbf{t}$ to preserve inf-sup stability at the reduced level. The offline stage precomputes all reduced operators once; the online stage then solves only a small Galerkin system per new $\boldsymbol{\mu}$, at cost independent of the underlying mesh resolution.
 
+The final comparison can be viewed in the following image:
+
+<p align="center">
+  <img src="Outputs/ROM_FEM_comparison_1.png" alt="Alt Text" width="1500"/>
+</p>
 
 ## Features
 
