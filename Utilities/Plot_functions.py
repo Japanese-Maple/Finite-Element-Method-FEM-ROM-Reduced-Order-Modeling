@@ -219,7 +219,7 @@ def plot_streamlines_experimental(p_fine, t_fine, ux, uy,
 
 def Stokes_matrix_structure(A_B_M_K_mat, mat_name:str='A/B_x/B_y/M/K',
                             figsize:tuple=(13,13), cmap:str='viridis',
-                            savetype:str='jpeg'):
+                            name='', savetype:str='png'):
     """Plots the B matrix values and color codes them."""
 
     A_B_K_coo = A_B_M_K_mat.tocoo()
@@ -248,7 +248,7 @@ def Stokes_matrix_structure(A_B_M_K_mat, mat_name:str='A/B_x/B_y/M/K',
     mat_plot.set_title(f"{mat_name}: {A_B_M_K_mat.shape[0]}x{A_B_M_K_mat.shape[1]}")
 
     plt.tight_layout()    
-    plt.savefig(f'Outputs/Stokes_{mat_name}_matrix.{savetype}')
+    plt.savefig(f'Outputs/{name}Stokes_{mat_name}_matrix.{savetype}', bbox_inches='tight', pad_inches=0.01)
     plt.show()
 
 #_______________________________________________________________________________________________________________________________________________________________
@@ -302,7 +302,7 @@ def K_matrix_structure(K_mat, dim_A, dim_B,
 
     mat_plot.set_title(f"Saddle-Point Matrix K: {K_mat.shape[0]}x{K_mat.shape[1]}", fontsize=15)
     plt.tight_layout()
-    plt.savefig(f'Outputs/{name}Stokes_K_matrix_labeled.{savetype}')
+    plt.savefig(f'Outputs/{name}Stokes_K_matrix_labeled.{savetype}', bbox_inches='tight', pad_inches=0.01)
     plt.show()
 
 #_______________________________________________________________________________________________________________________________________________________________
