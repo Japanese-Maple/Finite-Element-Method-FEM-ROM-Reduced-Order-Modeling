@@ -16,9 +16,10 @@ from Utilities.Plot_functions import Plot_Initial_Refined_meshes
 from Utilities.Stokes_felib import (
      calculate_velocity_A,
      calculate_pressure_B,
+     calculate_stabilization_Cp,
      calculate_Saddle_point_K,
      save_simulation_data
-)
+     )
 
 #_____________________________________________________________________________________________________________________________
 
@@ -58,6 +59,9 @@ def compute_U_P_solution_exchanger_device(p_fine, t_fine, e_fine, p_coarse, t_co
 
     A  = calculate_velocity_A(p_fine, t_fine, kinematic_viscosity)
     Bx, By = calculate_pressure_B(p_fine, t_fine, p_coarse, t_coarse)
+    # gamma = 0.05
+    # Cp = calculate_stabilization_Cp(p_coarse, t_coarse, gamma=gamma)
+    # K = calculate_Saddle_point_K(A, Bx, By, Cp=Cp)
     K  = calculate_Saddle_point_K(A, Bx, By)
 
     F = np.zeros(2 * Nv + Np)

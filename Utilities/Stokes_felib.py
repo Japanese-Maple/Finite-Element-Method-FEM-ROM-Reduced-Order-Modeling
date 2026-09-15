@@ -31,9 +31,9 @@ def calculate_velocity_A(p, t, kinematic_viscosity):
     #
     #                                                     Q = Cof(J).T @ Cof(J)
 
-    q11 = jacobian[:, 1, 1]**2 + jacobian[:, 0, 1]**2
-    q12 = -(jacobian[:, 1, 0] * jacobian[:, 1, 1] + jacobian[:, 0, 0] * jacobian[:, 0, 1])
-    q22 = jacobian[:, 1, 0]**2 + jacobian[:, 0, 0]**2
+    q11 = jacobian[:, 1, 1]**2 + jacobian[:, 1, 0]**2
+    q12 = -(jacobian[:, 1, 1]*jacobian[:, 0, 1] + jacobian[:, 1, 0]*jacobian[:, 0, 0])
+    q22 = jacobian[:, 0, 1]**2 + jacobian[:, 0, 0]**2
 
     Q_mat = np.zeros_like(jacobian)
     Q_mat[:, 0, 0] = q11
@@ -47,7 +47,7 @@ def calculate_velocity_A(p, t, kinematic_viscosity):
 
     # We can now construct a local matrix A for each triangle:
     
-    A_local = np.einsum('mi,txy,nj->tmn', test_function_derivatives, Q_mat, test_function_derivatives)
+    A_local = np.einsum('mi,tij,nj->tmn', test_function_derivatives, Q_mat, test_function_derivatives)
     A_local *= (kinematic_viscosity / (2.0 * det_J))[:, None, None]
 
     rowidx = np.einsum("ni,j->nij", t[:,0:3], [1,1,1])
@@ -55,6 +55,39 @@ def calculate_velocity_A(p, t, kinematic_viscosity):
     
     # Return corresponding csc_matrix
     return sparse.csc_matrix((np.ravel(A_local),(np.ravel(rowidx),np.ravel(colidx))),shape=(Np,Np))
+
+# def calculate_velocity_A(p, t, kinematic_viscosity):
+#     """Calculates the Stiffness Matrix **A**"""
+#     Np = p.shape[0]
+#     Nt = t.shape[0]
+
+#     jacobian = np.zeros(shape=(Nt, 2, 2))
+#     jacobian[:, 0, :] = p[t[:, 1]] - p[t[:, 0]]   # (x2-x1, y2-y1)
+#     jacobian[:, 1, :] = p[t[:, 2]] - p[t[:, 0]]   # (x3-x1, y3-y1)
+
+#     det_J = jacobian[:, 0, 0]*jacobian[:, 1, 1] - jacobian[:, 0, 1]*jacobian[:, 1, 0]
+
+#     q11 = jacobian[:, 1, 1]**2 + jacobian[:, 1, 0]**2
+#     q12 = -(jacobian[:, 1, 1]*jacobian[:, 0, 1] + jacobian[:, 1, 0]*jacobian[:, 0, 0])
+#     q22 = jacobian[:, 0, 1]**2 + jacobian[:, 0, 0]**2
+
+#     Q_mat = np.zeros_like(jacobian)
+#     Q_mat[:, 0, 0] = q11
+#     Q_mat[:, 1, 0], Q_mat[:, 0, 1] = q12, q12
+#     Q_mat[:, 1, 1] = q22
+
+#     test_function_derivatives = np.array([[-1., -1.],
+#                                           [ 1.,  0.],
+#                                           [ 0.,  1.]])
+
+#     A_local = np.einsum('mi,tij,nj->tmn',
+#                         test_function_derivatives, Q_mat, test_function_derivatives)
+#     A_local *= (kinematic_viscosity / (2.0*np.abs(det_J)))[:, None, None]
+
+#     rowidx = np.einsum("ni,j->nij", t[:, 0:3], [1, 1, 1])
+#     colidx = np.einsum("nj,i->nij", t[:, 0:3], [1, 1, 1])
+#     return sparse.csc_matrix((np.ravel(A_local), (np.ravel(rowidx), np.ravel(colidx))),
+#                              shape=(Np, Np))
 
 #_______________________________________________________________________________________________________________________________________________________________
 
@@ -250,18 +283,58 @@ def calculate_pressure_B(p_fine, t_fine, p_coarse, t_coarse):
         (By_loc.ravel(), (rowidx, colidx)), shape=(Np_coarse, Np_fine))
 
     return B_x, B_y
+
 #_______________________________________________________________________________________________________________________________________________________________
 
-def calculate_Saddle_point_K(A, B_x, B_y):
-    """Calculates the Saddle-Point matrix **K**"""
+def calculate_pressure_stiffness_Kp(p_coarse, t_coarse):
+    """Scalar pressure Laplacian K_p, reusing the existing stiffness assembler."""
+    return calculate_velocity_A(p_coarse, t_coarse, kinematic_viscosity=1.0)
 
+#_______________________________________________________________________________________________________________________________________________________________
+
+def calculate_stabilization_Cp(p_coarse, t_coarse, gamma=0.05):
+    Kp = calculate_pressure_stiffness_Kp(p_coarse, t_coarse)
+
+    # element diameters (longest edge of each coarse triangle)
+    v0, v1, v2 = p_coarse[t_coarse[:,0]], p_coarse[t_coarse[:,1]], p_coarse[t_coarse[:,2]]
+    e01 = np.linalg.norm(v1-v0, axis=1)
+    e12 = np.linalg.norm(v2-v1, axis=1)
+    e20 = np.linalg.norm(v0-v2, axis=1)
+    h_avg = np.mean(np.concatenate([e01, e12, e20]))
+
+    Cp = gamma * h_avg**2 * Kp
+    return Cp
+
+#_______________________________________________________________________________________________________________________________________________________________
+
+# def calculate_Saddle_point_K(A, B_x, B_y):
+#     """Calculates the Saddle-Point matrix **K**"""
+
+#     Np_coarse = B_x.shape[0]
+#     Zero_pp = sparse.csc_matrix((Np_coarse, Np_coarse))
+
+#     K_mat = bmat([
+#         [A,       None,    B_x.T],
+#         [None,    A,       B_y.T],
+#         [B_x,     B_y,     Zero_pp]
+#     ], format='csc')
+
+#     return K_mat
+
+def calculate_Saddle_point_K(A, B_x, B_y, Cp=None):
     Np_coarse = B_x.shape[0]
-    Zero_pp = sparse.csc_matrix((Np_coarse, Np_coarse))
+
+    if Cp is None:
+        Zero_pp = sparse.csc_matrix((Np_coarse, Np_coarse))
+        pp_block = Zero_pp
+        
+    else:
+        pp_block = -Cp
 
     K_mat = bmat([
-        [A,       None,    B_x.T],
-        [None,    A,       B_y.T],
-        [B_x,     B_y,     Zero_pp]
+        [A,    None, B_x.T],
+        [None, A,    B_y.T],
+        [B_x,  B_y,  pp_block]
     ], format='csc')
 
     return K_mat
