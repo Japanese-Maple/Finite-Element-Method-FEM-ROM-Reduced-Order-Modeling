@@ -32,6 +32,7 @@ def ROM_solution_statistics(ux_FOM, uy_FOM, p_FOM, ux_ROM, uy_ROM, p_ROM,
 def ROM_FOM_comparison(ux_true, uy_true, p_true, ux_rom, uy_rom, p_rom,
                        p_fine, t_fine, p_coarse, t_coarse, test_idx,
                        density=3.1, levels=20, figsize=(23, 7.5),
+                       name='1',
                        savetype='png'):
 
     Umag_true, Umag_rom, abs_err_u, abs_err_p, rel_u, rel_p = ROM_solution_statistics(ux_true, uy_true, p_true,
@@ -84,7 +85,7 @@ def ROM_FOM_comparison(ux_true, uy_true, p_true, ux_rom, uy_rom, p_rom,
     )
 
     plt.tight_layout()
-    plt.savefig(f'Outputs/ROM_FEM_comparison.{savetype}', bbox_inches='tight', pad_inches=0.01)
+    plt.savefig(f'Outputs/{name}ROM_FEM_comparison.{savetype}', bbox_inches='tight', pad_inches=0.01)
     plt.show()
 
 #_______________________________________________________________________________________________________________________________________________________________
