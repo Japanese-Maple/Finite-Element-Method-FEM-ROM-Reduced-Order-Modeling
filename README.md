@@ -48,7 +48,7 @@ $$
 $$
 
 <p align="center">
-  <img src="Outputs/Viscosity_Basis_Functions.png" alt="Alt Text" width="1500"/>
+  <img src="Outputs/ROM/Viscosity_Basis_Functions.png" alt="Alt Text" width="1500"/>
 </p>
 
 Because viscosity enters the weak form linearly, the stiffness operator inherits an affine dependence on the five-dimensional parameter vector $\boldsymbol{\mu}\in[10,200]^5$, which controls viscosity values at five Shepard-interpolated control points. This lets five parameter-independent matrices $A_1,\dots,A_5$ be assembled once and reused for any $\boldsymbol{\mu}$ as a cheap scalar-weighted sum, entirely avoiding per-query reassembly of the global operator.
@@ -67,7 +67,7 @@ $$\mathcal{M} = \{(\mathbf{u}_h(\boldsymbol{\mu}), p_h) : \boldsymbol{\mu}\in\ma
 $$
 
 <p align="center">
-  <img src="Outputs/LHS_downprojected.png" alt="Alt Text" width="450"/>
+  <img src="Outputs/ROM/LHS_downprojected.png" alt="Alt Text" width="450"/>
 </p>
 
 Exploiting the fact that the solution manifold $\mathcal{M}$ has low intrinsic dimension despite living in a high-dimensional discrete space, the framework builds a reduced basis via Proper Orthogonal Decomposition on 100 Latin-Hypercube-sampled full-order snapshots, enriching the velocity space with supremizer modes $\mathbf{t}$ to preserve inf-sup stability at the reduced level. The offline stage precomputes all reduced operators once; the online stage then solves only a small Galerkin system per new $\boldsymbol{\mu}$, at cost independent of the underlying mesh resolution.
@@ -75,7 +75,7 @@ Exploiting the fact that the solution manifold $\mathcal{M}$ has low intrinsic d
 The final comparison can be viewed in the following image:
 
 <p align="center">
-  <img src="Outputs/ROM_FEM_comparison.png" alt="Alt Text" width="1500"/>
+  <img src="Outputs/ROM/held_out_mu_ROM_FEM_comparison.png" alt="Alt Text" width="1500"/>
 </p>
 
 ## Features
