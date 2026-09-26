@@ -1,8 +1,12 @@
 import numpy as np
+from scipy.stats import qmc
+from scipy.spatial import cKDTree
+
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import matplotlib.patches as patches
 from matplotlib.colors import SymLogNorm
+from matplotlib.path import Path
 
 from IPython.display import display, Math
 
@@ -249,7 +253,7 @@ def plot_Reduced_K_Matrices(
             origin="upper",
         )
 
-        ax.set_title(rf"$\mathbf{{K}}^N(\mu _{{{i+1}}})$", fontsize=12, pad=6)
+        ax.set_title(fr"$\mathbf{{K}}^N(\boldsymbol{{\mu}}_{{{i+1}}})$", fontsize=12, pad=6)
 
         for row_i in range(n_blocks):
             for col_j in range(n_blocks):
@@ -309,3 +313,53 @@ def plot_Reduced_K_Matrices(
         bbox_inches="tight",
     )
     plt.show()
+
+#_______________________________________________________________________________________________________________________________________________________________
+
+def generate_sensor_locations(region_array, p_nodes, num_sensors=25, base_radius=1, seed=33):
+    """
+    Generates well-spaced points inside a polygon using Poisson Disk sampling,
+    and snaps them to the nearest available mesh nodes using a KDTree.
+    """
+    path = Path(region_array)
+    
+    x_min, x_max = region_array[:, 0].min(), region_array[:, 0].max()
+    y_min, y_max = region_array[:, 1].min(), region_array[:, 1].max()
+    width = x_max - x_min
+    height = y_max - y_min
+    
+    valid_sensors = []
+    attempt = 0
+    current_radius = base_radius
+    
+    while len(valid_sensors) < num_sensors:
+        engine = qmc.PoissonDisk(d=2, radius=current_radius, seed=seed + attempt)
+        candidates_unit = engine.random(n=num_sensors * 10)
+        candidates = candidates_unit * [width, height] + [x_min, y_min]
+        inside_mask = path.contains_points(candidates)
+        candidates_inside = candidates[inside_mask]
+        
+        for pt in candidates_inside:
+            if len(valid_sensors) < num_sensors:
+                valid_sensors.append(pt)
+            else:
+                break
+                
+        attempt += 1
+        if len(valid_sensors) < num_sensors:
+            current_radius *= 0.9  
+            valid_sensors = []
+
+    raw_sensors = np.array(valid_sensors)
+    
+    tree = cKDTree(p_nodes)
+    _, node_indices = tree.query(raw_sensors)
+    
+    if len(np.unique(node_indices)) < num_sensors:
+        print("Warning: Multiple sensors snapped to the same node. Mesh might be too coarse.")
+        
+    snapped_sensors = p_nodes[node_indices]
+
+    return snapped_sensors, node_indices
+
+#_______________________________________________________________________________________________________________________________________________________________
