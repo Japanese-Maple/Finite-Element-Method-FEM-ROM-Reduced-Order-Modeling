@@ -17,6 +17,118 @@ from .Plot_functions import (
 
 #_______________________________________________________________________________________________________________________________________________________________
 
+def pod_basis(S, energy:float=0.9999, name:str="",
+              plot:bool=False,
+              manual_selection:bool=False, k:int=5):
+    
+    _U, s, _ = np.linalg.svd(S.T, full_matrices=False)
+
+    if manual_selection:
+        return _U[:, :k]
+    
+    normalized_eigenvalues = np.cumsum(s**2) / np.sum(s**2)    
+    _N = int(np.searchsorted(normalized_eigenvalues, energy) + 1)
+    enery_true = normalized_eigenvalues[_N-1]
+    print(f"[{name}] kept {_N}/{len(s)} modes, energy = {enery_true:.6f}")
+
+    if plot:
+        plt.figure(figsize=(7, 7))
+
+        plt.plot(normalized_eigenvalues, 
+                linestyle='-',
+                marker='o', 
+                markersize=3.5,
+                color="#373eac",
+                linewidth=1.5,
+                label="Cumulative Energy $E(N)$")
+        
+        plt.axhline(y=energy,
+                    color="green",
+                    linestyle="--",
+                    linewidth=1.2,
+                    label=f"Target energy ($\\gamma$ = {energy * 100}%)")
+        
+        plt.axhline(y=enery_true,
+                    color="crimson",
+                    linestyle="--",
+                    linewidth=1.2,
+                    label=f"Selected energy ($\\gamma'$ = {enery_true * 100:.4f}%)")
+
+        plt.scatter(_N-1,
+                    normalized_eigenvalues[_N - 1],
+                    color="#39003A",
+                    marker="x",
+                    s=130,
+                    linewidth=2.5,
+                    zorder=5,
+                    label=f"Selected {_N} modes")
+        
+        plt.title(f"POD Energy Spectrum — {name.capitalize()}", fontsize=12, weight="bold", pad=12)
+        plt.xlabel("Snapshot / Mode Index ($i$)", fontsize=11)
+        plt.ylabel("Cumulative Energy Ratio / $\\lambda_i / \\sum_i \\lambda_i$", fontsize=11)
+
+        plt.xscale('symlog', linthresh=10)
+        plt.xticks([0, 5, 10, 20, 40, 60, 80, 100], 
+                   [0, 5, 10, 20, 40, 60, 80, 100])
+
+        plt.legend(frameon=True, facecolor="white", edgecolor="none", fontsize=15)
+        plt.grid(True, which="both", ls="--", alpha=0.3)
+        plt.savefig(f'Outputs/ROM/Spectra/POD_Energy_Spectrum_{name}.png')
+        plt.show()
+    
+    return _U[:, :_N]
+
+#_______________________________________________________________________________________________________________________________________________________________
+
+def solve_ROM(input_parameters, 
+              Reduced_Affine_Operators, Velocity_basis, Pressure_basis, Reduced_divergence, Reduced_rhs, Reduced_Lifting_Vectors, lifting_f,
+              return_reduced_solution_only=False):
+    
+    Div_N = Reduced_divergence
+    g_N   = Reduced_rhs
+    Nv    = int(Velocity_basis.shape[0]/2)
+
+    # Online affine assembly
+    Lap_N = sum((mu * X_i for mu, X_i in zip(input_parameters, Reduced_Affine_Operators)),
+                np.zeros_like(Reduced_Affine_Operators[0]))
+    
+    f_N = sum(mu * f_i for mu, f_i in zip(input_parameters, Reduced_Lifting_Vectors))
+
+    Nu_, Np_ = Lap_N.shape[0], Div_N.shape[0]
+
+    K_cheap = np.block([[Lap_N, Div_N.T], 
+                        [Div_N, np.zeros((Np_, Np_))]])
+                    
+    sol_N = np.linalg.solve(K_cheap, np.concatenate([np.ravel(f_N), 
+                                                     np.ravel(g_N)]))
+    u_N, p_N = sol_N[:Nu_], sol_N[Nu_:]
+    
+    if return_reduced_solution_only:
+        return u_N, p_N
+    
+    u_red = Velocity_basis @ u_N + lifting_f       # (Adding the lift back)
+    
+    return u_red[:Nv], u_red[Nv:], Pressure_basis @ p_N
+
+#_______________________________________________________________________________________________________________________________________________________________
+
+def reduced_system_matrices(input_parameters, 
+                            Reduced_Affine_Operators, Reduced_divergence):
+    
+    Div_N = Reduced_divergence
+
+    Lap_N = sum((mu * X_i for mu, X_i in zip(input_parameters, Reduced_Affine_Operators)),
+                np.zeros_like(Reduced_Affine_Operators[0]))
+    
+    _, Np_ = Lap_N.shape[0], Div_N.shape[0]
+
+    K_cheap = np.block([[Lap_N, Div_N.T], 
+                        [Div_N, np.zeros((Np_, Np_))]])
+    
+    return K_cheap, Lap_N
+
+#_______________________________________________________________________________________________________________________________________________________________
+
 def ROM_solution_statistics(ux_FOM, uy_FOM, p_FOM, ux_ROM, uy_ROM, p_ROM,
                             display_errors:bool=False):
 
