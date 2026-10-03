@@ -149,10 +149,7 @@ def plot_Reduced_Affine_Operators(Reduced_Affine_Operators, name='ROM/'):
         axes_flat[j].axis("off")
 
     plt.tight_layout()
-
-    plt.savefig(
-        f"Outputs/{name}Reduced_Affine_Operators.png", dpi=300, bbox_inches="tight"
-    )
+    plt.savefig(f"Outputs/{name}Reduced_Affine_Operators.png", dpi=300, bbox_inches="tight")
     plt.show()
 
 #_______________________________________________________________________________________________________________________________________________________________
@@ -201,9 +198,6 @@ def plot_Reduced_K_Matrices(
 
     Parameters
     ----------
-    use_abs : bool
-        If True, plots log10(|K^N|) with standard LogNorm.
-        If False, uses SymLogNorm to handle negative and positive values around zero.
     linthresh : float
         The range around zero [-linthresh, linthresh] where SymLogNorm transitions to linear.
     """
@@ -361,5 +355,36 @@ def generate_sensor_locations(region_array, p_nodes, num_sensors=25, base_radius
     snapped_sensors = p_nodes[node_indices]
 
     return snapped_sensors, node_indices
+
+#_______________________________________________________________________________________________________________________________________________________________
+
+def plot_reduced_extraction_matrices(E_pN, E_uN):
+    _, ax = plt.subplots(nrows=1, ncols=2, figsize=(5, 5))
+
+    ax[0].set_title('$\\mathbf{E}_p^N$')
+    ax[0].imshow(E_pN)
+    ax[0].set_xlabel('$5$')
+    ax[0].set_ylabel('$25$')
+
+    ax[1].set_title('$\\mathbf{E}_\\mathbf{u}^N$')
+    ax[1].imshow(E_uN)
+    ax[1].set_xlabel('$5+6$')
+    ax[1].set_ylabel('$2 \\cdot 25$')
+
+    rect_tl = patches.Rectangle((-0.5, -0.5), 5, 25, linewidth=1.5, edgecolor='red', facecolor='none', clip_on=False)
+    rect_tr = patches.Rectangle((4.5, -0.5), 6, 25,  linewidth=1.5, edgecolor='red', facecolor='none', clip_on=False)
+    rect_bl = patches.Rectangle((-0.5, 24.5), 5, 25, linewidth=1.5, edgecolor='red', facecolor='none', clip_on=False)
+    rect_br = patches.Rectangle((4.5, 24.5), 6, 25,  linewidth=1.5, edgecolor='red', facecolor='none', clip_on=False)
+
+    for rect in [rect_tl, rect_tr, rect_bl, rect_br]:
+        ax[1].add_patch(rect)
+
+    for i in [0,1]:
+        ax[i].set_yticks([])
+        ax[i].set_xticks([])
+
+    plt.tight_layout()
+    plt.savefig(f"Outputs/ROM/Extraction_operators.png", dpi=300, bbox_inches="tight")
+    plt.show()
 
 #_______________________________________________________________________________________________________________________________________________________________
