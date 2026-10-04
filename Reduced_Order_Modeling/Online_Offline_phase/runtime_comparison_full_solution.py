@@ -1,3 +1,7 @@
+"""
+Comparing the execution speed / FULL SOLUTIONS 
+"""
+
 import time
 import numpy as np
 from scipy.sparse import load_npz
