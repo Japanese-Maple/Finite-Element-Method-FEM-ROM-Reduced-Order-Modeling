@@ -252,5 +252,56 @@ print("\n" + "─"*90)
 
 # Run results:
 """
+Starting benchmark warm-up (untimed)...
+Warm-up complete. Starting timed runs for 30 parameters...
 
+Param 1/30  | FEM: 10.3199s | ROM: 0.000063s | Speedup: 163240.37x                                                                                                                                         
+Param 2/30  | FEM: 10.5846s | ROM: 0.000060s | Speedup: 175445.07x                                                                                                                                         
+Param 3/30  | FEM: 9.4693s  | ROM: 0.000066s | Speedup: 143912.44x                                                                                                                                          
+Param 4/30  | FEM: 10.4381s | ROM: 0.000062s | Speedup: 167556.60x                                                                                                                                         
+Param 5/30  | FEM: 10.5633s | ROM: 0.000069s | Speedup: 153522.02x                                                                                                                                         
+Param 6/30  | FEM: 10.8006s | ROM: 0.000072s | Speedup: 150402.08x                                                                                                                                         
+Param 7/30  | FEM: 10.5015s | ROM: 0.000064s | Speedup: 164720.71x                                                                                                                                         
+Param 8/30  | FEM: 10.7947s | ROM: 0.000066s | Speedup: 163809.24x                                                                                                                                         
+Param 9/30  | FEM: 11.2060s | ROM: 0.000067s | Speedup: 167920.44x                                                                                                                                         
+Param 10/30 | FEM: 10.1355s | ROM: 0.000069s | Speedup: 147511.91x                                                                                                                                        
+Param 11/30 | FEM: 10.4068s | ROM: 0.000065s | Speedup: 160092.52x                                                                                                                                        
+Param 12/30 | FEM: 11.5140s | ROM: 0.000064s | Speedup: 179992.46x                                                                                                                                        
+Param 13/30 | FEM: 10.0558s | ROM: 0.000064s | Speedup: 156474.58x                                                                                                                                        
+Param 14/30 | FEM: 10.0843s | ROM: 0.000067s | Speedup: 149606.66x                                                                                                                                        
+Param 15/30 | FEM: 10.6674s | ROM: 0.000066s | Speedup: 162649.18x                                                                                                                                        
+Param 16/30 | FEM: 10.1309s | ROM: 0.000063s | Speedup: 159653.28x                                                                                                                                        
+Param 17/30 | FEM: 10.8565s | ROM: 0.000064s | Speedup: 169454.03x                                                                                                                                        
+Param 18/30 | FEM: 10.4369s | ROM: 0.000064s | Speedup: 164020.55x                                                                                                                                        
+Param 19/30 | FEM: 10.1176s | ROM: 0.000063s | Speedup: 159730.85x                                                                                                                                        
+Param 20/30 | FEM: 10.1993s | ROM: 0.000063s | Speedup: 161032.15x                                                                                                                                        
+Param 21/30 | FEM: 10.8390s | ROM: 0.000065s | Speedup: 166038.10x                                                                                                                                        
+Param 22/30 | FEM: 9.8837s  | ROM: 0.000060s | Speedup: 164263.92x                                                                                                                                         
+Param 23/30 | FEM: 10.0563s | ROM: 0.000063s | Speedup: 159508.45x                                                                                                                                        
+Param 24/30 | FEM: 10.6767s | ROM: 0.000064s | Speedup: 165896.60x                                                                                                                                        
+Param 25/30 | FEM: 10.0775s | ROM: 0.000065s | Speedup: 155645.48x                                                                                                                                        
+Param 26/30 | FEM: 10.4854s | ROM: 0.000067s | Speedup: 156754.89x                                                                                                                                        
+Param 27/30 | FEM: 9.6330s  | ROM: 0.000063s | Speedup: 153326.91x                                                                                                                                         
+Param 28/30 | FEM: 10.1589s | ROM: 0.000065s | Speedup: 157304.78x                                                                                                                                        
+Param 29/30 | FEM: 10.4875s | ROM: 0.000062s | Speedup: 169639.86x                                                                                                                                        
+Param 30/30 | FEM: 9.1214s  | ROM: 0.000069s | Speedup: 132183.70x                                                                                                                                         
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 30/30 [05:13<00:00, 10.45s/it]
+
+──────────────────────────────────────────────────────────────────────────────────────────
+COMPUTATIONAL SPEEDUP
+==================================================
+Average FEM Time: 10.3567 s (±0.4800)
+Average ROM Time: 0.000065 s (±0.000003)
+Average Speedup:  159814.39x
+
+──────────────────────────────────────────────────────────────────────────────────────────
+QUANTITIES OF INTEREST: MEAN RELATIVE ERROR
+==================================================
+Sensors (P & U):       6.45e-04 ± 2.50e-04
+Region 2 (Pressure):   1.77e-04 ± 2.10e-04
+Region 3 (Pressure):   1.95e-04 ± 2.13e-04
+Region 1 (Velocity):   2.07e-02 ± 1.08e-02
+Region 4 (Velocity):   3.17e-02 ± 1.49e-02
+
+──────────────────────────────────────────────────────────────────────────────────────────
 """
