@@ -140,6 +140,7 @@ qoi_filepath = 'Reduced_Order_Modeling/Online_Offline_phase/Data/reduced_qoi_vec
 with open(qoi_filepath, 'rb') as f:
     reduced_vectors = pickle.load(f)
 
+sensor_lift = E_uxy @ lf
 #────────────────────────────────────────────────────────────────────────────────────────────────
 # Warm-up
 #────────────────────────────────────────────────────────────────────────────────────────────────
@@ -178,7 +179,7 @@ for i, mu_unseen in enumerate(tqdm(mu_test_set)):
     ux_fom, uy_fom, p_fom = compute_U_P_solution_exchanger_device(p_fine, t_fine, e_fine, p_coarse, t_coarse, 3, kinematic_viscosity)
     u_fom = np.hstack([ux_fom, uy_fom])
     p_sensor_vals_fom = E_p @ p_fom                         # SENSORS
-    u_sensor_vals_fom = E_uxy @ lf + E_uxy @ u_fom
+    u_sensor_vals_fom = E_uxy @ u_fom
     p_avg_fom_o2 = compute_fom_region_avg_fast(p_fom, 2)    # AVG P
     p_avg_fom_o3 = compute_fom_region_avg_fast(p_fom, 3)
     u_avg_fom_o1 = np.sqrt(compute_fom_region_avg_fast(ux_fom, 1)**2 + compute_fom_region_avg_fast(uy_fom, 1)**2)  # AVG U
@@ -193,7 +194,7 @@ for i, mu_unseen in enumerate(tqdm(mu_test_set)):
 
         a_u, a_p = solve_ROM(mu_unseen, Reduced_Affine_Operators, Vu, Vp, Div_N, g_N, Reduced_lifting_vectors, lf, return_reduced_solution_only=True)
         p_sensor_vals_rom = E_pN @ a_p                      # SENSORS
-        u_sensor_vals_rom = E_uxy @ lf + E_uN @ a_u
+        u_sensor_vals_rom = sensor_lift + E_uN @ a_u
         p_avg_rom_o2 = a_p @ reduced_vectors[2]['p']
         p_avg_rom_o3 = a_p @ reduced_vectors[3]['p']
         u_avg_rom_o1 = np.sqrt((a_u @ reduced_vectors[1]['ux'])**2 + (a_u @ reduced_vectors[1]['uy'])**2)
