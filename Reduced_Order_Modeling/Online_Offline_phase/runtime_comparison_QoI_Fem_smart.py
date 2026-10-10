@@ -26,7 +26,7 @@ from Utilities.Plot_functions import Plot_Initial_Refined_meshes
 from Utilities.ROM import solve_ROM
 from Utilities.Stokes_felib import calculate_pressure_B
 
-RUN_SCRATCH_FOM = False     # True -> additionally time the "from scratch" solver (~10 s per parameter)
+RUN_SCRATCH_FOM = False
 
 #────────────────────────────────────────────────────────────────────────────────────────────────
 # Paths
@@ -86,7 +86,7 @@ Vp = np.load(os.path.join(data_rom, 'Vp.npy'))
 Div_N = np.load(os.path.join(data_rom, 'Div_N.npy'))
 g_N = np.load(os.path.join(data_rom, 'g_N.npy'))
 Reduced_lifting_vectors = np.load(os.path.join(data_rom, 'Reduced_lifting_vectors.npy'))
-lf = np.load(os.path.join(data_rom, 'lifting.npy'))            # r_g, length 2*Nv (x-part, then y-part)
+lf = np.load(os.path.join(data_rom, 'lifting.npy'))
 
 #────────────────────────────────────────────────────────────────────────────────────────────────
 # QoI operators (ROM side)
@@ -102,20 +102,20 @@ E_uN = np.load(os.path.join(data_rom, 'E_uN.npy'))
 with open(os.path.join(data_online, 'reduced_qoi_vectors.pkl'), 'rb') as f:
     reduced_vectors = pickle.load(f)
 
-sensor_lift = E_uxy @ lf        # E_u r_g, parameter-independent -> precomputed
+sensor_lift = E_uxy @ lf
 
-#════════════════════════════════════════════════════════════════════════════════════════════════
-# FOM WITH PRECOMPUTED OPERATORS (offline part - not timed per query)
-#════════════════════════════════════════════════════════════════════════════════════════════════
+#────────────────────────────────────────────────────────────────────────────────────────────────
+# FOM WITH PRECOMPUTED OPERATORS (offline part)
+#────────────────────────────────────────────────────────────────────────────────────────────────
 
 t_offline_start = time.perf_counter()
 
 Nv = p_fine.shape[0]
 Np = p_coarse.shape[0]
-n_params = psi_field.shape[1]            # = 5
+n_params = psi_field.shape[1]
 eps = 1e-10
 
-# ── STEP 1: five Dirichlet-enforced Xu_k = blockdiag(A_k, A_k) and B_h^T from your solver ──────
+# ── STEP 1: five Dirichlet-enforced Xu_k = blockdiag(A_k, A_k) and B_h^T ────────────────────────
 Xu_k_list = []
 BT_D = None
 
@@ -127,8 +127,9 @@ for k in range(n_params):
         return_matrices=True
     )
     Xu_k_list.append(Xu_k.tocsr())
+
     if BT_D is None:
-        BT_D = B_hT_k.tocsr()            # parameter-independent, Dirichlet rows enforced
+        BT_D = B_hT_k.tocsr()
 
 print(f"STEP 1 done: {n_params} x Xu_k {Xu_k_list[0].shape}, B_hT {BT_D.shape}")
 
@@ -140,7 +141,7 @@ outlet_idx = np.where(np.abs(p_fine[:, 0] - xmax) < eps)[0]
 boundary_nodes  = np.unique(e_fine[e_fine[:, 2] > 0, 0:2])
 v_wall_idx      = np.setdiff1d(boundary_nodes, np.concatenate([inlet_idx, outlet_idx]))
 dirichlet_nodes = np.unique(np.concatenate([inlet_idx, v_wall_idx]))
-dirichlet_rows  = np.concatenate([dirichlet_nodes, dirichlet_nodes + Nv])      # used for the RHS in step 4
+dirichlet_rows  = np.concatenate([dirichlet_nodes, dirichlet_nodes + Nv])
 
 # pressure pin: same node as in the solver
 p_ref_candidates = np.where(np.abs(p_coarse[:, 0] - xmax) < eps)[0]
@@ -149,7 +150,7 @@ if len(p_ref_candidates) == 0:
 p_pin = int(p_ref_candidates[0])
 
 Bx, By = calculate_pressure_B(p_fine, t_fine, p_coarse, t_coarse)
-B_full = sp.hstack([Bx, By], format='csr')                                     # (Np x 2Nv), unpinned
+B_full = sp.hstack([Bx, By], format='csr')
 
 p_mask = np.ones(Np)
 p_mask[p_pin] = 0.0
@@ -159,11 +160,9 @@ Zero_pp = sp.csr_matrix(([1.0], ([p_pin], [p_pin])), shape=(Np, Np))           #
 print(f"STEP 2 done: B {B_pinned.shape}, pinned pressure node {p_pin}")
 
 # ── STEP 3: lifting contributions to the RHS, using the five stored blocks ──────────────────────
-# momentum:  -Xu(mu) r_g = -sum_k mu_k (Xu_k r_g), Dirichlet rows set to 0 (as in the solver)
-R_lift = np.column_stack([Xu_k @ lf for Xu_k in Xu_k_list])                    # (2Nv x 5)
+R_lift = np.column_stack([Xu_k @ lf for Xu_k in Xu_k_list])
 R_lift[dirichlet_rows, :] = 0.0
 
-# continuity: -B r_g, pin row set to 0 (parameter-independent)
 G_lift = -(B_full @ lf)
 G_lift[p_pin] = 0.0
 
@@ -175,8 +174,7 @@ print(f"FOM offline precomputation total: {t_offline:.1f} s\n")
 
 # ── STEP 4: online FOM function ─────────────────────────────────────────────────────────────────
 def solve_FOM_affine(mu):
-    """Sum Xu_k with the weights mu_k, assemble the full saddle-point system, build the RHS
-    from the stored lifting terms, solve. Returns TOTAL velocity (u0 + r_g) and pressure."""
+
     Xu = mu[0] * Xu_k_list[0]
     for mu_k, Xu_k in zip(mu[1:], Xu_k_list[1:]):
         Xu = Xu + mu_k * Xu_k
@@ -194,7 +192,7 @@ def solve_FOM_affine(mu):
     return ux, uy, p
 
 #────────────────────────────────────────────────────────────────────────────────────────────────
-# Sanity check: affine FOM must reproduce your standard solver
+# Check: Affine FOM <===> Standard Solver
 #────────────────────────────────────────────────────────────────────────────────────────────────
 
 mu_warmup = mu_test_set[0]
