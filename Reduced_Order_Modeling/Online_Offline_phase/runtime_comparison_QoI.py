@@ -256,44 +256,44 @@ print("\n" + "─"*90)
 Starting benchmark warm-up (untimed)...
 Warm-up complete. Starting timed runs for 30 parameters...
 
-Param 1/30  | FEM: 10.3199s | ROM: 0.000063s | Speedup: 163240.37x                                                                                                                                         
-Param 2/30  | FEM: 10.5846s | ROM: 0.000060s | Speedup: 175445.07x                                                                                                                                         
-Param 3/30  | FEM: 9.4693s  | ROM: 0.000066s | Speedup: 143912.44x                                                                                                                                          
-Param 4/30  | FEM: 10.4381s | ROM: 0.000062s | Speedup: 167556.60x                                                                                                                                         
-Param 5/30  | FEM: 10.5633s | ROM: 0.000069s | Speedup: 153522.02x                                                                                                                                         
-Param 6/30  | FEM: 10.8006s | ROM: 0.000072s | Speedup: 150402.08x                                                                                                                                         
-Param 7/30  | FEM: 10.5015s | ROM: 0.000064s | Speedup: 164720.71x                                                                                                                                         
-Param 8/30  | FEM: 10.7947s | ROM: 0.000066s | Speedup: 163809.24x                                                                                                                                         
-Param 9/30  | FEM: 11.2060s | ROM: 0.000067s | Speedup: 167920.44x                                                                                                                                         
-Param 10/30 | FEM: 10.1355s | ROM: 0.000069s | Speedup: 147511.91x                                                                                                                                        
-Param 11/30 | FEM: 10.4068s | ROM: 0.000065s | Speedup: 160092.52x                                                                                                                                        
-Param 12/30 | FEM: 11.5140s | ROM: 0.000064s | Speedup: 179992.46x                                                                                                                                        
-Param 13/30 | FEM: 10.0558s | ROM: 0.000064s | Speedup: 156474.58x                                                                                                                                        
-Param 14/30 | FEM: 10.0843s | ROM: 0.000067s | Speedup: 149606.66x                                                                                                                                        
-Param 15/30 | FEM: 10.6674s | ROM: 0.000066s | Speedup: 162649.18x                                                                                                                                        
-Param 16/30 | FEM: 10.1309s | ROM: 0.000063s | Speedup: 159653.28x                                                                                                                                        
-Param 17/30 | FEM: 10.8565s | ROM: 0.000064s | Speedup: 169454.03x                                                                                                                                        
-Param 18/30 | FEM: 10.4369s | ROM: 0.000064s | Speedup: 164020.55x                                                                                                                                        
-Param 19/30 | FEM: 10.1176s | ROM: 0.000063s | Speedup: 159730.85x                                                                                                                                        
-Param 20/30 | FEM: 10.1993s | ROM: 0.000063s | Speedup: 161032.15x                                                                                                                                        
-Param 21/30 | FEM: 10.8390s | ROM: 0.000065s | Speedup: 166038.10x                                                                                                                                        
-Param 22/30 | FEM: 9.8837s  | ROM: 0.000060s | Speedup: 164263.92x                                                                                                                                         
-Param 23/30 | FEM: 10.0563s | ROM: 0.000063s | Speedup: 159508.45x                                                                                                                                        
-Param 24/30 | FEM: 10.6767s | ROM: 0.000064s | Speedup: 165896.60x                                                                                                                                        
-Param 25/30 | FEM: 10.0775s | ROM: 0.000065s | Speedup: 155645.48x                                                                                                                                        
-Param 26/30 | FEM: 10.4854s | ROM: 0.000067s | Speedup: 156754.89x                                                                                                                                        
-Param 27/30 | FEM: 9.6330s  | ROM: 0.000063s | Speedup: 153326.91x                                                                                                                                         
-Param 28/30 | FEM: 10.1589s | ROM: 0.000065s | Speedup: 157304.78x                                                                                                                                        
-Param 29/30 | FEM: 10.4875s | ROM: 0.000062s | Speedup: 169639.86x                                                                                                                                        
-Param 30/30 | FEM: 9.1214s  | ROM: 0.000069s | Speedup: 132183.70x                                                                                                                                         
-100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 30/30 [05:13<00:00, 10.45s/it]
+Param 1/30  | FEM: 9.5340s  | ROM: 0.000050s | Speedup: 190039.21x                                                                                                                                                          
+Param 2/30  | FEM: 9.4246s  | ROM: 0.000055s | Speedup: 171726.64x                                                                                                                                                          
+Param 3/30  | FEM: 9.7700s  | ROM: 0.000048s | Speedup: 204427.55x                                                                                                                                                          
+Param 4/30  | FEM: 9.4199s  | ROM: 0.000052s | Speedup: 182228.25x                                                                                                                                                          
+Param 5/30  | FEM: 9.6608s  | ROM: 0.000049s | Speedup: 196495.51x                                                                                                                                                          
+Param 6/30  | FEM: 10.4159s | ROM: 0.000054s | Speedup: 191748.82x                                                                                                                                                         
+Param 7/30  | FEM: 10.7568s | ROM: 0.000051s | Speedup: 209760.39x                                                                                                                                                         
+Param 8/30  | FEM: 9.9945s  | ROM: 0.000050s | Speedup: 197910.76x                                                                                                                                                          
+Param 9/30  | FEM: 11.1273s | ROM: 0.000051s | Speedup: 217986.77x                                                                                                                                                         
+Param 10/30 | FEM: 10.4808s | ROM: 0.000048s | Speedup: 217546.58x                                                                                                                                                        
+Param 11/30 | FEM: 9.9974s  | ROM: 0.000047s | Speedup: 213421.16x                                                                                                                                                         
+Param 12/30 | FEM: 9.9828s  | ROM: 0.000054s | Speedup: 184312.64x                                                                                                                                                         
+Param 13/30 | FEM: 10.4405s | ROM: 0.000051s | Speedup: 203249.23x                                                                                                                                                        
+Param 14/30 | FEM: 10.0452s | ROM: 0.000049s | Speedup: 203348.12x                                                                                                                                                        
+Param 15/30 | FEM: 9.7945s  | ROM: 0.000049s | Speedup: 201923.64x                                                                                                                                                         
+Param 16/30 | FEM: 9.6198s  | ROM: 0.000050s | Speedup: 191308.83x                                                                                                                                                         
+Param 17/30 | FEM: 10.4756s | ROM: 0.000050s | Speedup: 211318.10x                                                                                                                                                        
+Param 18/30 | FEM: 10.8196s | ROM: 0.000056s | Speedup: 192760.41x                                                                                                                                                        
+Param 19/30 | FEM: 9.5615s  | ROM: 0.000050s | Speedup: 192061.77x                                                                                                                                                         
+Param 20/30 | FEM: 10.6469s | ROM: 0.000048s | Speedup: 219689.54x                                                                                                                                                        
+Param 21/30 | FEM: 10.0319s | ROM: 0.000050s | Speedup: 198795.44x                                                                                                                                                        
+Param 22/30 | FEM: 10.4632s | ROM: 0.000051s | Speedup: 203915.23x                                                                                                                                                        
+Param 23/30 | FEM: 9.8479s  | ROM: 0.000049s | Speedup: 200963.85x                                                                                                                                                         
+Param 24/30 | FEM: 10.6817s | ROM: 0.000048s | Speedup: 222943.90x                                                                                                                                                        
+Param 25/30 | FEM: 9.9889s  | ROM: 0.000048s | Speedup: 208086.48x                                                                                                                                                         
+Param 26/30 | FEM: 10.4744s | ROM: 0.000050s | Speedup: 209181.91x                                                                                                                                                        
+Param 27/30 | FEM: 9.9095 s | ROM: 0.000052s | Speedup: 190581.59x                                                                                                                                                         
+Param 28/30 | FEM: 10.2934s | ROM: 0.000052s | Speedup: 199206.21x                                                                                                                                                        
+Param 29/30 | FEM: 9.9885s  | ROM: 0.000050s | Speedup: 198221.85x                                                                                                                                                         
+Param 30/30 | FEM: 9.9505s  | ROM: 0.000051s | Speedup: 194937.46x                                                                                                                                                         
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 30/30 [05:17<00:00, 10.57s/it]
 
 ──────────────────────────────────────────────────────────────────────────────────────────
 COMPUTATIONAL SPEEDUP
 ==================================================
-Average FEM Time: 10.3567 s (±0.4800)
-Average ROM Time: 0.000065 s (±0.000003)
-Average Speedup:  159814.39x
+Average FEM Time: 10.1199  s (±0.4392)
+Average ROM Time: 0.000051 s (±0.000002)
+Average Speedup:  200340.97x
 
 ──────────────────────────────────────────────────────────────────────────────────────────
 QUANTITIES OF INTEREST: MEAN RELATIVE ERROR
